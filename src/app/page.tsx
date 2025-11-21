@@ -265,7 +265,7 @@ export default function Home() {
             </button>
           </div>
           <p className="mt-3 text-xs text-slate-400">
-            数据源：TuShare Pro 日度前复权数据（T+1 更新，非实时）。
+            数据源：Baostock 日度前复权数据（T+1 更新，非实时）。
           </p>
         </section>
 
@@ -428,7 +428,7 @@ export default function Home() {
                 </h3>
                 <SimplePriceChart data={data} />
               </div>
-        </div>
+            </div>
           )}
         </section>
       </main>

@@ -1,40 +1,21 @@
+import { spawn } from "node:child_process";
+import path from "node:path";
+
 import { NextRequest, NextResponse } from "next/server";
+
+export const runtime = "nodejs";
 
 // 简单缓存，避免同一只股票频繁请求第三方接口（进程级，部署后可视情况替换为更高级缓存）
 const memoryCache = new Map<string, { timestamp: number; data: unknown }>();
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 分钟
-const DEFAULT_START_DATE = "19901219"; // 上证开市
-const FETCH_LIMIT = 4000;
-
-type TushareResponse = {
-  code: number;
-  msg: string;
-  data: {
-    fields: string[];
-    items: Array<Array<string | number | null>>;
-  } | null;
-};
-
-const TUSHARE_API_URL = "https://api.tushare.pro";
-
-const REQUIRED_FIELDS = [
-  "trade_date",
-  "open",
-  "high",
-  "low",
-  "close",
-  "vol",
-] as const;
-
-const STOCK_BASIC_FIELDS = ["ts_code", "name"] as const;
-const ADJ_FACTOR_FIELDS = ["trade_date", "adj_factor"] as const;
-const STK_WEEK_MONTH_FIELDS = ["trade_date", "close_qfq"] as const;
-
-type TushareTable = {
-  fields: string[];
-  items: Array<Array<string | number | null>>;
-};
+const DEFAULT_START_DATE = "1990-12-19"; // 上证开市
+const PYTHON_BIN = process.env.PYTHON_BIN?.trim() || "python3";
+const BAOSTOCK_FETCHER_PATH = path.join(
+  process.cwd(),
+  "scripts",
+  "baostock_fetcher.py"
+);
 
 type Candle = {
   time: number;
@@ -56,7 +37,30 @@ type StockSeries = {
   rawLatest: PricePoint | null;
 };
 
-const stockNameCache = new Map<string, string>();
+type BaostockFetcherInput = {
+  code: string;
+  startDate: string;
+  endDate: string;
+};
+
+type BaostockFetcherDailyRow = {
+  date: string;
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  close: number | null;
+  volume: number | null;
+};
+
+type BaostockFetcherOutput = {
+  name: string | null;
+  daily: BaostockFetcherDailyRow[];
+};
+
+type RawFetcherOutput = {
+  name?: unknown;
+  daily?: unknown;
+};
 
 function normalizeToTsCode(symbol: string): string | null {
   const upper = symbol.toUpperCase();
@@ -75,411 +79,197 @@ function normalizeToTsCode(symbol: string): string | null {
 }
 
 function tradeDateToTimestamp(tradeDate: string): number | null {
-  if (!/^\d{8}$/.test(tradeDate)) return null;
-  const year = tradeDate.slice(0, 4);
-  const month = tradeDate.slice(4, 6);
-  const day = tradeDate.slice(6, 8);
-  const date = new Date(`${year}-${month}-${day}T15:00:00+08:00`);
+  let normalized: string | null = null;
+  if (/^\d{8}$/.test(tradeDate)) {
+    const year = tradeDate.slice(0, 4);
+    const month = tradeDate.slice(4, 6);
+    const day = tradeDate.slice(6, 8);
+    normalized = `${year}-${month}-${day}`;
+  } else if (/^\d{4}-\d{2}-\d{2}$/.test(tradeDate)) {
+    normalized = tradeDate;
+  }
+
+  if (!normalized) {
+    return null;
+  }
+
+  const date = new Date(`${normalized}T15:00:00+08:00`);
   const time = date.getTime();
   return Number.isNaN(time) ? null : time;
 }
 
-function toNumber(value: string | number | null): number | null {
-  if (value === null || value === undefined) return null;
-  const num = typeof value === "number" ? value : Number(value);
-  return Number.isFinite(num) ? num : null;
-}
-
-async function callTushare({
-  apiName,
-  token,
-  params,
-  fields,
-}: {
-  apiName: string;
-  token: string;
-  params: Record<string, unknown>;
-  fields?: string;
-}) {
-  const payload: Record<string, unknown> = {
-    api_name: apiName,
-    token,
-    params,
-  };
-
-  if (fields) {
-    payload.fields = fields;
+function toNumber(value: unknown): number | null {
+  if (value === null || value === undefined) {
+    return null;
   }
-
-  const resp = await fetch(TUSHARE_API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-    cache: "no-store",
-  });
-
-  if (!resp.ok) {
-    throw new Error(`TuShare 接口 ${apiName} 返回 HTTP ${resp.status}`);
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
   }
-
-  const json = (await resp.json()) as TushareResponse;
-  if (json.code !== 0) {
-    throw new Error(json.msg || `TuShare 接口 ${apiName} 返回错误`);
-  }
-
-  return (
-    json.data ?? {
-      fields: [],
-      items: [],
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed.length) {
+      return null;
     }
-  );
-}
-
-function toSinaSymbol(tsCode: string): string | null {
-  const match = tsCode.match(/^(\d{6})\.(SH|SZ)$/i);
-  if (!match) {
-    return null;
+    const num = Number(trimmed);
+    return Number.isFinite(num) ? num : null;
   }
-  const [, digits, market] = match;
-  const prefix = market.toUpperCase() === "SH" ? "sh" : "sz";
-  return `${prefix}${digits}`;
-}
-
-async function fetchNameFromSina(tsCode: string): Promise<string | null> {
-  const sinaSymbol = toSinaSymbol(tsCode);
-  if (!sinaSymbol) {
-    return null;
-  }
-
-  const resp = await fetch(`https://hq.sinajs.cn/list=${sinaSymbol}`, {
-    headers: {
-      Referer: "https://finance.sina.com.cn",
-    },
-    cache: "no-store",
-  });
-
-  if (!resp.ok) {
-    return null;
-  }
-
-  const text = await resp.text();
-  const match = text.match(/="([^",]+),/);
-  if (!match) {
-    return null;
-  }
-
-  const name = match[1].trim();
-  return name.length ? name : null;
-}
-
-async function fetchStockName(tsCode: string, token: string) {
-  const cached = stockNameCache.get(tsCode);
-  if (cached) {
-    return cached;
-  }
-
-  try {
-    const data = await callTushare({
-      apiName: "stock_basic",
-      token,
-      params: { ts_code: tsCode },
-      fields: STOCK_BASIC_FIELDS.join(","),
-    });
-
-    if (data.items.length) {
-      const nameIndex = data.fields.indexOf("name");
-      if (nameIndex !== -1) {
-        const firstRow = data.items[0];
-        const rawName = firstRow?.[nameIndex];
-        const normalized =
-          typeof rawName === "string" && rawName.trim().length
-            ? rawName.trim()
-            : null;
-        if (normalized) {
-          stockNameCache.set(tsCode, normalized);
-          return normalized;
-        }
-      }
-    }
-  } catch {
-    // TuShare 查询失败时继续尝试新浪数据源
-  }
-
-  const fallbackName = await fetchNameFromSina(tsCode);
-  if (fallbackName) {
-    stockNameCache.set(tsCode, fallbackName);
-    return fallbackName;
-  }
-
   return null;
 }
 
-async function fetchPagedDataset({
-  apiName,
-  token,
-  params,
-  fields,
-}: {
-  apiName: string;
-  token: string;
-  params: Record<string, unknown>;
-  fields?: readonly string[];
-}): Promise<TushareTable> {
-  let offset = 0;
-  let hasMore = true;
-  const aggregated: Array<Array<string | number | null>> = [];
-  let fieldSnapshot: string[] | null = null;
+function formatDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
 
-  while (hasMore) {
-    const data = await callTushare({
-      apiName,
-      token,
-      params: {
-        ...params,
-        limit: FETCH_LIMIT,
-        offset,
-      },
-      fields: fields?.join(","),
+function normalizeFetcherOutput(raw: RawFetcherOutput): BaostockFetcherOutput {
+  const name =
+    typeof raw.name === "string" && raw.name.trim().length
+      ? raw.name.trim()
+      : null;
+
+  const daily = Array.isArray(raw.daily)
+    ? raw.daily
+        .map((row) => {
+          if (!row || typeof row !== "object") {
+            return null;
+          }
+          const record = row as Record<string, unknown>;
+          const date =
+            typeof record.date === "string" && record.date.trim().length
+              ? record.date.trim()
+              : null;
+          if (!date) {
+            return null;
+          }
+
+          return {
+            date,
+            open: toNumber(record.open),
+            high: toNumber(record.high),
+            low: toNumber(record.low),
+            close: toNumber(record.close),
+            volume: toNumber(record.volume),
+          };
+        })
+        .filter((row): row is BaostockFetcherDailyRow => Boolean(row))
+    : [];
+
+  return { name, daily };
+}
+
+async function runBaostockFetcher(
+  input: BaostockFetcherInput
+): Promise<BaostockFetcherOutput> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(PYTHON_BIN, [BAOSTOCK_FETCHER_PATH], {
+      stdio: ["pipe", "pipe", "pipe"],
     });
 
-    if (!fieldSnapshot && data.fields.length) {
-      fieldSnapshot = data.fields;
-    }
+    let stdout = "";
+    let stderr = "";
 
-    if (!data.items.length) {
-      break;
-    }
-
-    aggregated.push(...data.items);
-
-    if (data.items.length < FETCH_LIMIT) {
-      hasMore = false;
-    } else {
-      offset += data.items.length;
-      if (offset > 200000) {
-        throw new Error("日 K 数据量异常，已停止拉取以避免死循环");
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.once("error", (error) => reject(error));
+    child.once("close", (code) => {
+      if (code !== 0) {
+        reject(
+          new Error(
+            stderr.trim() ||
+              stdout.trim() ||
+              `Baostock fetcher exited with code ${code}`
+          )
+        );
+        return;
       }
-    }
-  }
 
-  return {
-    fields: fieldSnapshot ?? [],
-    items: aggregated,
-  };
-}
+      try {
+        const raw = JSON.parse(stdout || "{}") as RawFetcherOutput;
+        resolve(normalizeFetcherOutput(raw));
+      } catch (err) {
+        reject(
+          new Error(
+            `无法解析 Baostock 响应: ${
+              err instanceof Error ? err.message : String(err)
+            }`
+          )
+        );
+      }
+    });
 
-async function fetchDailyRaw(tsCode: string, token: string) {
-  return fetchPagedDataset({
-    apiName: "daily",
-    token,
-    params: {
-      ts_code: tsCode,
-      start_date: DEFAULT_START_DATE,
-    },
-    fields: REQUIRED_FIELDS,
+    child.stdin.end(JSON.stringify(input));
   });
 }
 
-async function fetchAdjFactorRaw(tsCode: string, token: string) {
-  return fetchPagedDataset({
-    apiName: "adj_factor",
-    token,
-    params: {
-      ts_code: tsCode,
-      start_date: DEFAULT_START_DATE,
-    },
-    fields: ADJ_FACTOR_FIELDS,
-  });
-}
-
-async function fetchHighestAdjClose(
-  tsCode: string,
-  token: string
-): Promise<PricePoint | null> {
-  const data = await fetchPagedDataset({
-    apiName: "stk_week_month_adj",
-    token,
-    params: {
-      ts_code: tsCode,
-      freq: "week",
-    },
-    fields: STK_WEEK_MONTH_FIELDS,
-  });
-
-  if (!data.items.length) {
-    return null;
-  }
-
-  const index = createFieldIndex(data.fields, STK_WEEK_MONTH_FIELDS);
-  let highest: PricePoint | null = null;
-
-  for (const row of data.items) {
-    const close = toNumber(row[index.close_qfq]);
-    const tradeDate = row[index.trade_date];
-    if (close === null || typeof tradeDate !== "string") {
-      continue;
-    }
-    const time = tradeDateToTimestamp(tradeDate);
-    if (time === null) {
-      continue;
-    }
-    if (!highest || close > highest.price) {
-      highest = { price: close, time };
-    }
-  }
-
-  return highest;
-}
-
-function createFieldIndex<T extends readonly string[]>(
-  fields: string[],
-  required: T
-): Record<T[number], number> {
-  const result: Partial<Record<T[number], number>> = {};
-  for (const field of required) {
-    const idx = fields.indexOf(field);
-    if (idx === -1) {
-      throw new Error(`返回数据缺少字段 ${field}`);
-    }
-    result[field as T[number]] = idx;
-  }
-  return result as Record<T[number], number>;
-}
-
-function buildStockSeries(
-  dailyData: TushareTable,
-  adjFactorData: TushareTable
-): StockSeries {
-  if (!dailyData.items.length) {
+function buildStockSeries(rows: BaostockFetcherDailyRow[]): StockSeries {
+  if (!rows.length) {
     return { candles: [], rawHighest: null, rawLatest: null };
   }
 
-  const dailyIndex = createFieldIndex(dailyData.fields, REQUIRED_FIELDS);
-  const adjIndex = createFieldIndex(adjFactorData.fields, ADJ_FACTOR_FIELDS);
-
-  const adjFactorMap = new Map<string, number>();
-  let latestAdjFactorValue: number | null = null;
-  let latestAdjFactorTradeDate: string | null = null;
-
-  for (const row of adjFactorData.items) {
-    const tradeDate = row[adjIndex.trade_date];
-    const adjFactor = toNumber(row[adjIndex.adj_factor]);
-    if (typeof tradeDate === "string" && adjFactor !== null) {
-      adjFactorMap.set(tradeDate, adjFactor);
-      if (!latestAdjFactorTradeDate || tradeDate > latestAdjFactorTradeDate) {
-        latestAdjFactorTradeDate = tradeDate;
-        latestAdjFactorValue = adjFactor;
-      }
-    }
-  }
-
-  if (!adjFactorMap.size || latestAdjFactorValue === null) {
-    throw new Error("未获取到有效复权因子数据");
-  }
-
-  let latestDailyTradeDate: string | null = null;
-  let rawLatest: PricePoint | null = null;
-  let rawLatestTradeDate: string | null = null;
-
-  for (const row of dailyData.items) {
-    const tradeDate = row[dailyIndex.trade_date];
-    if (typeof tradeDate !== "string") {
-      continue;
-    }
-
-    if (!latestDailyTradeDate || tradeDate > latestDailyTradeDate) {
-      latestDailyTradeDate = tradeDate;
-    }
-
-    const closeValue = toNumber(row[dailyIndex.close]);
-    const time = tradeDateToTimestamp(tradeDate);
-    if (closeValue === null || time === null) {
-      continue;
-    }
-
-    if (!rawLatestTradeDate || tradeDate > rawLatestTradeDate) {
-      rawLatestTradeDate = tradeDate;
-      rawLatest = { price: closeValue, time };
-    }
-  }
-
-  const baselineTradeDate =
-    (latestDailyTradeDate && adjFactorMap.get(latestDailyTradeDate)
-      ? latestDailyTradeDate
-      : latestAdjFactorTradeDate) ?? null;
-  const baselineFactor =
-    (baselineTradeDate && adjFactorMap.get(baselineTradeDate)) ??
-    latestAdjFactorValue;
-
-  if (baselineFactor === null) {
-    throw new Error("无法确定最近交易日的复权因子");
-  }
-  const ensuredBaselineFactor = baselineFactor as number;
-
-  const candles = dailyData.items
+  const candles = rows
     .map((row) => {
-      const tradeDate = row[dailyIndex.trade_date];
-      if (typeof tradeDate !== "string") {
-        return null;
-      }
-      const factor = adjFactorMap.get(tradeDate);
-      if (factor === undefined || factor === null) {
-        return null;
-      }
-      const ratio = factor / ensuredBaselineFactor;
-      if (!Number.isFinite(ratio) || ratio <= 0) {
+      const time = tradeDateToTimestamp(row.date);
+      if (time === null) {
         return null;
       }
 
-      const open = toNumber(row[dailyIndex.open]);
-      const high = toNumber(row[dailyIndex.high]);
-      const low = toNumber(row[dailyIndex.low]);
-      const close = toNumber(row[dailyIndex.close]);
-      const volume = toNumber(row[dailyIndex.vol]);
+      const open = row.open;
+      const high = row.high;
+      const low = row.low;
+      const close = row.close;
 
-      if (
-        open === null ||
-        high === null ||
-        low === null ||
-        close === null ||
-        volume === null
-      ) {
+      if (open === null || high === null || low === null || close === null) {
         return null;
       }
 
-      const time = tradeDateToTimestamp(tradeDate);
-      if (time === null) return null;
-
-      const adjust = (value: number) => value * ratio;
+      const volume =
+        typeof row.volume === "number" && Number.isFinite(row.volume)
+          ? row.volume
+          : 0;
 
       return {
         time,
-        open: adjust(open),
-        high: adjust(high),
-        low: adjust(low),
-        close: adjust(close),
+        open,
+        high,
+        low,
+        close,
         volume,
       };
     })
     .filter((candle): candle is Candle => Boolean(candle))
-    .reverse();
+    .sort((a, b) => a.time - b.time);
 
-  const adjustedHighest = candles.reduce<PricePoint | null>((acc, candle) => {
+  if (!candles.length) {
+    return { candles: [], rawHighest: null, rawLatest: null };
+  }
+
+  const rawHighest = candles.reduce<PricePoint | null>((acc, candle) => {
     if (!acc || candle.close > acc.price) {
       return { price: candle.close, time: candle.time };
     }
     return acc;
   }, null);
 
-  return { candles, rawHighest: adjustedHighest, rawLatest };
+  const rawLatest = {
+    price: candles[candles.length - 1].close,
+    time: candles[candles.length - 1].time,
+  };
+
+  return { candles, rawHighest, rawLatest };
 }
 
-async function fetchStockSeries(tsCode: string, token: string) {
-  const [dailyData, adjFactorData] = await Promise.all([
-    fetchDailyRaw(tsCode, token),
-    fetchAdjFactorRaw(tsCode, token),
-  ]);
-  return buildStockSeries(dailyData, adjFactorData);
+async function fetchStockPayload(tsCode: string) {
+  const today = formatDate(new Date());
+  const output = await runBaostockFetcher({
+    code: tsCode,
+    startDate: DEFAULT_START_DATE,
+    endDate: today,
+  });
+  const series = buildStockSeries(output.daily);
+  return { name: output.name, series };
 }
 
 export async function GET(req: NextRequest) {
@@ -503,15 +293,6 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const tushareToken = process.env.TUSHARE_TOKEN?.trim();
-  if (!tushareToken) {
-    return NextResponse.json(
-      { error: "服务器未配置 TuShare Token，请联系管理员" },
-      { status: 500 }
-    );
-  }
-
-  // 简单内存缓存
   const cacheKey = tsCode;
   const cached = memoryCache.get(cacheKey);
   const now = Date.now();
@@ -520,14 +301,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const [basicInfo, series, highestFromWeekMonth] = await Promise.all([
-      fetchStockName(tsCode, tushareToken).catch(() => null),
-      fetchStockSeries(tsCode, tushareToken),
-      fetchHighestAdjClose(tsCode, tushareToken).catch(() => null),
-    ]);
-
-    console.log("111-222", highestFromWeekMonth);
-
+    const { name, series } = await fetchStockPayload(tsCode);
     const { candles, rawHighest, rawLatest } = series;
 
     if (!candles.length) {
@@ -538,7 +312,6 @@ export async function GET(req: NextRequest) {
     }
 
     const fallbackHighest =
-      highestFromWeekMonth ??
       rawHighest ??
       candles.reduce<PricePoint | null>((acc, candle) => {
         if (!acc || candle.close > acc.price) {
@@ -564,16 +337,15 @@ export async function GET(req: NextRequest) {
     }
 
     const target80Price = fallbackHighest.price * 0.2;
-
-    // 当前价 = 最后一根有效 K 线的收盘价（通常为最近一个交易日）
+    const denominator = fallbackHighest.price * 0.8;
     const expectedDropRatio =
-      fallbackHighest.price * 0.8 !== 0
-        ? (latestPoint.price - target80Price) / (fallbackHighest.price * 0.8)
+      denominator !== 0
+        ? (latestPoint.price - target80Price) / denominator
         : null;
 
     const payload = {
       symbol: tsCode,
-      name: basicInfo,
+      name,
       highest: fallbackHighest,
       target80: {
         price: target80Price,
@@ -582,7 +354,7 @@ export async function GET(req: NextRequest) {
         price: latestPoint.price,
         time: latestPoint.time,
       },
-      expectedDropRatio, // 例如 0.5 表示还完成了 50% 的“从最高跌到 -80%”之旅
+      expectedDropRatio,
       candles,
     };
 
@@ -592,7 +364,7 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.error(err);
     return NextResponse.json(
-      { error: "请求第三方股票数据失败，请稍后重试" },
+      { error: "请求 Baostock 数据失败，请稍后重试" },
       { status: 500 }
     );
   }

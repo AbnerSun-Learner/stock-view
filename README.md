@@ -3,7 +3,7 @@
 本项目是一个基于 **Next.js + TypeScript + Tailwind CSS** 的股票分析小工具，核心功能：
 
 - **输入股票代码**：支持 A 股 6 位股票代码（可带 `.SZ`/`.SH` 后缀，如 `000001.SZ`、`600519`）。
-- **展示日 K 走势**：基于 **TuShare Pro** 提供的日度前复权数据（自 1990-12-19 起）。
+- **展示日 K 走势**：基于 **Baostock** 提供的日度前复权数据（自 1990-12-19 起）。
 - **关键价位计算**：
   - 历史最高收盘价；
   - 对应的 **-80% 点位**（即 \(0.2 \times 最高收盘价\)）；
@@ -31,16 +31,19 @@
 
 ---
 
-## 环境变量
+## 外部依赖
 
-- 申请并登录 [TuShare Pro](https://tushare.pro/)，在「账号」-「Token」中复制专属 Token。
-- 在项目根目录创建 `.env.local`，写入：
+- **Python 3.9+ 与 Baostock**
 
-  ```bash
-  TUSHARE_TOKEN=你的TuShareToken
-  ```
+  - 保证服务器可用 `python3`（或自定义路径）；
+  - 安装 Baostock：`pip install baostock`;
+  - 若默认 `python3` 不可用，可在 `.env.local` 中指定：
 
-- Next.js 在开发与部署时都会读取该变量，用于 `/api/stock` 的后端请求。
+    ```bash
+    PYTHON_BIN=/custom/path/to/python3
+    ```
+
+  - `/api/stock` 会通过 `scripts/baostock_fetcher.py` 调用本地 Python 解释器抓取数据，请确保部署环境允许执行。
 
 ---
 
@@ -70,7 +73,7 @@
 - **搜索输入框**
 
 - 输入股票代码，回车或点击「查询」按钮发起请求。
-- 后端请求 `/api/stock?symbol=代码`，实时向 TuShare Pro 拉取该股票自 1990 年以来的日 K 数据。
+- 后端请求 `/api/stock?symbol=代码`，实时通过 Baostock 拉取该股票自 1990 年以来的日度前复权数据。
 
 - **日 K 与价位展示**
 
@@ -166,6 +169,6 @@
 
 ## 注意事项与扩展方向
 
-- 本项目当前使用 TuShare Pro 数据源，请确保配置了可用的 `TUSHARE_TOKEN`，并遵守 TuShare 的使用条款与频控限制。
+- 本项目当前使用 Baostock 数据源，请遵守 Baostock 的使用条款及访问频控要求。
 - 目前的 K 线展示为「收盘价折线」+ 关键价位水平线，后续可以引入专门的金融图表库（如 `lightweight-charts`、`react-financial-charts` 等）实现完整蜡烛图。
 - 收藏与历史记录存储在浏览器本地，不会同步到服务器或不同设备。
