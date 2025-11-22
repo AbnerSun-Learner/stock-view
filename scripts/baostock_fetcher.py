@@ -4,7 +4,7 @@ Simple helper script to fetch stock data from Baostock.
 
 Reads a JSON payload from stdin:
 {
-  "code": "000001.SZ",
+  "code": "sz.000001",
   "startDate": "1990-12-19",
   "endDate": "2025-11-21"
 }
@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import json
 import sys
+from contextlib import redirect_stdout
+from io import StringIO
 from typing import Any, Dict, List, Optional
 
 import baostock as bs
@@ -28,12 +30,13 @@ def _fail(message: str) -> None:
 
 
 def _convert_code(ts_code: str) -> str:
-    ts_code = ts_code.upper()
-    if ts_code.endswith(".SZ"):
-        return f"sz.{ts_code[:6]}"
-    if ts_code.endswith(".SH"):
-        return f"sh.{ts_code[:6]}"
-    _fail(f"Unsupported ts_code format: {ts_code}")
+    ts_code = ts_code.strip()
+    # 只支持 sh. 或 sz. 开头的格式
+    if ts_code.lower().startswith("sh."):
+        return ts_code.lower()
+    if ts_code.lower().startswith("sz."):
+        return ts_code.lower()
+    _fail(f"Unsupported ts_code format: {ts_code}. Expected format: sh.XXXXXX or sz.XXXXXX")
     return ts_code  # Unreachable
 
 
@@ -118,16 +121,19 @@ def main() -> None:
 
     bs_code = _convert_code(code)
 
-    login_result = bs.login()
-    if login_result.error_code != "0":
-        _fail(f"Baostock login failed: {login_result.error_msg or login_result.error_code}")
+    # 抑制 baostock 的输出（它会输出 "login succ..." 等到 stdout）
+    with redirect_stdout(StringIO()):
+        login_result = bs.login()
+        if login_result.error_code != "0":
+            _fail(f"Baostock login failed: {login_result.error_msg or login_result.error_code}")
 
-    try:
-        name = _query_basic(bs_code)
-        daily = _query_history(bs_code, start_date, end_date)
-    finally:
-        bs.logout()
+        try:
+            name = _query_basic(bs_code)
+            daily = _query_history(bs_code, start_date, end_date)
+        finally:
+            bs.logout()
 
+    # redirect_stdout 会自动恢复 stdout，所以这里可以正常输出 JSON
     output = {
         "name": name,
         "daily": daily,

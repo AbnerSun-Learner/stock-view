@@ -62,20 +62,9 @@ type RawFetcherOutput = {
   daily?: unknown;
 };
 
-function normalizeToTsCode(symbol: string): string | null {
-  const upper = symbol.toUpperCase();
-  if (/^\d{6}\.(SZ|SH)$/.test(upper)) {
-    return upper;
-  }
-  if (/^\d{6}$/.test(upper)) {
-    if (upper.startsWith("6")) {
-      return `${upper}.SH`;
-    }
-    if (upper.startsWith("0") || upper.startsWith("3")) {
-      return `${upper}.SZ`;
-    }
-  }
-  return null;
+function validateCodeFormat(code: string): boolean {
+  const lower = code.toLowerCase();
+  return lower.startsWith("sh.") || lower.startsWith("sz.");
 }
 
 function tradeDateToTimestamp(tradeDate: string): number | null {
@@ -283,17 +272,18 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const tsCode = normalizeToTsCode(symbol);
-  if (!tsCode) {
+  const code = symbol.toLowerCase();
+  if (!validateCodeFormat(code)) {
     return NextResponse.json(
       {
-        error: "仅支持 6 位 A 股代码（如 000001.SZ 或 600519.SH），请检查输入",
+        error:
+          "仅支持 sh. 或 sz. 开头的格式（如 sh.600519 或 sz.000001），请检查输入",
       },
       { status: 400 }
     );
   }
 
-  const cacheKey = tsCode;
+  const cacheKey = code;
   const cached = memoryCache.get(cacheKey);
   const now = Date.now();
   if (cached && now - cached.timestamp < CACHE_TTL_MS) {
@@ -301,7 +291,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const { name, series } = await fetchStockPayload(tsCode);
+    const { name, series } = await fetchStockPayload(code);
     const { candles, rawHighest, rawLatest } = series;
 
     if (!candles.length) {
@@ -344,7 +334,7 @@ export async function GET(req: NextRequest) {
         : null;
 
     const payload = {
-      symbol: tsCode,
+      symbol: code,
       name,
       highest: fallbackHighest,
       target80: {

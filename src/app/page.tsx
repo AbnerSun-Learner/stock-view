@@ -248,7 +248,7 @@ export default function Home() {
             <input
               value={symbol}
               onChange={(e) => setSymbol(e.target.value)}
-              placeholder="输入 A 股代码，如：000001.SZ、600519、002475"
+              placeholder="输入 A 股代码或指数代码，如：sz.000001、sh.600519、sz.399618（中证医疗）"
               className="flex-1 rounded-full bg-transparent px-6 py-3 text-sm outline-none placeholder:text-slate-400"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -280,7 +280,7 @@ export default function Home() {
             </div>
             {favorites.length === 0 ? (
               <p className="text-xs text-slate-400">
-                暂无收藏。查询股票后，可在结果区点击「收藏」。
+                暂无收藏。查询股票/指数后，可在结果区点击「收藏」。
               </p>
             ) : (
               <div className="flex flex-wrap gap-2">
@@ -341,7 +341,7 @@ export default function Home() {
         <section className="mt-10 w-full max-w-4xl">
           {!data && !error && (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-white/60 p-8 text-center text-sm text-slate-400">
-              输入股票代码并点击「查询」，将展示日K、历史最高价、-80%点位与当前价。
+              输入股票代码或指数代码并点击「查询」，将展示日K、历史最高价、-80%点位与当前价。
             </div>
           )}
 
