@@ -8,13 +8,13 @@ export const runtime = "nodejs";
 // 简单缓存，避免同一只股票频繁请求第三方接口（进程级，部署后可视情况替换为更高级缓存）
 const memoryCache = new Map<string, { timestamp: number; data: unknown }>();
 
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 分钟
-const DEFAULT_START_DATE = "1990-12-19"; // 上证开市
+const CACHE_TTL_MS = 1 * 60 * 1000; // 1 分钟（实时数据需要更频繁更新）
 const PYTHON_BIN = process.env.PYTHON_BIN?.trim() || "python3";
-const BAOSTOCK_FETCHER_PATH = path.join(
+// 优先使用多数据源fetcher（免费且稳定）
+const MULTI_SOURCE_FETCHER_PATH = path.join(
   process.cwd(),
   "scripts",
-  "baostock_fetcher.py"
+  "multi_source_fetcher.py"
 );
 
 type Candle = {
@@ -37,13 +37,12 @@ type StockSeries = {
   rawLatest: PricePoint | null;
 };
 
-type BaostockFetcherInput = {
+type TsanghiFetcherInput = {
   code: string;
-  startDate: string;
-  endDate: string;
+  only_today_close?: boolean;
 };
 
-type BaostockFetcherDailyRow = {
+type TsanghiFetcherDailyRow = {
   date: string;
   open: number | null;
   high: number | null;
@@ -52,20 +51,19 @@ type BaostockFetcherDailyRow = {
   volume: number | null;
 };
 
-type BaostockFetcherOutput = {
+type TsanghiFetcherOutput = {
   name: string | null;
-  daily: BaostockFetcherDailyRow[];
+  daily?: TsanghiFetcherDailyRow[];
+  close_price?: number | null;
+  date?: string | null;
 };
 
 type RawFetcherOutput = {
   name?: unknown;
   daily?: unknown;
+  close_price?: unknown;
+  date?: unknown;
 };
-
-function validateCodeFormat(code: string): boolean {
-  const lower = code.toLowerCase();
-  return lower.startsWith("sh.") || lower.startsWith("sz.");
-}
 
 function tradeDateToTimestamp(tradeDate: string): number | null {
   let normalized: string | null = null;
@@ -87,6 +85,35 @@ function tradeDateToTimestamp(tradeDate: string): number | null {
   return Number.isNaN(time) ? null : time;
 }
 
+function isTradingHours(): boolean {
+  // A股交易时间：9:30-11:30, 13:00-15:00（北京时间）
+  const now = new Date();
+  const beijingTime = new Date(
+    now.toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
+  );
+  const day = beijingTime.getDay(); // 0=周日, 6=周六
+  const hour = beijingTime.getHours();
+  const minute = beijingTime.getMinutes();
+  const timeInMinutes = hour * 60 + minute;
+
+  // 周末不交易
+  if (day === 0 || day === 6) {
+    return false;
+  }
+
+  // 上午：9:30-11:30
+  const morningStart = 9 * 60 + 30; // 9:30
+  const morningEnd = 11 * 60 + 30; // 11:30
+  // 下午：13:00-15:00
+  const afternoonStart = 13 * 60; // 13:00
+  const afternoonEnd = 15 * 60; // 15:00
+
+  return (
+    (timeInMinutes >= morningStart && timeInMinutes <= morningEnd) ||
+    (timeInMinutes >= afternoonStart && timeInMinutes <= afternoonEnd)
+  );
+}
+
 function toNumber(value: unknown): number | null {
   if (value === null || value === undefined) {
     return null;
@@ -105,16 +132,22 @@ function toNumber(value: unknown): number | null {
   return null;
 }
 
-function formatDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
-function normalizeFetcherOutput(raw: RawFetcherOutput): BaostockFetcherOutput {
+function normalizeFetcherOutput(raw: RawFetcherOutput): TsanghiFetcherOutput {
   const name =
     typeof raw.name === "string" && raw.name.trim().length
       ? raw.name.trim()
       : null;
 
+  // 如果返回的是当天收盘价格式
+  if (raw.close_price !== undefined) {
+    return {
+      name,
+      close_price: toNumber(raw.close_price),
+      date: typeof raw.date === "string" ? raw.date : null,
+    };
+  }
+
+  // 否则返回历史数据格式
   const daily = Array.isArray(raw.daily)
     ? raw.daily
         .map((row) => {
@@ -139,17 +172,19 @@ function normalizeFetcherOutput(raw: RawFetcherOutput): BaostockFetcherOutput {
             volume: toNumber(record.volume),
           };
         })
-        .filter((row): row is BaostockFetcherDailyRow => Boolean(row))
+        .filter((row): row is TsanghiFetcherDailyRow => Boolean(row))
     : [];
 
   return { name, daily };
 }
 
-async function runBaostockFetcher(
-  input: BaostockFetcherInput
-): Promise<BaostockFetcherOutput> {
+async function runStockFetcher(
+  input: TsanghiFetcherInput,
+  fetcherPath: string,
+  fetcherName: string
+): Promise<TsanghiFetcherOutput> {
   return new Promise((resolve, reject) => {
-    const child = spawn(PYTHON_BIN, [BAOSTOCK_FETCHER_PATH], {
+    const child = spawn(PYTHON_BIN, [fetcherPath], {
       stdio: ["pipe", "pipe", "pipe"],
     });
 
@@ -169,7 +204,7 @@ async function runBaostockFetcher(
           new Error(
             stderr.trim() ||
               stdout.trim() ||
-              `Baostock fetcher exited with code ${code}`
+              `${fetcherName} exited with code ${code}`
           )
         );
         return;
@@ -181,7 +216,7 @@ async function runBaostockFetcher(
       } catch (err) {
         reject(
           new Error(
-            `无法解析 Baostock 响应: ${
+            `无法解析 ${fetcherName} 响应: ${
               err instanceof Error ? err.message : String(err)
             }`
           )
@@ -193,7 +228,7 @@ async function runBaostockFetcher(
   });
 }
 
-function buildStockSeries(rows: BaostockFetcherDailyRow[]): StockSeries {
+function buildStockSeries(rows: TsanghiFetcherDailyRow[]): StockSeries {
   if (!rows.length) {
     return { candles: [], rawHighest: null, rawLatest: null };
   }
@@ -236,8 +271,8 @@ function buildStockSeries(rows: BaostockFetcherDailyRow[]): StockSeries {
   }
 
   const rawHighest = candles.reduce<PricePoint | null>((acc, candle) => {
-    if (!acc || candle.close > acc.price) {
-      return { price: candle.close, time: candle.time };
+    if (!acc || candle.high > acc.price) {
+      return { price: candle.high, time: candle.time };
     }
     return acc;
   }, null);
@@ -251,39 +286,47 @@ function buildStockSeries(rows: BaostockFetcherDailyRow[]): StockSeries {
 }
 
 async function fetchStockPayload(tsCode: string) {
-  const today = formatDate(new Date());
-  const output = await runBaostockFetcher({
-    code: tsCode,
-    startDate: DEFAULT_START_DATE,
-    endDate: today,
-  });
-  const series = buildStockSeries(output.daily);
-  return { name: output.name, series };
+  // 优先使用多数据源fetcher（免费且稳定）
+  const fetchers = [{ path: MULTI_SOURCE_FETCHER_PATH, name: "多数据源" }];
+
+  let lastError: Error | null = null;
+  for (const fetcher of fetchers) {
+    try {
+      const output = await runStockFetcher(
+        { code: tsCode },
+        fetcher.path,
+        fetcher.name
+      );
+      // 如果返回的是当天收盘价格式，不应该在这里处理
+      if (output.close_price !== undefined) {
+        continue;
+      }
+      const series = buildStockSeries(output.daily || []);
+      return { name: output.name, series };
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      // 继续尝试下一个fetcher
+      continue;
+    }
+  }
+
+  // 所有fetcher都失败
+  throw lastError || new Error("所有数据源获取失败");
+}
+
+export async function DELETE() {
+  // 清除所有缓存
+  memoryCache.clear();
+  return NextResponse.json({ success: true, message: "缓存已清除" });
 }
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const symbol = searchParams.get("symbol")?.trim();
+  const symbol = searchParams.get("symbol");
+  const code = symbol || "";
+  const onlyTodayClose = searchParams.get("only_today_close") === "true";
 
-  if (!symbol) {
-    return NextResponse.json(
-      { error: "缺少股票代码参数 symbol" },
-      { status: 400 }
-    );
-  }
-
-  const code = symbol.toLowerCase();
-  if (!validateCodeFormat(code)) {
-    return NextResponse.json(
-      {
-        error:
-          "仅支持 sh. 或 sz. 开头的格式（如 sh.600519 或 sz.000001），请检查输入",
-      },
-      { status: 400 }
-    );
-  }
-
-  const cacheKey = code;
+  const cacheKey = `${code}_${onlyTodayClose}`;
   const cached = memoryCache.get(cacheKey);
   const now = Date.now();
   if (cached && now - cached.timestamp < CACHE_TTL_MS) {
@@ -291,6 +334,36 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // 如果只需要当天收盘价（用于ETF）
+    if (onlyTodayClose) {
+      const output = await runStockFetcher(
+        { code, only_today_close: true },
+        MULTI_SOURCE_FETCHER_PATH,
+        "多数据源"
+      );
+
+      if (output.close_price === null || output.close_price === undefined) {
+        return NextResponse.json(
+          { error: "无法获取该ETF的当天收盘价格" },
+          { status: 404 }
+        );
+      }
+
+      const payload = {
+        symbol: code,
+        name: output.name,
+        close_price:
+          output.close_price != null
+            ? parseFloat(output.close_price.toFixed(3))
+            : null,
+        date: output.date,
+      };
+
+      memoryCache.set(cacheKey, { timestamp: now, data: payload });
+      return NextResponse.json(payload);
+    }
+
+    // 否则获取完整的历史数据
     const { name, series } = await fetchStockPayload(code);
     const { candles, rawHighest, rawLatest } = series;
 
@@ -304,20 +377,61 @@ export async function GET(req: NextRequest) {
     const fallbackHighest =
       rawHighest ??
       candles.reduce<PricePoint | null>((acc, candle) => {
-        if (!acc || candle.close > acc.price) {
-          return { price: candle.close, time: candle.time };
+        if (!acc || candle.high > acc.price) {
+          return { price: candle.high, time: candle.time };
         }
         return acc;
       }, null);
 
-    const latestPoint =
-      rawLatest ??
-      (candles.length
-        ? {
-            price: candles[candles.length - 1].close,
-            time: candles[candles.length - 1].time,
-          }
-        : null);
+    // 根据交易时间决定显示当天还是上一个交易日的收盘价
+    let latestPoint: PricePoint | null = null;
+    if (candles.length > 0) {
+      const lastCandle = candles[candles.length - 1];
+      // 获取北京时间的今天日期字符串
+      const nowBeijing = new Date(
+        new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
+      );
+      const todayDateStr = `${nowBeijing.getFullYear()}-${String(
+        nowBeijing.getMonth() + 1
+      ).padStart(2, "0")}-${String(nowBeijing.getDate()).padStart(2, "0")}`;
+
+      // lastCandle.time 已经是北京时间（从 tradeDateToTimestamp 生成）
+      const lastCandleDate = new Date(lastCandle.time);
+      const lastCandleDateStr = `${lastCandleDate.getFullYear()}-${String(
+        lastCandleDate.getMonth() + 1
+      ).padStart(2, "0")}-${String(lastCandleDate.getDate()).padStart(2, "0")}`;
+
+      const isLastCandleToday = lastCandleDateStr === todayDateStr;
+      const inTradingHours = isTradingHours();
+
+      if (isLastCandleToday && inTradingHours) {
+        // 如果最后一条数据是今天，且在交易时间内，显示上一个交易日的收盘价
+        if (candles.length > 1) {
+          const prevCandle = candles[candles.length - 2];
+          latestPoint = {
+            price: prevCandle.close,
+            time: prevCandle.time,
+          };
+        } else {
+          // 如果只有一条数据（今天），且没有前一天数据，仍然显示今天的
+          latestPoint = {
+            price: lastCandle.close,
+            time: lastCandle.time,
+          };
+        }
+      } else {
+        // 不在交易时间内，或者最后一条数据不是今天，显示最后一条数据的收盘价
+        latestPoint = {
+          price: lastCandle.close,
+          time: lastCandle.time,
+        };
+      }
+    }
+
+    // 如果没有 rawLatest，使用上面计算的 latestPoint
+    if (!latestPoint) {
+      latestPoint = rawLatest ?? null;
+    }
 
     if (!fallbackHighest || !latestPoint) {
       return NextResponse.json(
@@ -327,11 +441,9 @@ export async function GET(req: NextRequest) {
     }
 
     const target80Price = fallbackHighest.price * 0.2;
-    const denominator = fallbackHighest.price * 0.8;
+    // const denominator = fallbackHighest.price * 0.8;
     const expectedDropRatio =
-      denominator !== 0
-        ? (latestPoint.price - target80Price) / denominator
-        : null;
+      (latestPoint.price - target80Price) / latestPoint.price;
 
     const payload = {
       symbol: code,
@@ -354,7 +466,7 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.error(err);
     return NextResponse.json(
-      { error: "请求 Baostock 数据失败，请稍后重试" },
+      { error: "获取股票数据失败，请稍后重试" },
       { status: 500 }
     );
   }
