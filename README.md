@@ -112,30 +112,36 @@
 
 ## 部署到 GitHub / Vercel
 
-### 1. 推送到 GitHub
+### 快速部署（推荐）
 
-1. 在 GitHub 上新建一个仓库，例如 `stock-view`。
-2. 在本地项目根目录执行（如你还未初始化 git，可执行）：
+项目已配置好 GitHub Actions 和 Vercel 部署配置，按照以下步骤即可完成部署：
 
-   ```bash
-   cd /Users/abnersun/Downloads/code/stock-view
-   git init
-   git remote add origin <你的 GitHub 仓库地址>
-   git add .
-   git commit -m "init stock-view app"
-   git push -u origin main
-   ```
+#### 1. 推送到 GitHub
 
-> 若 `create-next-app` 已自动初始化 git，可直接 `git remote add origin` 然后 push。
+```bash
+# 确保所有更改已提交
+git add .
+git commit -m "配置部署文件"
+git push origin main
+```
 
-### 2. 使用 Vercel 部署（推荐）
+#### 2. 使用 Vercel 部署
 
-1. 打开 Vercel 网站，使用 GitHub 账号登录。
-2. 选择「Import Project」，选中刚才的 GitHub 仓库。
-3. 保持默认 Next.js 配置，一路确认即可。
-4. 部署完成后，会得到一个线上访问地址（如 `https://your-project.vercel.app`）。
+1. 访问 [vercel.com](https://vercel.com) 并使用 GitHub 账号登录
+2. 点击 **"Add New..."** → **"Project"**
+3. 在项目列表中找到 `stock-view` 仓库，点击 **"Import"**
+4. 保持默认配置，直接点击 **"Deploy"**
+5. 等待部署完成，获得公网访问地址（如 `https://stock-view.vercel.app`）
 
-> 本项目不需要任何后端环境变量，部署开箱即用，但需要保证 Vercel 使用的 Node 版本满足 Next.js 要求（一般默认即可）。
+> **提示**：Vercel 会自动检测 Next.js 项目并完成配置，无需额外设置。部署后，每次推送到 `main` 分支都会自动触发重新部署。
+
+#### 3. 使用 GitHub Actions 自动部署（可选）
+
+如需使用 GitHub Actions 自动部署，请参考 [DEPLOY.md](./DEPLOY.md) 中的详细说明。
+
+### 详细部署文档
+
+完整的部署指南、常见问题解答和自定义域名配置，请查看 [DEPLOY.md](./DEPLOY.md)。
 
 ---
 
