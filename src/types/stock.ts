@@ -1,5 +1,5 @@
 /**
- * 股票相关类型定义
+ * ETF相关类型定义
  */
 
 export type Candle = {
@@ -16,7 +16,7 @@ export type PricePoint = {
   time: number;
 };
 
-export type StockResponse = {
+export type EtfResponse = {
   symbol: string;
   name: string | null;
   highest: PricePoint | null;

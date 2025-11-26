@@ -1,21 +1,13 @@
-import { spawn } from "node:child_process";
-import path from "node:path";
-
 import { NextRequest, NextResponse } from "next/server";
+
+import { fetchEtfData, fetchEtfDataWithTodayClose } from "@/lib/stock-fetcher";
 
 export const runtime = "nodejs";
 
-// 简单缓存，避免同一只股票频繁请求第三方接口（进程级，部署后可视情况替换为更高级缓存）
+// 简单缓存，避免同一只ETF频繁请求第三方接口（进程级，部署后可视情况替换为更高级缓存）
 const memoryCache = new Map<string, { timestamp: number; data: unknown }>();
 
 const CACHE_TTL_MS = 1 * 60 * 1000; // 1 分钟（实时数据需要更频繁更新）
-const PYTHON_BIN = process.env.PYTHON_BIN?.trim() || "python3";
-// 优先使用多数据源fetcher（免费且稳定）
-const MULTI_SOURCE_FETCHER_PATH = path.join(
-  process.cwd(),
-  "scripts",
-  "multi_source_fetcher.py"
-);
 
 type Candle = {
   time: number;
@@ -31,38 +23,19 @@ type PricePoint = {
   time: number;
 };
 
-type StockSeries = {
+type EtfSeries = {
   candles: Candle[];
   rawHighest: PricePoint | null;
   rawLatest: PricePoint | null;
 };
 
-type TsanghiFetcherInput = {
-  code: string;
-  only_today_close?: boolean;
-};
-
-type TsanghiFetcherDailyRow = {
+type FetcherDailyRow = {
   date: string;
   open: number | null;
   high: number | null;
   low: number | null;
   close: number | null;
   volume: number | null;
-};
-
-type TsanghiFetcherOutput = {
-  name: string | null;
-  daily?: TsanghiFetcherDailyRow[];
-  close_price?: number | null;
-  date?: string | null;
-};
-
-type RawFetcherOutput = {
-  name?: unknown;
-  daily?: unknown;
-  close_price?: unknown;
-  date?: unknown;
 };
 
 function tradeDateToTimestamp(tradeDate: string): number | null {
@@ -132,103 +105,7 @@ function toNumber(value: unknown): number | null {
   return null;
 }
 
-function normalizeFetcherOutput(raw: RawFetcherOutput): TsanghiFetcherOutput {
-  const name =
-    typeof raw.name === "string" && raw.name.trim().length
-      ? raw.name.trim()
-      : null;
-
-  // 如果返回的是当天收盘价格式
-  if (raw.close_price !== undefined) {
-    return {
-      name,
-      close_price: toNumber(raw.close_price),
-      date: typeof raw.date === "string" ? raw.date : null,
-    };
-  }
-
-  // 否则返回历史数据格式
-  const daily = Array.isArray(raw.daily)
-    ? raw.daily
-        .map((row) => {
-          if (!row || typeof row !== "object") {
-            return null;
-          }
-          const record = row as Record<string, unknown>;
-          const date =
-            typeof record.date === "string" && record.date.trim().length
-              ? record.date.trim()
-              : null;
-          if (!date) {
-            return null;
-          }
-
-          return {
-            date,
-            open: toNumber(record.open),
-            high: toNumber(record.high),
-            low: toNumber(record.low),
-            close: toNumber(record.close),
-            volume: toNumber(record.volume),
-          };
-        })
-        .filter((row): row is TsanghiFetcherDailyRow => Boolean(row))
-    : [];
-
-  return { name, daily };
-}
-
-async function runStockFetcher(
-  input: TsanghiFetcherInput,
-  fetcherPath: string,
-  fetcherName: string
-): Promise<TsanghiFetcherOutput> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(PYTHON_BIN, [fetcherPath], {
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-
-    let stdout = "";
-    let stderr = "";
-
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk.toString();
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk.toString();
-    });
-    child.once("error", (error) => reject(error));
-    child.once("close", (code) => {
-      if (code !== 0) {
-        reject(
-          new Error(
-            stderr.trim() ||
-              stdout.trim() ||
-              `${fetcherName} exited with code ${code}`
-          )
-        );
-        return;
-      }
-
-      try {
-        const raw = JSON.parse(stdout || "{}") as RawFetcherOutput;
-        resolve(normalizeFetcherOutput(raw));
-      } catch (err) {
-        reject(
-          new Error(
-            `无法解析 ${fetcherName} 响应: ${
-              err instanceof Error ? err.message : String(err)
-            }`
-          )
-        );
-      }
-    });
-
-    child.stdin.end(JSON.stringify(input));
-  });
-}
-
-function buildStockSeries(rows: TsanghiFetcherDailyRow[]): StockSeries {
+function buildEtfSeries(rows: FetcherDailyRow[]): EtfSeries {
   if (!rows.length) {
     return { candles: [], rawHighest: null, rawLatest: null };
   }
@@ -285,33 +162,14 @@ function buildStockSeries(rows: TsanghiFetcherDailyRow[]): StockSeries {
   return { candles, rawHighest, rawLatest };
 }
 
-async function fetchStockPayload(tsCode: string) {
-  // 优先使用多数据源fetcher（免费且稳定）
-  const fetchers = [{ path: MULTI_SOURCE_FETCHER_PATH, name: "多数据源" }];
-
-  let lastError: Error | null = null;
-  for (const fetcher of fetchers) {
-    try {
-      const output = await runStockFetcher(
-        { code: tsCode },
-        fetcher.path,
-        fetcher.name
-      );
-      // 如果返回的是当天收盘价格式，不应该在这里处理
-      if (output.close_price !== undefined) {
-        continue;
-      }
-      const series = buildStockSeries(output.daily || []);
-      return { name: output.name, series };
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err));
-      // 继续尝试下一个fetcher
-      continue;
-    }
+async function fetchEtfPayload(tsCode: string) {
+  const output = await fetchEtfData(tsCode);
+  // 如果返回的是当天收盘价格式，不应该在这里处理
+  if (output.close_price !== undefined) {
+    throw new Error("获取历史数据失败，返回了收盘价格式");
   }
-
-  // 所有fetcher都失败
-  throw lastError || new Error("所有数据源获取失败");
+  const series = buildEtfSeries(output.daily || []);
+  return { name: output.name, series };
 }
 
 export async function DELETE() {
@@ -336,11 +194,7 @@ export async function GET(req: NextRequest) {
   try {
     // 如果只需要当天收盘价（用于ETF）
     if (onlyTodayClose) {
-      const output = await runStockFetcher(
-        { code, only_today_close: true },
-        MULTI_SOURCE_FETCHER_PATH,
-        "多数据源"
-      );
+      const output = await fetchEtfDataWithTodayClose(code);
 
       if (output.close_price === null || output.close_price === undefined) {
         return NextResponse.json(
@@ -364,12 +218,12 @@ export async function GET(req: NextRequest) {
     }
 
     // 否则获取完整的历史数据
-    const { name, series } = await fetchStockPayload(code);
+    const { name, series } = await fetchEtfPayload(code);
     const { candles, rawHighest, rawLatest } = series;
 
     if (!candles.length) {
       return NextResponse.json(
-        { error: "该股票暂无有效日 K 数据" },
+        { error: "该ETF暂无有效日 K 数据" },
         { status: 404 }
       );
     }
@@ -435,7 +289,7 @@ export async function GET(req: NextRequest) {
 
     if (!fallbackHighest || !latestPoint) {
       return NextResponse.json(
-        { error: "该股票暂无有效收盘价数据" },
+        { error: "该ETF暂无有效收盘价数据" },
         { status: 404 }
       );
     }
@@ -466,7 +320,7 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.error(err);
     return NextResponse.json(
-      { error: "获取股票数据失败，请稍后重试" },
+      { error: "获取ETF数据失败，请稍后重试" },
       { status: 500 }
     );
   }

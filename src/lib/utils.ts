@@ -5,9 +5,9 @@
 import type { FavoriteItem, HistoryItem } from "@/types/stock";
 
 /**
- * 格式化股票标签
+ * 格式化ETF标签
  */
-export function formatStockLabel(symbol: string, name?: string | null): string {
+export function formatEtfLabel(symbol: string, name?: string | null): string {
   return name ? `${symbol}（${name}）` : symbol;
 }
 

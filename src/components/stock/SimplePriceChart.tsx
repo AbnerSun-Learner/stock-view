@@ -4,18 +4,18 @@
 
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
-import {
-  createChart,
-  ColorType,
-  ISeriesApi,
-  CandlestickSeries,
-} from "lightweight-charts";
 import { LIMITS } from "@/constants/stock";
-import type { StockResponse } from "@/types/stock";
+import type { EtfResponse } from "@/types/stock";
+import {
+  CandlestickSeries,
+  ColorType,
+  createChart,
+  ISeriesApi,
+} from "lightweight-charts";
+import { useEffect, useMemo, useRef } from "react";
 
 type SimplePriceChartProps = {
-  data: StockResponse;
+  data: EtfResponse;
 };
 
 // 将毫秒时间戳转换为 YYYY-MM-DD 格式

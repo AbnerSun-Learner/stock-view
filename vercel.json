@@ -8,10 +8,5 @@
     "src/app/api/**/*.ts": {
       "runtime": "nodejs20.x"
     }
-  },
-  "includeFiles": [
-    "scripts/**",
-    "requirements.txt"
-  ]
+  }
 }
-

@@ -45,6 +45,7 @@ git push origin main
 #### 4. 等待部署完成
 
 Vercel 会自动：
+
 - 安装 Node.js 依赖
 - 构建 Next.js 项目
 - 部署到全球 CDN
@@ -63,6 +64,7 @@ Vercel 会自动：
 #### 2. 获取 Vercel 项目信息
 
 在 Vercel 项目设置中，找到：
+
 - **Project ID**（在 Settings → General 中）
 - **Organization ID**（在 Settings → General 中）
 
@@ -104,6 +106,7 @@ git push origin main
 **问题**：API 返回错误，提示 Python 脚本无法执行。
 
 **解决方案**：
+
 - 确认 Vercel 项目设置中已包含 `scripts/` 目录
 - 检查 `requirements.txt` 中的依赖是否正确
 - 查看 Vercel 部署日志中的错误信息
@@ -113,6 +116,7 @@ git push origin main
 **问题**：Vercel 构建过程中出现错误。
 
 **解决方案**：
+
 - 确认 Node.js 版本 >= 20.9.0
 - 检查 `package.json` 中的依赖是否正确
 - 查看构建日志定位具体错误
@@ -122,6 +126,7 @@ git push origin main
 **问题**：前端可以访问，但查询股票时返回 500 错误。
 
 **解决方案**：
+
 - 检查 Vercel 函数日志
 - 确认 Python 脚本路径正确
 - 验证网络请求是否正常（脚本需要访问外部 API）
@@ -136,6 +141,7 @@ git push origin main
 ## 持续部署
 
 配置完成后，每次您向 `main` 分支推送代码时：
+
 - **方案一**：Vercel 会自动检测并重新部署
 - **方案二**：GitHub Actions 会自动触发部署流程
 
@@ -156,4 +162,3 @@ git push origin main
 ---
 
 部署完成后，您的项目就可以通过公网 URL 访问了！🎉
-

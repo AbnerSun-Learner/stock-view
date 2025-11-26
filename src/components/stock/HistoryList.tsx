@@ -2,7 +2,7 @@
  * 历史记录列表组件
  */
 
-import { formatStockLabel, formatDate } from "@/lib/utils";
+import { formatDate, formatEtfLabel } from "@/lib/utils";
 import type { HistoryItem } from "@/types/stock";
 
 type HistoryListProps = {
@@ -40,7 +40,7 @@ export function HistoryList({
               className="rounded-full bg-slate-100 px-3 py-1 text-[11px] text-slate-700 hover:bg-slate-200"
             >
               <span className="mr-1 font-medium">
-                {formatStockLabel(item.symbol, item.name)}
+                {formatEtfLabel(item.symbol, item.name)}
               </span>
               <span className="text-[10px] text-slate-400">
                 {formatDate(item.time)}

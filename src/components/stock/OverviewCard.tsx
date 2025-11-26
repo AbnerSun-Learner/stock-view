@@ -3,18 +3,18 @@
  */
 
 import {
-  formatStockLabel,
-  formatDate,
   calculateDropFromHighest,
   calculateDropToTarget80,
+  formatDate,
+  formatEtfLabel,
   formatTimeSince,
 } from "@/lib/utils";
+import type { EtfResponse } from "@/types/stock";
 import { QuestionCircleOutlined } from "@ant-design/icons";
-import type { StockResponse } from "@/types/stock";
 import { Tooltip } from "antd";
 
 type OverviewCardProps = {
-  data: StockResponse;
+  data: EtfResponse;
   expectedDropPercent: number | null;
   isFavorite: boolean;
   onToggleFavorite: () => void;
@@ -115,7 +115,7 @@ export function OverviewCard({
       <div className="mb-3 flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-slate-900">
-            {formatStockLabel(data.symbol, data.name)}
+            {formatEtfLabel(data.symbol, data.name)}
           </h2>
           <div className="mt-1 text-[11px] text-slate-400">
             最近交易日：{formatDate(data.current.time)}

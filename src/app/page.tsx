@@ -1,24 +1,24 @@
 /**
- * 首页：类 Google 搜索布局 + 股票查询结果展示
+ * 首页：类 Google 搜索布局 + ETF查询结果展示
  */
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { SearchBox } from "@/components/stock/SearchBox";
 import { FavoritesList } from "@/components/stock/FavoritesList";
 import { HistoryList } from "@/components/stock/HistoryList";
 import { OverviewCard } from "@/components/stock/OverviewCard";
+import { SearchBox } from "@/components/stock/SearchBox";
 import { SimplePriceChart } from "@/components/stock/SimplePriceChart";
-import { STORAGE_KEYS, LIMITS } from "@/constants/stock";
+import { LIMITS, STORAGE_KEYS } from "@/constants/stock";
 import { normalizeFavoriteEntry, normalizeHistoryEntry } from "@/lib/utils";
-import type { StockResponse, FavoriteItem, HistoryItem } from "@/types/stock";
+import type { EtfResponse, FavoriteItem, HistoryItem } from "@/types/stock";
+import { useEffect, useMemo, useState } from "react";
 
 export default function Home() {
   const [symbol, setSymbol] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<StockResponse | null>(null);
+  const [data, setData] = useState<EtfResponse | null>(null);
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
@@ -90,7 +90,7 @@ export default function Home() {
 
     try {
       const resp = await fetch(`/api/stock?symbol=${encodeURIComponent(code)}`);
-      const json = (await resp.json()) as StockResponse & {
+      const json = (await resp.json()) as EtfResponse & {
         error?: string;
       };
 
@@ -121,7 +121,7 @@ export default function Home() {
       });
     } catch (e) {
       const msg =
-        e instanceof Error ? e.message : "查询股票数据失败，请稍后再试";
+        e instanceof Error ? e.message : "查询ETF数据失败，请稍后再试";
       setError(msg);
       setData(null);
     } finally {
@@ -246,7 +246,7 @@ export default function Home() {
         <section className="mt-10 w-full max-w-4xl">
           {!data && !error && (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-white/60 p-8 text-center text-sm text-slate-400">
-              输入股票代码或指数代码并点击「查询」，将展示日K、历史最高价、-80%点位与当前价。
+              输入ETF代码并点击「查询」，将展示日K、历史最高价、-80%点位与当前价。
             </div>
           )}
 
