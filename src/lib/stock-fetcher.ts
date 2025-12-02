@@ -61,24 +61,6 @@ function normalizeCode(code: string): string {
   return normalized;
 }
 
-function getMarketPrefix(code: string): string {
-  const normalized = normalizeCode(code);
-  if (normalized.startsWith("6") || normalized.startsWith("51")) {
-    return "sh"; // 上海（股票6开头，ETF 51开头）
-  } else if (
-    normalized.startsWith("0") ||
-    normalized.startsWith("3") ||
-    normalized.startsWith("15")
-  ) {
-    return "sz"; // 深圳（股票0/3开头，ETF 15开头）
-  } else if (normalized.startsWith("8") || normalized.startsWith("4")) {
-    return "bj"; // 北京
-  } else {
-    // 默认尝试深圳
-    return "sz";
-  }
-}
-
 function getMarketCodeForApi(code: string): string {
   const normalized = normalizeCode(code);
   if (normalized.startsWith("6") || normalized.startsWith("51")) {
