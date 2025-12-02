@@ -46,7 +46,7 @@
   },
   "typescript.tsdk": "node_modules/typescript/lib",
   "editor.mouseWheelZoom": true,
-  "editor.fontSize": 16,
+  "editor.fontSize": 15,
   "terminal.integrated.fontSize": 15,
   "debug.console.fontSize": 15
 }
