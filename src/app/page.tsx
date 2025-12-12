@@ -8,7 +8,6 @@ import { FavoritesList } from "@/components/stock/FavoritesList";
 import { HistoryList } from "@/components/stock/HistoryList";
 import { OverviewCard } from "@/components/stock/OverviewCard";
 import { SearchBox } from "@/components/stock/SearchBox";
-import { SimplePriceChart } from "@/components/stock/SimplePriceChart";
 import { LIMITS, STORAGE_KEYS } from "@/constants/stock";
 import { normalizeFavoriteEntry, normalizeHistoryEntry } from "@/lib/utils";
 import type { EtfResponse, FavoriteItem, HistoryItem } from "@/types/stock";
@@ -204,21 +203,29 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900">
-      <main className="mx-auto flex min-h-screen max-w-5xl flex-col items-center px-4 pb-16 pt-20">
-        {/* 顶部品牌区 */}
-        <div className="mb-10 flex flex-col items-center">
-          <div className="mb-4 text-5xl font-semibold tracking-tight text-slate-900">
-            <span className="text-sky-500">ETF</span>
-            <span className="text-slate-800">View</span>
-          </div>
-          <p className="text-sm text-slate-500">
-            从历史最高价出发，量化你与
-            <span className="font-semibold text-rose-500"> -80% </span>
-            的距离。
-          </p>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 px-5 text-slate-900">
+      <header className="mx-auto flex max-w-5xl items-center justify-between border-slate-200/80 py-4">
+        <div className="text-lg font-semibold tracking-tight text-slate-900">
+          <span className="text-sky-500">ETF</span>
+          <span className="text-slate-800">View</span>
         </div>
+        <nav className="flex flex-1 justify-center">
+          <ul className="flex items-center gap-8 text-sm font-medium text-slate-700">
+            <li className="cursor-pointer transition hover:text-slate-900">
+              70/80
+            </li>
+            {/* <li className="cursor-pointer transition hover:text-slate-900">
+              占位1
+            </li>
+            <li className="cursor-pointer transition hover:text-slate-900">
+              占位2
+            </li> */}
+          </ul>
+        </nav>
+        <div className="w-16" />
+      </header>
 
+      <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center pb-16 pt-14 px-4 sm:px-6 md:px-[90px]">
         {/* 搜索框区域 */}
         <SearchBox
           symbol={symbol}
@@ -244,12 +251,6 @@ export default function Home() {
 
         {/* 结果展示 */}
         <section className="mt-10 w-full max-w-4xl">
-          {!data && !error && (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-white/60 p-8 text-center text-sm text-slate-400">
-              输入ETF代码并点击「查询」，将展示日K、历史最高价、-80%点位与当前价。
-            </div>
-          )}
-
           {error && (
             <div className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700">
               {error}
@@ -266,12 +267,12 @@ export default function Home() {
               />
 
               {/* 简易 K 线图区域 */}
-              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/70">
+              {/* <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/70">
                 <h3 className="mb-3 text-sm font-semibold text-slate-800">
                   日 K 走势（近 6 个月，仅展示收盘价曲线与关键价位）
                 </h3>
                 <SimplePriceChart data={data} />
-              </div>
+              </div> */}
             </div>
           )}
         </section>

@@ -10,7 +10,11 @@ import {
   formatTimeSince,
 } from "@/lib/utils";
 import type { EtfResponse } from "@/types/stock";
-import { QuestionCircleOutlined } from "@ant-design/icons";
+import {
+  QuestionCircleOutlined,
+  StarFilled,
+  StarOutlined,
+} from "@ant-design/icons";
 import { Tooltip } from "antd";
 
 type OverviewCardProps = {
@@ -123,9 +127,14 @@ export function OverviewCard({
         </div>
         <button
           onClick={onToggleFavorite}
-          className="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-700 hover:bg-slate-50"
+          aria-label={isFavorite ? "取消收藏" : "收藏"}
+          className="flex h-8 w-8 items-center justify-center text-slate-700 transition hover:text-amber-500"
         >
-          {isFavorite ? "取消收藏" : "收藏"}
+          {isFavorite ? (
+            <StarFilled className="text-amber-500" />
+          ) : (
+            <StarOutlined />
+          )}
         </button>
       </div>
 

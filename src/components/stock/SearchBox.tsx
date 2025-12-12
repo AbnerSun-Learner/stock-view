@@ -23,7 +23,7 @@ export function SearchBox({
         <input
           value={symbol}
           onChange={(e) => onSymbolChange(e.target.value)}
-          placeholder="输入 ETF 代码，如：510300（沪深300ETF）、159919（300ETF）"
+          placeholder="输入 ETF 代码"
           className="flex-1 rounded-full bg-transparent px-6 py-3 text-sm outline-none placeholder:text-slate-400"
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -43,12 +43,6 @@ export function SearchBox({
         <p className="text-xs text-slate-400">
           数据源：东方财富网日度前复权数据（实时更新）。
         </p>
-        <button
-          onClick={onClearCache}
-          className="text-xs text-slate-500 hover:text-slate-700 underline"
-        >
-          清除缓存
-        </button>
       </div>
     </section>
   );
