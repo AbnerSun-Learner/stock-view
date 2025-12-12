@@ -24,6 +24,109 @@ type OverviewCardProps = {
   onToggleFavorite: () => void;
 };
 
+function clampPercent(value: number | null) {
+  if (value === null || Number.isNaN(value)) {
+    return null;
+  }
+  return Math.max(0, Math.min(100, value));
+}
+
+function InlineProgress({
+  percent,
+  colorClass,
+  label,
+}: {
+  percent: number | null;
+  colorClass: string;
+  label: string;
+}) {
+  const safePercent = clampPercent(percent);
+  if (safePercent === null) {
+    return null;
+  }
+
+  return (
+    <div className="mt-2 space-y-1">
+      <div className="flex items-center justify-between text-[11px] text-slate-500">
+        <span>{label}</span>
+        <span className="font-medium text-slate-700">
+          {safePercent.toFixed(1)}%
+        </span>
+      </div>
+      <div className="h-2 w-full rounded-full bg-slate-100">
+        <div
+          className={`h-2 rounded-full ${colorClass}`}
+          style={{ width: `${safePercent}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+type CardItemProps = {
+  title: string;
+  subtitle?: string;
+  value: string;
+  valueClassName?: string;
+  description?: string | null;
+  progressPercent?: number | null;
+  progressColorClass?: string;
+  progressLabel?: string;
+  icon?: React.ReactNode;
+};
+
+function CardItem({
+  title,
+  subtitle,
+  value,
+  valueClassName,
+  description,
+  progressPercent,
+  progressColorClass = "bg-slate-400",
+  progressLabel = "进度",
+  icon,
+}: CardItemProps) {
+  const infoIcon =
+    icon ||
+    (description ? (
+      <Tooltip
+        title={() => (
+          <div className="mt-0.5 text-[11px] text-slate-400">{description}</div>
+        )}
+      >
+        <QuestionCircleOutlined className="cursor-pointer text-slate-400" />
+      </Tooltip>
+    ) : null);
+
+  return (
+    <div className="flex h-full flex-col justify-between rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200/70">
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+          {infoIcon}
+          <span>{title}</span>
+        </div>
+        {subtitle && (
+          <div className="text-[11px] text-slate-500">{subtitle}</div>
+        )}
+        <div
+          className={`text-xl font-semibold text-slate-900 ${
+            valueClassName ?? ""
+          }`}
+        >
+          {value}
+        </div>
+      </div>
+      {progressPercent !== undefined && progressPercent !== null && (
+        <InlineProgress
+          percent={progressPercent}
+          colorClass={progressColorClass}
+          label={progressLabel}
+        />
+      )}
+    </div>
+  );
+}
+
 // 趋势指示组件
 function TrendIndicator({
   currentPrice,
@@ -116,15 +219,26 @@ export function OverviewCard({
 
   return (
     <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/70">
-      <div className="mb-3 flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900">
-            {formatEtfLabel(data.symbol, data.name)}
-          </h2>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-[180px]">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-slate-900">
+              {formatEtfLabel(data.symbol, data.name)}
+            </h2>
+            {data.highest && data.target80.price !== null && (
+              <TrendIndicator
+                currentPrice={data.current.price}
+                highestPrice={data.highest.price}
+                target80Price={data.target80.price}
+              />
+            )}
+          </div>
+
           <div className="mt-1 text-[11px] text-slate-400">
             最近交易日：{formatDate(data.current.time)}
           </div>
         </div>
+
         <button
           onClick={onToggleFavorite}
           aria-label={isFavorite ? "取消收藏" : "收藏"}
@@ -138,88 +252,59 @@ export function OverviewCard({
         </button>
       </div>
 
-      {/* 趋势指示 */}
-      {data.highest && data.target80.price !== null && (
-        <div className="mb-4">
-          <TrendIndicator
-            currentPrice={data.current.price}
-            highestPrice={data.highest.price}
-            target80Price={data.target80.price}
-          />
-        </div>
-      )}
-
-      <div className="grid gap-4 md:grid-cols-4">
-        <div>
-          <div className="flex items-center gap-[10px] text-[11px] text-slate-500">
-            <span>历史最高价</span>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <CardItem
+          title="历史最高价"
+          subtitle={
+            data.highest ? `日期：${formatDate(data.highest.time)}` : "日期：--"
+          }
+          value={data.highest ? data.highest.price.toFixed(3) : "--"}
+          description={
+            timeSinceHighest ? `距离最高价已过去 ${timeSinceHighest}` : null
+          }
+          icon={
             <Tooltip
               title={() => (
                 <div className="mt-0.5 text-[11px] text-slate-400">
-                  日期：{data.highest ? formatDate(data.highest.time) : "--"}
+                  最高价时间与价格记录
                 </div>
               )}
             >
-              <QuestionCircleOutlined className="cursor-pointer" />
+              <QuestionCircleOutlined className="cursor-pointer text-slate-400" />
             </Tooltip>
-          </div>
-          <div className="mt-1 text-base font-semibold text-slate-900">
-            {data.highest ? data.highest.price.toFixed(3) : "--"}
-          </div>
+          }
+        />
 
-          {timeSinceHighest && (
-            <div className="mt-1 text-[11px] text-rose-600 font-medium">
-              距离最高价已过去 {timeSinceHighest}
-            </div>
-          )}
-        </div>
+        <CardItem
+          title="当前收盘价"
+          value={data.current.price.toFixed(3)}
+          description={
+            dropFromHighest !== null
+              ? `相对最高价跌幅 ${dropFromHighest.toFixed(1)}%`
+              : null
+          }
+          progressPercent={dropFromHighest}
+          progressColorClass="bg-rose-400"
+          progressLabel="已跌幅度"
+        />
 
-        <div>
-          <div className="text-[11px] text-slate-500">
-            -80% 目标价位（0.2×最高）
-          </div>
-          <div className="mt-1 text-base font-semibold text-emerald-600">
-            {data.target80.price === null
-              ? "--"
-              : data.target80.price.toFixed(3)}
-          </div>
-          {dropToTarget80 !== null && (
-            <div className="mt-1 text-[11px] text-slate-600">
-              {dropToTarget80 > 0 ? (
-                <span className="text-amber-600">
-                  距离 -80% 点位还需跌 {dropToTarget80.toFixed(1)}%
-                </span>
-              ) : (
-                <span className="text-emerald-600">
-                  已低于 -80% 点位 {Math.abs(dropToTarget80).toFixed(1)}%
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div>
-          <div className="text-[11px] text-slate-500">当前收盘价</div>
-          <div className="mt-1 text-base font-semibold text-slate-900">
-            {data.current.price.toFixed(3)}
-          </div>
-          {dropFromHighest !== null && (
-            <div className="mt-1 text-[11px] text-rose-600 font-medium">
-              相对最高价跌幅 {dropFromHighest.toFixed(1)}%
-            </div>
-          )}
-        </div>
-
-        <div>
-          <div className="text-[11px] text-slate-500">
-            当前距离 -80% 的预期跌幅
-          </div>
-          <div className="mt-1 text-base font-semibold">
-            {expectedDropPercent === null
-              ? "--"
-              : `${expectedDropPercent.toFixed(1)}%`}
-          </div>
-        </div>
+        <CardItem
+          title="-80% 目标价位"
+          value={
+            data.target80.price === null ? "--" : data.target80.price.toFixed(3)
+          }
+          valueClassName="text-emerald-600"
+          description={
+            dropToTarget80 !== null
+              ? dropToTarget80 > 0
+                ? `距离 -80% 点位还需跌 ${dropToTarget80.toFixed(1)}%`
+                : `已低于 -80% 点位 ${Math.abs(dropToTarget80).toFixed(1)}%`
+              : null
+          }
+          progressPercent={expectedDropPercent}
+          progressColorClass="bg-amber-400"
+          progressLabel="距 -80% 目标"
+        />
       </div>
     </div>
   );
