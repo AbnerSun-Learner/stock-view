@@ -4,22 +4,88 @@
 
 "use client";
 
-import { FavoritesList } from "@/components/stock/FavoritesList";
-import { HistoryList } from "@/components/stock/HistoryList";
+import { Navigation } from "@/components/stock/Navigation";
 import { OverviewCard } from "@/components/stock/OverviewCard";
 import { SearchBox } from "@/components/stock/SearchBox";
 import { LIMITS, STORAGE_KEYS } from "@/constants/stock";
 import { normalizeFavoriteEntry, normalizeHistoryEntry } from "@/lib/utils";
 import type { EtfResponse, FavoriteItem, HistoryItem } from "@/types/stock";
-import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 export default function Home() {
+  const searchParams = useSearchParams();
   const [symbol, setSymbol] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<EtfResponse | null>(null);
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+
+  // 处理搜索
+  const handleSearch = useCallback(
+    async (inputSymbol?: string) => {
+      const code = (inputSymbol ?? symbol).trim();
+      if (!code) {
+        return;
+      }
+
+      setSymbol(code);
+      setLoading(true);
+      setError(null);
+
+      try {
+        const resp = await fetch(
+          `/api/stock?symbol=${encodeURIComponent(code)}`
+        );
+        const json = (await resp.json()) as EtfResponse & {
+          error?: string;
+        };
+
+        if (!resp.ok) {
+          throw new Error(json.error || "查询失败");
+        }
+
+        setData(json);
+
+        // 写入历史记录（去重，最多保留指定条数）
+        setHistory((prev) => {
+          const filtered = prev.filter(
+            (h) => h.symbol.toUpperCase() !== json.symbol.toUpperCase()
+          );
+          const next = [
+            { symbol: json.symbol, name: json.name ?? null, time: Date.now() },
+            ...filtered,
+          ].slice(0, LIMITS.maxHistory);
+
+          if (typeof window !== "undefined") {
+            window.localStorage.setItem(
+              STORAGE_KEYS.history,
+              JSON.stringify(next)
+            );
+          }
+
+          return next;
+        });
+      } catch (e) {
+        const msg =
+          e instanceof Error ? e.message : "查询ETF数据失败，请稍后再试";
+        setError(msg);
+        setData(null);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [symbol]
+  );
+
+  // 处理 URL 参数（从收藏页面跳转过来时自动查询）
+  useEffect(() => {
+    const symbolParam = searchParams.get("symbol");
+    if (symbolParam && symbolParam !== symbol) {
+      handleSearch(symbolParam);
+    }
+  }, [searchParams, handleSearch, symbol]);
 
   // 读取本地收藏与历史
   useEffect(() => {
@@ -76,58 +142,6 @@ export default function Home() {
     [favorites, symbol]
   );
 
-  // 处理搜索
-  const handleSearch = async (inputSymbol?: string) => {
-    const code = (inputSymbol ?? symbol).trim();
-    if (!code) {
-      return;
-    }
-
-    setSymbol(code);
-    setLoading(true);
-    setError(null);
-
-    try {
-      const resp = await fetch(`/api/stock?symbol=${encodeURIComponent(code)}`);
-      const json = (await resp.json()) as EtfResponse & {
-        error?: string;
-      };
-
-      if (!resp.ok) {
-        throw new Error(json.error || "查询失败");
-      }
-
-      setData(json);
-
-      // 写入历史记录（去重，最多保留指定条数）
-      setHistory((prev) => {
-        const filtered = prev.filter(
-          (h) => h.symbol.toUpperCase() !== json.symbol.toUpperCase()
-        );
-        const next = [
-          { symbol: json.symbol, name: json.name ?? null, time: Date.now() },
-          ...filtered,
-        ].slice(0, LIMITS.maxHistory);
-
-        if (typeof window !== "undefined") {
-          window.localStorage.setItem(
-            STORAGE_KEYS.history,
-            JSON.stringify(next)
-          );
-        }
-
-        return next;
-      });
-    } catch (e) {
-      const msg =
-        e instanceof Error ? e.message : "查询ETF数据失败，请稍后再试";
-      setError(msg);
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // 切换收藏状态
   const toggleFavorite = () => {
     if (!data) {
@@ -159,23 +173,6 @@ export default function Home() {
     });
   };
 
-  // 删除收藏
-  const handleDeleteFavorite = (symbol: string) => {
-    const code = symbol.toUpperCase();
-    setFavorites((prev) => {
-      const next = prev.filter((item) => item.symbol.toUpperCase() !== code);
-
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(
-          STORAGE_KEYS.favorites,
-          JSON.stringify(next)
-        );
-      }
-
-      return next;
-    });
-  };
-
   // 清除缓存
   const handleClearCache = async () => {
     try {
@@ -194,60 +191,21 @@ export default function Home() {
     }
   };
 
-  // 清空历史记录
-  const handleClearHistory = () => {
-    setHistory([]);
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(STORAGE_KEYS.history);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 px-5 text-slate-900">
-      <header className="mx-auto flex max-w-5xl items-center justify-between border-slate-200/80 py-4">
-        <div className="text-lg font-semibold tracking-tight text-slate-900">
-          <span className="text-sky-500">ETF</span>
-          <span className="text-slate-800">View</span>
-        </div>
-        <nav className="flex flex-1 justify-center">
-          <ul className="flex items-center gap-8 text-sm font-medium text-slate-700">
-            <li className="cursor-pointer transition hover:text-slate-900">
-              70/80
-            </li>
-            {/* <li className="cursor-pointer transition hover:text-slate-900">
-              占位1
-            </li>
-            <li className="cursor-pointer transition hover:text-slate-900">
-              占位2
-            </li> */}
-          </ul>
-        </nav>
-        <div className="w-16" />
-      </header>
+      <Navigation />
 
-      <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center pb-16 pt-14 px-4 sm:px-6 md:px-[90px]">
-        {/* 搜索框区域 */}
+      <main className="mx-auto flex w-full max-w-5xl flex-col items-center pb-16 pt-14 px-4 sm:px-6 md:px-[90px]">
+        {/* 搜索框区域（展示最近 4 条历史） */}
         <SearchBox
           symbol={symbol}
           loading={loading}
+          history={history}
           onSymbolChange={setSymbol}
           onSearch={() => handleSearch()}
           onClearCache={handleClearCache}
+          onHistoryClick={(symbol) => handleSearch(symbol)}
         />
-
-        {/* 收藏 & 历史 */}
-        <section className="mt-10 grid w-full max-w-4xl gap-6 md:grid-cols-2">
-          <FavoritesList
-            favorites={favorites}
-            onItemClick={(symbol) => handleSearch(symbol)}
-            onDelete={handleDeleteFavorite}
-          />
-          <HistoryList
-            history={history}
-            onItemClick={(symbol) => handleSearch(symbol)}
-            onClear={handleClearHistory}
-          />
-        </section>
 
         {/* 结果展示 */}
         <section className="mt-10 w-full max-w-4xl">

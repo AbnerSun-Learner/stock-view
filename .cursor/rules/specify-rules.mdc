@@ -1,0 +1,31 @@
+# stock-view 开发指引
+
+由所有特性计划自动汇总生成。最后更新: 2025-12-15
+
+宪章对齐：汇总计划/规格中关于代码质量、测试纪律、UX 一致性、性能预算与可追溯性的要求。
+
+## 在用技术
+
+- (001-favorites-wechat-notify)
+
+## 项目结构
+
+```text
+src/
+tests/
+```
+
+## 命令
+
+# Add commands for 
+
+## 代码风格
+
+: Follow standard conventions
+
+## 最近变更
+
+- 001-favorites-wechat-notify: Added
+
+<!-- MANUAL ADDITIONS START -->
+<!-- MANUAL ADDITIONS END -->
