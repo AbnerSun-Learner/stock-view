@@ -111,7 +111,6 @@ export function FavoritePriceCard({
                       : "text-emerald-600"
                   }`}
                 >
-                  {/* {data.expectedDropRatio > 0 ? "+" : ""} */}
                   {(data.expectedDropRatio * 100).toFixed(2)}%
                 </span>
               </div>
