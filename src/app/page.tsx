@@ -11,9 +11,23 @@ import { LIMITS, STORAGE_KEYS } from "@/constants/stock";
 import { normalizeFavoriteEntry, normalizeHistoryEntry } from "@/lib/utils";
 import type { EtfResponse, FavoriteItem, HistoryItem } from "@/types/stock";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 
-export default function Home() {
+export default function HomePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-50 to-slate-100 px-5 text-slate-900">
+          <div className="text-sm text-slate-500">加载中…</div>
+        </div>
+      }
+    >
+      <Home />
+    </Suspense>
+  );
+}
+
+function Home() {
   const searchParams = useSearchParams();
   const [symbol, setSymbol] = useState("");
   const [loading, setLoading] = useState(false);
