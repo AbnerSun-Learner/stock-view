@@ -7,6 +7,7 @@
 import {
   getFavoritesFromLocal,
   performInitialSync,
+  saveFavoritesToLocal,
 } from "@/lib/favorites-store";
 import {
   fetchBatchPrices,
@@ -119,33 +120,51 @@ export function FavoritesPage() {
     router.push(`/?symbol=${encodeURIComponent(symbol)}`);
   };
 
-  // 处理删除收藏（保留以备将来使用，如添加删除按钮）
-  // const handleDeleteFavorite = async (symbol: string) => {
-  //   const updated = favorites.filter((item) => item.symbol !== symbol);
-  //   setFavorites(updated);
+  // 处理删除收藏（收藏页内的取消收藏）
+  const handleDeleteFavorite = async (symbol: string) => {
+    const updated = favorites.filter((item) => item.symbol !== symbol);
+    setFavorites(updated);
 
-  //   // 同步删除到服务端
-  //   const userId = getUserIdFromStorage();
-  //   if (userId) {
-  //     try {
-  //       await fetch(
-  //         `/api/favorites/${encodeURIComponent(symbol)}?userId=${userId}`,
-  //         {
-  //           method: "DELETE",
-  //         }
-  //       );
-  //     } catch (error) {
-  //       console.error("Failed to delete favorite from server:", error);
-  //     }
-  //   }
+    // 从价格数据中移除
+    setPriceDataMap((prev) => {
+      const next = new Map(prev);
+      next.delete(symbol);
+      return next;
+    });
 
-  //   // 从价格数据中移除
-  //   setPriceDataMap((prev) => {
-  //     const next = new Map(prev);
-  //     next.delete(symbol);
-  //     return next;
-  //   });
-  // };
+    // 更新本地存储（与全局收藏存储逻辑保持一致）
+    saveFavoritesToLocal(updated);
+
+    // 尝试同步到服务端（如果已存在 userId 与联系方式）
+    const userId = getUserIdFromStorage();
+    if (!userId) return;
+
+    try {
+      const contact =
+        window.localStorage.getItem("stock_view_user_contact") || "";
+      const contactType =
+        (window.localStorage.getItem("stock_view_user_contact_type") as
+          | "phone"
+          | "email"
+          | null) || "phone";
+
+      await fetch("/api/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          contact,
+          contactType,
+          favorites: updated.map((f) => ({
+            symbol: f.symbol,
+            name: f.name,
+          })),
+        }),
+      });
+    } catch (error) {
+      console.error("Failed to sync deleted favorite to server:", error);
+    }
+  };
 
   // 重试获取价格数据
   const handleRetryPrice = (symbol: string) => {
@@ -154,14 +173,14 @@ export function FavoritesPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-center px-4">
+      <div className="mx-auto flex w-full max-w-5xl flex-col items-center justify-center px-4">
         <div className="text-sm text-slate-500">加载中...</div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 py-8">
+    <div className="mx-auto flex w-full max-w-5xl flex-col px-4 py-8">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-slate-900">我的收藏</h1>
         <p className="mt-1 text-sm text-slate-500">
@@ -208,6 +227,7 @@ export function FavoritesPage() {
                 error={priceData.error}
                 onRetry={() => handleRetryPrice(favorite.symbol)}
                 onClick={() => handleFavoriteClick(favorite.symbol)}
+                onUnfavorite={() => handleDeleteFavorite(favorite.symbol)}
               />
             );
           })}

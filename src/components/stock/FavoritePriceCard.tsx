@@ -2,8 +2,9 @@
  * 收藏 ETF 价格信息卡片组件
  */
 
-import { formatEtfLabel } from "@/lib/utils";
+import { calculateDropFromHighest, formatEtfLabel } from "@/lib/utils";
 import type { EtfResponse } from "@/types/stock";
+import { StarFilled } from "@ant-design/icons";
 
 interface FavoritePriceCardProps {
   symbol: string;
@@ -13,6 +14,7 @@ interface FavoritePriceCardProps {
   error?: string | null;
   onRetry?: () => void;
   onClick?: () => void;
+  onUnfavorite?: () => void;
 }
 
 export function FavoritePriceCard({
@@ -23,12 +25,18 @@ export function FavoritePriceCard({
   error = null,
   onRetry,
   onClick,
+  onUnfavorite,
 }: FavoritePriceCardProps) {
   const handleClick = () => {
     if (onClick && !loading && !error) {
       onClick();
     }
   };
+
+  const dropFromHighestPercent =
+    data && data.highest
+      ? calculateDropFromHighest(data.current.price, data.highest.price)
+      : null;
 
   return (
     <div
@@ -43,9 +51,41 @@ export function FavoritePriceCard({
         <h3 className="text-sm font-semibold text-slate-900">
           {formatEtfLabel(symbol, name)}
         </h3>
-        {loading && (
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
-        )}
+        <div className="flex items-center gap-3">
+          {dropFromHighestPercent !== null &&
+            Number.isFinite(dropFromHighestPercent) && (
+              <span className="text-xs font-medium text-slate-500">
+                距最高价{" "}
+                <span
+                  className={
+                    dropFromHighestPercent > 0
+                      ? "text-emerald-600"
+                      : "text-slate-700"
+                  }
+                >
+                  {dropFromHighestPercent > 0
+                    ? `-${dropFromHighestPercent.toFixed(1)}%`
+                    : "0.0%"}
+                </span>
+              </span>
+            )}
+          {onUnfavorite && (
+            <button
+              type="button"
+              aria-label="取消收藏"
+              onClick={(e) => {
+                e.stopPropagation();
+                onUnfavorite();
+              }}
+              className="flex h-6 w-6 items-center justify-center text-amber-500 hover:text-amber-600"
+            >
+              <StarFilled />
+            </button>
+          )}
+          {loading && (
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
+          )}
+        </div>
       </div>
 
       {loading && !data && (
