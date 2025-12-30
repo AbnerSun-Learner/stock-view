@@ -8,6 +8,7 @@
 import { Activity, Grid, LineChart, Target } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { JSX } from "react";
 import { ThemeToggleButton } from "./shared-components";
 
 function TabButton({
@@ -140,4 +141,3 @@ export function TerminalLayout({
     </div>
   );
 }
-
