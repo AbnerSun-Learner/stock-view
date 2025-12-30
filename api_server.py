@@ -8,6 +8,7 @@ from flask_cors import CORS
 import akshare as ak  # type: ignore[import]
 import pandas as pd  # type: ignore[import]
 from datetime import datetime, timedelta
+import os
 import pytz
 
 app = Flask(__name__)
@@ -227,5 +228,7 @@ def get_stock_data():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001, debug=True)
+    port = int(os.environ.get("PORT", 5001))
+    debug = os.environ.get("DEBUG", "False").lower() == "true"
+    app.run(host="0.0.0.0", port=port, debug=debug)
 
