@@ -12,11 +12,10 @@ const IV_LENGTH = 16; // AES 块大小
  * 获取加密密钥（从环境变量或生成）
  */
 function getEncryptionKey(): Buffer {
-  const key =
-    process.env.WECHAT_ENCRYPTION_KEY || process.env.WECHAT_APP_SECRET;
+  const key = process.env.ENCRYPTION_KEY;
   if (!key) {
     throw new Error(
-      "加密密钥未配置。请设置 WECHAT_ENCRYPTION_KEY 或 WECHAT_APP_SECRET"
+      "加密密钥未配置。请设置环境变量 ENCRYPTION_KEY"
     );
   }
   // 使用 SHA-256 哈希确保密钥长度为 32 字节（AES-256）
@@ -102,15 +101,6 @@ export function maskEmail(email: string): string {
   return `${local.slice(0, 2)}***@${domain}`;
 }
 
-/**
- * 脱敏 openId（用于日志）
- */
-export function maskOpenId(openId: string): string {
-  if (!openId || openId.length <= 8) {
-    return "***";
-  }
-  return `${openId.slice(0, 4)}***${openId.slice(-4)}`;
-}
 
 /**
  * 脱敏联系方式（自动识别类型）

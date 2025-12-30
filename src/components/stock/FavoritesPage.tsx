@@ -19,7 +19,6 @@ import type { FavoriteItem } from "@/types/stock";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { FavoritePriceCard } from "./FavoritePriceCard";
-import { PushSettings } from "./PushSettings";
 
 export function FavoritesPage() {
   const router = useRouter();
@@ -186,11 +185,6 @@ export function FavoritesPage() {
         <p className="mt-1 text-sm text-slate-500">
           查看您收藏的所有 ETF 及其价格信息
         </p>
-      </div>
-
-      {/* 微信推送设置 */}
-      <div className="mb-6">
-        <PushSettings />
       </div>
 
       {favorites.length === 0 ? (

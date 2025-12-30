@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { fetchEtfData, fetchEtfDataWithTodayClose } from "@/lib/stock-fetcher";
+import { isAfterMarketClose, isToday, isTradingHours } from "@/lib/utils";
 
 export const runtime = "nodejs";
 
@@ -58,35 +59,6 @@ function tradeDateToTimestamp(tradeDate: string): number | null {
   return Number.isNaN(time) ? null : time;
 }
 
-function isTradingHours(): boolean {
-  // A股交易时间：9:30-11:30, 13:00-15:00（北京时间）
-  const now = new Date();
-  const beijingTime = new Date(
-    now.toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
-  );
-  const day = beijingTime.getDay(); // 0=周日, 6=周六
-  const hour = beijingTime.getHours();
-  const minute = beijingTime.getMinutes();
-  const timeInMinutes = hour * 60 + minute;
-
-  // 周末不交易
-  if (day === 0 || day === 6) {
-    return false;
-  }
-
-  // 上午：9:30-11:30
-  const morningStart = 9 * 60 + 30; // 9:30
-  const morningEnd = 11 * 60 + 30; // 11:30
-  // 下午：13:00-15:00
-  const afternoonStart = 13 * 60; // 13:00
-  const afternoonEnd = 15 * 60; // 15:00
-
-  return (
-    (timeInMinutes >= morningStart && timeInMinutes <= morningEnd) ||
-    (timeInMinutes >= afternoonStart && timeInMinutes <= afternoonEnd)
-  );
-}
-
 function toNumber(value: unknown): number | null {
   if (value === null || value === undefined) {
     return null;
@@ -110,6 +82,7 @@ function buildEtfSeries(rows: FetcherDailyRow[]): EtfSeries {
     return { candles: [], rawHighest: null, rawLatest: null };
   }
 
+  // 保留所有数据，不进行过滤（让前端可以显示完整历史数据）
   const candles = rows
     .map((row) => {
       const time = tradeDateToTimestamp(row.date);
@@ -138,28 +111,92 @@ function buildEtfSeries(rows: FetcherDailyRow[]): EtfSeries {
         low,
         close,
         volume,
+        date: row.date, // 临时保存日期用于判断
       };
     })
-    .filter((candle): candle is Candle => Boolean(candle))
+    .filter((candle): candle is Candle & { date: string } => Boolean(candle))
     .sort((a, b) => a.time - b.time);
 
   if (!candles.length) {
     return { candles: [], rawHighest: null, rawLatest: null };
   }
 
+  // 最高价也要遵守“开盘期间锁定到上一交易日”的规则：
+  // - 在交易时间内：忽略今天的 K 线，只在历史数据里找最高价
+  // - 收盘后：包含今天在内的所有数据
+  const inTradingHoursForHighest = isTradingHours();
   const rawHighest = candles.reduce<PricePoint | null>((acc, candle) => {
+    if (inTradingHoursForHighest && isToday(candle.date)) {
+      return acc;
+    }
     if (!acc || candle.high > acc.price) {
       return { price: candle.high, time: candle.time };
     }
     return acc;
   }, null);
 
-  const rawLatest = {
-    price: candles[candles.length - 1].close,
-    time: candles[candles.length - 1].time,
-  };
+  // 根据交易日规则选择最新的收盘价
+  // 如果在交易时间内（9:30-11:30 或 13:00-15:00），使用上一个交易日
+  // 如果在收盘后（15:00之后），使用最后一条数据（可能是今天的）
+  let rawLatest: PricePoint | null = null;
+  if (candles.length > 0) {
+    const lastCandle = candles[candles.length - 1];
+    const isLastCandleToday = isToday(lastCandle.date);
+    const inTradingHours = isTradingHours();
+    const afterMarketClose = isAfterMarketClose();
 
-  return { candles, rawHighest, rawLatest };
+    if (inTradingHours) {
+      // 在交易时间内，需要找到上一个交易日的数据
+      if (isLastCandleToday) {
+        // 如果最后一条是今天的数据，使用上一个交易日
+        if (candles.length > 1) {
+          const prevCandle = candles[candles.length - 2];
+          rawLatest = {
+            price: prevCandle.close,
+            time: prevCandle.time,
+          };
+        } else {
+          // 如果只有今天的数据，没有前一天数据，仍然显示今天的（避免无数据）
+          rawLatest = {
+            price: lastCandle.close,
+            time: lastCandle.time,
+          };
+        }
+      } else {
+        // 如果最后一条不是今天的数据，说明已经是上一个交易日了，直接使用
+        rawLatest = {
+          price: lastCandle.close,
+          time: lastCandle.time,
+        };
+      }
+    } else if (afterMarketClose) {
+      // 在收盘后，使用最后一条数据（可能是今天的）
+      rawLatest = {
+        price: lastCandle.close,
+        time: lastCandle.time,
+      };
+    } else {
+      // 不在交易时间内，也不在收盘后（比如早上9:00之前，或者中午休市时间）
+      // 这种情况下，如果最后一条是今天的数据，使用上一个交易日；否则使用最后一条
+      if (isLastCandleToday && candles.length > 1) {
+        const prevCandle = candles[candles.length - 2];
+        rawLatest = {
+          price: prevCandle.close,
+          time: prevCandle.time,
+        };
+      } else {
+        rawLatest = {
+          price: lastCandle.close,
+          time: lastCandle.time,
+        };
+      }
+    }
+  }
+
+  // 移除临时日期字段
+  const cleanCandles = candles.map(({ date, ...candle }) => candle);
+
+  return { candles: cleanCandles, rawHighest, rawLatest };
 }
 
 async function fetchEtfPayload(tsCode: string) {
@@ -237,55 +274,8 @@ export async function GET(req: NextRequest) {
         return acc;
       }, null);
 
-    // 根据交易时间决定显示当天还是上一个交易日的收盘价
-    let latestPoint: PricePoint | null = null;
-    if (candles.length > 0) {
-      const lastCandle = candles[candles.length - 1];
-      // 获取北京时间的今天日期字符串
-      const nowBeijing = new Date(
-        new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" })
-      );
-      const todayDateStr = `${nowBeijing.getFullYear()}-${String(
-        nowBeijing.getMonth() + 1
-      ).padStart(2, "0")}-${String(nowBeijing.getDate()).padStart(2, "0")}`;
-
-      // lastCandle.time 已经是北京时间（从 tradeDateToTimestamp 生成）
-      const lastCandleDate = new Date(lastCandle.time);
-      const lastCandleDateStr = `${lastCandleDate.getFullYear()}-${String(
-        lastCandleDate.getMonth() + 1
-      ).padStart(2, "0")}-${String(lastCandleDate.getDate()).padStart(2, "0")}`;
-
-      const isLastCandleToday = lastCandleDateStr === todayDateStr;
-      const inTradingHours = isTradingHours();
-
-      if (isLastCandleToday && inTradingHours) {
-        // 如果最后一条数据是今天，且在交易时间内，显示上一个交易日的收盘价
-        if (candles.length > 1) {
-          const prevCandle = candles[candles.length - 2];
-          latestPoint = {
-            price: prevCandle.close,
-            time: prevCandle.time,
-          };
-        } else {
-          // 如果只有一条数据（今天），且没有前一天数据，仍然显示今天的
-          latestPoint = {
-            price: lastCandle.close,
-            time: lastCandle.time,
-          };
-        }
-      } else {
-        // 不在交易时间内，或者最后一条数据不是今天，显示最后一条数据的收盘价
-        latestPoint = {
-          price: lastCandle.close,
-          time: lastCandle.time,
-        };
-      }
-    }
-
-    // 如果没有 rawLatest，使用上面计算的 latestPoint
-    if (!latestPoint) {
-      latestPoint = rawLatest ?? null;
-    }
+    // 使用 buildEtfSeries 中已经计算好的 rawLatest
+    const latestPoint = rawLatest;
 
     if (!fallbackHighest || !latestPoint) {
       return NextResponse.json(
@@ -318,9 +308,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(payload);
   } catch (err) {
-    console.error(err);
+    console.error("获取ETF数据失败:", err);
+    const errorMessage = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
-      { error: "获取ETF数据失败，请稍后重试" },
+      { error: "获取ETF数据失败，请稍后重试", details: errorMessage },
       { status: 500 }
     );
   }

@@ -1,8 +1,9 @@
-/**
- * 首页：默认展示 7080 指数页面
- */
-
 "use client";
+
+/**
+ * 7080 指数页面
+ * 完全按照 demo.jsx 的 Page7080 功能和UI实现
+ */
 
 import { Search, Star } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -147,7 +148,7 @@ function ResultCard({
   );
 }
 
-export default function HomePage() {
+export default function Page7080() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [userId, setUserId] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<FavoritesState>({
@@ -287,3 +288,4 @@ export default function HomePage() {
     </TerminalLayout>
   );
 }
+
