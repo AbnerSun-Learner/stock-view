@@ -296,7 +296,7 @@ async function fetchFromEastmoneyWithMarketCode(
 
 async function fetchRealtimeDaily(
   code: string
-): Promise<{ name: string | null; daily: DailyRow[] }> {
+): Promise<{ name: string | null; daily: DailyRow[]; ath_point?: number; ath_date?: string }> {
   // 仅使用 AKShare 数据源（通过 Python API 服务），不再回退到其他数据源
   const akshareApiUrl = process.env.AKSHARE_API_URL || "http://localhost:5001";
 
@@ -316,7 +316,7 @@ async function fetchRealtimeDaily(
     if (!response.ok) {
       const message = `AKShare API 响应异常: HTTP ${response.status}`;
       console.warn(message);
-      return { name: null, daily: [] };
+      return { name: null, daily: [], ath_point: undefined, ath_date: undefined };
     }
 
     const data = (await response.json()) as {
@@ -360,7 +360,7 @@ async function fetchRealtimeDaily(
     };
   } catch (error) {
     console.error("AKShare API 调用失败:", error);
-    return { name: null, daily: [] };
+    return { name: null, daily: [], ath_point: undefined, ath_date: undefined };
   }
 }
 
