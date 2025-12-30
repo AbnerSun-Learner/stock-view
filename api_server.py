@@ -1,234 +1,142 @@
 """
-AKShare 数据服务 API
-提供指数和股票历史数据查询接口
+AKShare 数据服务 API - 优化版
+1. 支持历史最高点 (ATH) 计算
+2. 增加缓存机制，防止频繁爬取导致被封及响应慢
+3. 适配 Render 部署，解决 404 及端口绑定问题
 """
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import akshare as ak  # type: ignore[import]
-import pandas as pd  # type: ignore[import]
+from flask_caching import Cache
+import akshare as ak
+import pandas as pd
 from datetime import datetime, timedelta
 import os
 import pytz
 
 app = Flask(__name__)
-CORS(app)  # 允许跨域请求
+CORS(app)
 
-# 北京时间时区
+# --- 缓存配置 (重要：解决加载慢的问题) ---
+# 缓存时间设为 6 小时 (21600秒)，因为指数历史数据不需要实时更新
+cache = Cache(app, config={
+    'CACHE_TYPE': 'simple', 
+    'CACHE_DEFAULT_TIMEOUT': 21600
+})
+
 BEIJING_TZ = pytz.timezone("Asia/Shanghai")
 
-
 def get_beijing_time():
-    """获取北京时间"""
     return datetime.now(BEIJING_TZ)
 
+# --- 路由 1: 根路径 (解决 Render 的 404 问题) ---
+@app.route("/")
+def health_check():
+    return jsonify({
+        "status": "online",
+        "message": "Stock Data API is running",
+        "beijing_time": get_beijing_time().strftime("%Y-%m-%d %H:%M:%S")
+    })
 
-def is_trading_hours():
-    """判断是否在交易时间内（9:30-11:30, 13:00-15:00）"""
-    beijing_time = get_beijing_time()
-    day = beijing_time.weekday()  # 0=周一, 6=周日
-    
-    # 周末不交易
-    if day >= 5:  # 周六或周日
-        return False
-    
-    hour = beijing_time.hour
-    minute = beijing_time.minute
-    time_in_minutes = hour * 60 + minute
-    
-    # 上午：9:30-11:30
-    morning_start = 9 * 60 + 30
-    morning_end = 11 * 60 + 30
-    # 下午：13:00-15:00
-    afternoon_start = 13 * 60
-    afternoon_end = 15 * 60
-    
-    return (
-        (morning_start <= time_in_minutes <= morning_end) or
-        (afternoon_start <= time_in_minutes <= afternoon_end)
-    )
-
-
-def is_after_market_close():
-    """判断是否在收盘之后（15:00之后）"""
-    beijing_time = get_beijing_time()
-    hour = beijing_time.hour
-    minute = beijing_time.minute
-    time_in_minutes = hour * 60 + minute
-    
-    return time_in_minutes >= 15 * 60
-
-
-def get_target_trade_date():
-    """
-    获取目标交易日
-    - 如果在交易时间内，返回上一个交易日
-    - 如果在收盘后，返回当天交易日
-    """
-    beijing_time = get_beijing_time()
-    target_date = beijing_time
-    
-    # 如果在交易时间内，使用上一个交易日
-    if is_trading_hours():
-        target_date = target_date - timedelta(days=1)
-    
-    # 如果是周末，往前推到周五
-    while target_date.weekday() >= 5:  # 周六或周日
-        target_date = target_date - timedelta(days=1)
-    
-    return target_date.strftime("%Y-%m-%d")
-
-
+# --- 路由 2: 获取指数数据 (含历史最高点) ---
 @app.route("/api/akshare/index", methods=["GET"])
+@cache.memoize(timeout=21600)  # 缓存相同参数的查询结果
 def get_index_data():
-    """
-    获取指数历史数据
-    参数：
-    - symbol: 指数代码（如 000300, 399001, 930955）
-    - period: 数据周期（daily/weekly/monthly），默认 daily
-    - start_date: 开始日期（YYYYMMDD），可选
-    - end_date: 结束日期（YYYYMMDD），可选
-    """
     symbol = request.args.get("symbol", "")
-    period = request.args.get("period", "daily")
-    
+    print(f"收到请求 symbol: {symbol}")
     if not symbol:
         return jsonify({"error": "缺少参数 symbol"}), 400
     
     try:
-        # 使用 AKShare 获取指数历史数据
-        # 根据 AKShare 文档，使用 index_zh_a_hist 接口
-        end_date = datetime.now().strftime("%Y%m%d")
-        start_date = (datetime.now() - timedelta(days=365)).strftime("%Y%m%d")
-        
-        # 调用 AKShare 接口
+        # 获取全量历史数据 (从1990年开始，确保覆盖历史最高点)
+        # 注意：akshare 内部会打印进度条，缓存后只有第一次会慢
         df = ak.index_zh_a_hist(
             symbol=symbol,
-            period=period,
-            start_date=start_date,
-            end_date=end_date
+            period="daily",
+            start_date="19900101",
+            end_date=datetime.now().strftime("%Y%m%d")
         )
         
         if df.empty:
             return jsonify({"error": "未获取到数据"}), 404
+
+        # 计算历史最高点 (ATH)
+        ath_value = float(df["最高"].max())
+        ath_date = df.loc[df["最高"].idxmax(), "日期"]
+        if hasattr(ath_date, "strftime"):
+            ath_date_str = ath_date.strftime("%Y-%m-%d")
+        else:
+            ath_date_str = str(ath_date)
+            
+        # 获取当前最新点位
+        current_val = float(df["收盘"].iloc[-1])
+        last_update = str(df["日期"].iloc[-1])
         
-        # 转换为 JSON 格式
-        daily_data = []
-        for _, row in df.iterrows():
-            daily_data.append({
-                "date": row["日期"].strftime("%Y-%m-%d") if hasattr(row["日期"], "strftime") else str(row["日期"]),
-                "open": float(row["开盘"]) if pd.notna(row["开盘"]) else None,
-                "high": float(row["最高"]) if pd.notna(row["最高"]) else None,
-                "low": float(row["最低"]) if pd.notna(row["最低"]) else None,
-                "close": float(row["收盘"]) if pd.notna(row["收盘"]) else None,
-                "volume": float(row["成交量"]) if pd.notna(row["成交量"]) else None,
+        # 计算距离最高点的回撤
+        drawdown = round(((current_val - ath_value) / ath_value) * 100, 2)
+
+        # 准备给前端绘图用的最近 1 年 K 线数据
+        recent_df = df.tail(250)
+        daily_history = []
+        for _, row in recent_df.iterrows():
+            daily_history.append({
+                "date": str(row["日期"]),
+                "close": float(row["收盘"]),
+                "high": float(row["最高"])
             })
-        
-        # 获取指数名称（从第一行数据或通过其他方式）
-        name = None
-        if len(df) > 0:
-            # 尝试从 AKShare 获取名称
-            try:
-                # 可以通过其他接口获取名称
-                name = symbol  # 暂时使用代码，后续可以优化
-            except:
-                pass
-        
-        # 根据交易日规则过滤数据
-        target_date = get_target_trade_date()
-        in_trading_hours = is_trading_hours()
-        
-        # 如果在交易时间内，过滤掉今天的数据
-        filtered_data = daily_data
-        if in_trading_hours:
-            today_str = datetime.now().strftime("%Y-%m-%d")
-            filtered_data = [d for d in daily_data if d["date"] != today_str]
-        
+
+        print(f"返回数据 symbol: {symbol}，是否命中缓存: {request.path in cache.cache._cache}")
         return jsonify({
-            "name": name,
-            "daily": filtered_data,
-            "target_trade_date": target_date,
-            "in_trading_hours": in_trading_hours
+            "symbol": symbol,
+            "name": f"指数 {symbol}",
+            "current_point": current_val,
+            "ath_point": ath_value,
+            "ath_date": ath_date_str,
+            "drawdown_percent": f"{drawdown}%",
+            "last_update": last_update,
+            "daily": daily_history
         })
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
+# --- 路由 3: 股票数据 (逻辑同上) ---
 @app.route("/api/akshare/stock", methods=["GET"])
+@cache.memoize(timeout=21600)
 def get_stock_data():
-    """
-    获取股票历史数据
-    参数：
-    - symbol: 股票代码（如 000001, 600000）
-    - period: 数据周期（daily/weekly/monthly），默认 daily
-    """
     symbol = request.args.get("symbol", "")
-    period = request.args.get("period", "daily")
-    
     if not symbol:
         return jsonify({"error": "缺少参数 symbol"}), 400
     
     try:
-        # 使用 AKShare 获取股票历史数据
-        end_date = datetime.now().strftime("%Y%m%d")
-        start_date = (datetime.now() - timedelta(days=365)).strftime("%Y%m%d")
-        
-        # 调用 AKShare 接口
+        # 股票获取全量历史进行前复权
         df = ak.stock_zh_a_hist(
             symbol=symbol,
-            period=period,
-            start_date=start_date,
-            end_date=end_date,
-            adjust="qfq"  # 前复权
+            period="daily",
+            start_date="19900101",
+            end_date=datetime.now().strftime("%Y%m%d"),
+            adjust="qfq"
         )
         
         if df.empty:
             return jsonify({"error": "未获取到数据"}), 404
-        
-        # 转换为 JSON 格式
-        daily_data = []
-        for _, row in df.iterrows():
-            date_val = row["日期"]
-            if hasattr(date_val, "strftime"):
-                date_str = date_val.strftime("%Y-%m-%d")
-            elif isinstance(date_val, str):
-                date_str = date_val
-            else:
-                date_str = str(date_val)
             
-            daily_data.append({
-                "date": date_str,
-                "open": float(row["开盘"]) if pd.notna(row["开盘"]) else None,
-                "high": float(row["最高"]) if pd.notna(row["最高"]) else None,
-                "low": float(row["最低"]) if pd.notna(row["最低"]) else None,
-                "close": float(row["收盘"]) if pd.notna(row["收盘"]) else None,
-                "volume": float(row["成交量"]) if pd.notna(row["成交量"]) else None,
-            })
-        
-        # 根据交易日规则过滤数据
-        target_date = get_target_trade_date()
-        in_trading_hours = is_trading_hours()
-        
-        # 如果在交易时间内，过滤掉今天的数据
-        filtered_data = daily_data
-        if in_trading_hours:
-            today_str = datetime.now().strftime("%Y-%m-%d")
-            filtered_data = [d for d in daily_data if d["date"] != today_str]
+        ath_value = float(df["最高"].max())
+        current_val = float(df["收盘"].iloc[-1])
         
         return jsonify({
-            "name": None,  # 股票名称可以通过其他接口获取
-            "daily": filtered_data,
-            "target_trade_date": target_date,
-            "in_trading_hours": in_trading_hours
+            "symbol": symbol,
+            "current_point": current_val,
+            "ath_point": ath_value,
+            "drawdown_percent": f"{round(((current_val - ath_value) / ath_value) * 100, 2)}%",
+            "last_update": str(df["日期"].iloc[-1])
         })
-        
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 if __name__ == "__main__":
+    # 支持环境变量 PORT，默认使用 5001（与前端配置一致）
     port = int(os.environ.get("PORT", 5001))
+    # 本地开发时开启 debug，生产环境通过环境变量控制
     debug = os.environ.get("DEBUG", "False").lower() == "true"
     app.run(host="0.0.0.0", port=port, debug=debug)
-

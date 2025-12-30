@@ -158,6 +158,7 @@ export default function Page7080() {
   const [currentResult, setCurrentResult] = useState<Index7080Item | null>(
     null
   );
+  const [loading, setLoading] = useState(false);
 
   // 初始化用户ID（模拟匿名登录）
   useEffect(() => {
@@ -181,7 +182,8 @@ export default function Page7080() {
   }, [userId]);
 
   const fetchIndexData = async () => {
-    if (!searchCode) return;
+    if (!searchCode || loading) return;
+    setLoading(true);
     try {
       const data = await fetchIndexDataFromAPI(searchCode);
       const result: Index7080Item = {
@@ -197,6 +199,14 @@ export default function Page7080() {
       // eslint-disable-next-line no-console
       console.error("查询指数失败:", error);
       alert("查询失败，请检查代码是否正确");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      fetchIndexData();
     }
   };
 
@@ -245,12 +255,15 @@ export default function Page7080() {
               } outline-none focus:ring-2 focus:ring-blue-500`}
               value={searchCode}
               onChange={(e) => setSearchCode(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={loading}
             />
             <button
               onClick={fetchIndexData}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+              disabled={loading || !searchCode}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
             >
-              查询
+              {loading ? "查询中..." : "查询"}
             </button>
           </div>
         </section>

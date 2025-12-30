@@ -1,18 +1,18 @@
 /**
  * 数据源：仅使用 AKShare 方式（底层调用东方财富接口）
- * 
+ *
  * 根据AKShare文档"历史行情数据-东方财富"部分实现指数数据查询
  * 支持指数代码格式：
  * - 000开头：沪深指数（如上证指数000001）
  * - 399开头：深证指数（如深证成指399001）
  * - 9开头：中证指数（如930955中证红利低波动100指数）
- * 
+ *
  * 交易日规则：
  * - 如果在交易时间内（9:30-11:30, 13:00-15:00）查询，展示上一个交易日的价格
  * - 如果在收盘后（15:00之后）查询，展示当天交易日的价格
  */
 
-import { isAfterMarketClose, isToday, isTradingHours, getTargetTradeDate } from "./utils";
+import { getTargetTradeDate, isTradingHours } from "./utils";
 
 interface DailyRow {
   date: string;
@@ -81,7 +81,7 @@ function getMarketCodeForApi(code: string): string {
     // 中证指数（9开头，如930955）使用上海市场代码
     return "1";
   }
-  
+
   // 股票和ETF代码
   if (normalized.startsWith("6") || normalized.startsWith("51")) {
     return "1"; // 上海（股票6开头，ETF 51开头）
@@ -148,7 +148,7 @@ async function fetchFromEastmoneyWithMarketCode(
   const klineUrl = isIndex
     ? "https://push2his.eastmoney.com/api/qt/index/kline/get"
     : "https://push2his.eastmoney.com/api/qt/stock/kline/get";
-  
+
   const params = new URLSearchParams({
     secid: `${marketCode}.${normalizedCode}`,
     ut: "fa5fd1943c7b386f172d6893dbfba10b",
@@ -291,76 +291,6 @@ async function fetchFromEastmoneyWithMarketCode(
   }
 }
 
-async function fetchFromEastmoney(
-  code: string
-): Promise<{ name: string | null; daily: DailyRow[] }> {
-  const normalizedCode = normalizeCode(code);
-  const isIndex = isIndexCode(normalizedCode);
-
-  // 对于指数代码，尝试多个市场代码和接口类型
-  // 根据AKShare文档，中证指数（9开头）可能需要不同的处理方式
-  const marketCodesToTry =
-    isIndex && normalizedCode.startsWith("9")
-      ? ["1", "0"] // 中证指数先尝试上海(1)，再尝试深圳(0)
-      : [getMarketCodeForApi(normalizedCode)];
-
-  // 对于9开头的指数，也尝试使用股票接口（某些中证指数可能使用股票接口）
-  const interfacesToTry: Array<{ isIndex: boolean; marketCode: string }> = [];
-
-  if (isIndex && normalizedCode.startsWith("9")) {
-    // 中证指数：先尝试指数接口，再尝试股票接口
-    for (const marketCode of marketCodesToTry) {
-      interfacesToTry.push({ isIndex: true, marketCode });
-      interfacesToTry.push({ isIndex: false, marketCode });
-    }
-  } else {
-    // 其他指数或股票：使用对应的接口
-    for (const marketCode of marketCodesToTry) {
-      interfacesToTry.push({ isIndex, marketCode });
-    }
-  }
-
-  let lastError: Error | null = null;
-  for (const { isIndex: useIndexInterface, marketCode } of interfacesToTry) {
-    try {
-      const result = await fetchFromEastmoneyWithMarketCode(
-        code, // 传递原始代码，函数内部会normalize
-        marketCode,
-        useIndexInterface
-      );
-
-      // 如果获取到数据，直接返回（名称已经在函数内部处理过）
-      if (result.daily && result.daily.length > 0) {
-        // 再次确保名称来自映射表（如果存在），防止乱码
-        if (INDEX_NAME_MAP[normalizedCode]) {
-          result.name = INDEX_NAME_MAP[normalizedCode];
-        }
-        return result;
-      }
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-      continue;
-    }
-  }
-
-  // 如果所有尝试都失败，记录警告
-  if (lastError) {
-    console.warn(
-      `东方财富接口获取失败，代码: ${normalizedCode}, 尝试的接口组合: ${interfacesToTry.length}种, 是否为指数: ${isIndex}`,
-      lastError.message
-    );
-  } else {
-    console.warn(
-      `东方财富接口返回空数据，代码: ${normalizedCode}, 尝试的接口组合: ${interfacesToTry.length}种, 是否为指数: ${isIndex}`
-    );
-  }
-
-  // 即使接口失败，也尝试从映射表获取名称（如果有数据但名称是乱码的情况）
-  const nameFromMap = INDEX_NAME_MAP[normalizedCode] || null;
-  return { name: nameFromMap, daily: [] };
-}
-
-
 async function fetchRealtimeDaily(
   code: string
 ): Promise<{ name: string | null; daily: DailyRow[] }> {
@@ -442,7 +372,7 @@ export async function getEtfTodayClosePrice(code: string): Promise<{
     // - 如果在收盘后（15:00之后），返回当天交易日的收盘价
     const inTradingHours = isTradingHours();
     const targetTradeDate = getTargetTradeDate();
-    
+
     // 查找目标交易日的数据
     for (const item of daily) {
       if (item.date === targetTradeDate && item.close !== null) {
@@ -463,9 +393,13 @@ export async function getEtfTodayClosePrice(code: string): Promise<{
 
       const latest = sortedDaily[0];
       const today = new Date().toISOString().split("T")[0];
-      
+
       // 如果最新数据是今天但收盘价为null，使用上一个交易日
-      if (latest.date === today && latest.close === null && sortedDaily.length > 1) {
+      if (
+        latest.date === today &&
+        latest.close === null &&
+        sortedDaily.length > 1
+      ) {
         const prevDay = sortedDaily[1];
         const closePrice =
           prevDay.close !== null
