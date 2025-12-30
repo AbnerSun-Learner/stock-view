@@ -28,6 +28,8 @@ interface FetcherOutput {
   daily?: DailyRow[];
   close_price?: number | null;
   date?: string | null;
+  ath_point?: number;
+  ath_date?: string;
 }
 
 function safeFloat(value: unknown): number | null {
@@ -101,7 +103,7 @@ function getMarketCodeForApi(code: string): string {
 /**
  * 常见指数代码到名称的映射表（用于处理API返回乱码的情况）
  */
-const INDEX_NAME_MAP: Record<string, string> = {
+export const INDEX_NAME_MAP: Record<string, string> = {
   "000001": "上证指数",
   "000002": "A股指数",
   "000003": "B股指数",
@@ -123,6 +125,7 @@ const INDEX_NAME_MAP: Record<string, string> = {
   "399106": "深证综指",
   "399330": "深证100",
   "399673": "创业板50",
+  "399967": "中证军工",
   "930955": "中证红利低波动100",
 };
 
@@ -328,6 +331,9 @@ async function fetchRealtimeDaily(
       }>;
       target_trade_date?: string;
       in_trading_hours?: boolean;
+      ath_point?: number;
+      ath_date?: string;
+      current_point?: number;
     };
 
     const inTradingHours = data.in_trading_hours ?? isTradingHours();
@@ -349,6 +355,8 @@ async function fetchRealtimeDaily(
         close: d.close,
         volume: d.volume,
       })),
+      ath_point: data.ath_point,
+      ath_date: data.ath_date,
     };
   } catch (error) {
     console.error("AKShare API 调用失败:", error);
@@ -424,13 +432,16 @@ export async function getEtfTodayClosePrice(code: string): Promise<{
 }
 
 export async function fetchEtfData(code: string): Promise<FetcherOutput> {
-  const { name, daily } = await fetchRealtimeDaily(code);
+  const result = await fetchRealtimeDaily(code);
+  const { name, daily, ath_point, ath_date } = result;
   // 确保使用映射表中的名称（如果存在），防止乱码
   const normalizedCode = normalizeCode(code);
   const finalName = INDEX_NAME_MAP[normalizedCode] || name;
   return {
     name: finalName,
     daily,
+    ath_point,
+    ath_date,
   };
 }
 

@@ -4,6 +4,7 @@
  */
 
 import { isToday, isTradingHours } from "./utils";
+import { INDEX_NAME_MAP } from "./stock-fetcher";
 
 export function formatNum(val: number | string, dec = 2): string {
   const num = Number(val);
@@ -137,8 +138,15 @@ export async function fetchIndexData(code: string): Promise<{
       ).padStart(2, "0")}-${String(highestDate.getDate()).padStart(2, "0")}`;
     }
 
+    // 使用映射表替换名称（如果存在）
+    const normalizedCode = code.trim().toUpperCase()
+      .replace(".SZ", "")
+      .replace(".SH", "")
+      .replace(".BJ", "");
+    const finalName = INDEX_NAME_MAP[normalizedCode] || data.name || null;
+
     return {
-      name: data.name || null,
+      name: finalName,
       current,
       peak,
       peakDate,

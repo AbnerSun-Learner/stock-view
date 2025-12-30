@@ -4,14 +4,14 @@
 
 "use client";
 
-import { Search, Star } from "lucide-react";
-import { useEffect, useState } from "react";
 import { TerminalLayout } from "@/components/etf-terminal/layout";
 import {
-  formatNum,
   fetchIndexData as fetchIndexDataFromAPI,
+  formatNum,
 } from "@/lib/etf-terminal-utils";
 import { supabase } from "@/lib/supabase-client";
+import { Search, Star } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const appId = "etf-manager-default";
 
@@ -61,7 +61,6 @@ async function saveToFirestore(
       }
     );
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error("Save error:", err);
   }
 }
@@ -165,7 +164,9 @@ export default function HomePage() {
     if (tempUserId) {
       setUserId(tempUserId);
     } else {
-      const newTempId = `temp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+      const newTempId = `temp_${Date.now()}_${Math.random()
+        .toString(36)
+        .slice(2, 11)}`;
       localStorage.setItem("etf_terminal_temp_user_id", newTempId);
       setUserId(newTempId);
     }
@@ -195,7 +196,6 @@ export default function HomePage() {
       };
       setCurrentResult(result);
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error("查询指数失败:", error);
       alert("查询失败，请检查代码是否正确");
     } finally {
@@ -270,7 +270,10 @@ export default function HomePage() {
         {currentResult && (
           <ResultCard
             item={currentResult}
-            metrics={calculateMetrics(currentResult.current, currentResult.peak)}
+            metrics={calculateMetrics(
+              currentResult.current,
+              currentResult.peak
+            )}
             onFavorite={() => handleFavorite(currentResult)}
             isFav={favorites.indices7080?.some(
               (i) => i.code === currentResult.code

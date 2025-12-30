@@ -206,7 +206,12 @@ async function fetchEtfPayload(tsCode: string) {
     throw new Error("获取历史数据失败，返回了收盘价格式");
   }
   const series = buildEtfSeries(output.daily || []);
-  return { name: output.name, series };
+  return { 
+    name: output.name, 
+    series,
+    ath_point: output.ath_point,
+    ath_date: output.ath_date,
+  };
 }
 
 export async function DELETE() {
@@ -255,7 +260,7 @@ export async function GET(req: NextRequest) {
     }
 
     // 否则获取完整的历史数据
-    const { name, series } = await fetchEtfPayload(code);
+    const { name, series, ath_point, ath_date } = await fetchEtfPayload(code);
     const { candles, rawHighest, rawLatest } = series;
 
     if (!candles.length) {
@@ -265,14 +270,28 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const fallbackHighest =
-      rawHighest ??
-      candles.reduce<PricePoint | null>((acc, candle) => {
-        if (!acc || candle.high > acc.price) {
-          return { price: candle.high, time: candle.time };
-        }
-        return acc;
-      }, null);
+    // 优先使用 Python API 返回的历史最高点（从指数成立以来）
+    // 如果 Python API 没有返回，则从 candles 中计算
+    let fallbackHighest: PricePoint | null = null;
+    if (ath_point !== undefined && ath_point !== null && ath_date) {
+      // 使用 Python API 返回的历史最高点
+      const athTimestamp = tradeDateToTimestamp(ath_date);
+      if (athTimestamp !== null) {
+        fallbackHighest = { price: ath_point, time: athTimestamp };
+      }
+    }
+    
+    // 如果 Python API 没有返回历史最高点，则从 candles 中计算
+    if (!fallbackHighest) {
+      fallbackHighest =
+        rawHighest ??
+        candles.reduce<PricePoint | null>((acc, candle) => {
+          if (!acc || candle.high > acc.price) {
+            return { price: candle.high, time: candle.time };
+          }
+          return acc;
+        }, null);
+    }
 
     // 使用 buildEtfSeries 中已经计算好的 rawLatest
     const latestPoint = rawLatest;
