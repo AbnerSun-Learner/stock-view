@@ -116,6 +116,7 @@ def get_index_data():
             start_date="19900101",
             end_date=datetime.now().strftime("%Y%m%d")
         )
+        print(f"df: {df}")
         
         if df.empty:
             return jsonify({"error": "未获取到数据"}), 404

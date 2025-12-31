@@ -4,7 +4,9 @@
 
 "use client";
 
+import { AuthModal } from "@/components/etf-terminal/auth-modal";
 import { TerminalLayout } from "@/components/etf-terminal/layout";
+import { useAuth } from "@/lib/auth";
 import {
   fetchIndexData as fetchIndexDataFromAPI,
   formatNum,
@@ -12,8 +14,6 @@ import {
 import { supabase } from "@/lib/supabase-client";
 import { Search, Star } from "lucide-react";
 import { useEffect, useState } from "react";
-
-const appId = "etf-manager-default";
 
 interface Index7080Item {
   name: string;
@@ -28,40 +28,93 @@ interface FavoritesState {
   indices7080: Index7080Item[];
 }
 
-async function loadUserSettings(userId: string): Promise<FavoritesState> {
-  const { data, error } = await supabase
-    .from("user_settings")
-    .select("indices7080")
-    .eq("user_id", userId)
-    .eq("app_id", appId)
-    .maybeSingle();
+async function loadFavorites(userId: string): Promise<FavoritesState> {
+  try {
+    const { data, error } = await supabase
+      .from("favorites")
+      .select("symbol, name")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
-  if (error || !data) {
+    if (error) {
+      console.error("加载收藏失败:", error);
+      return { indices7080: [] };
+    }
+
+    // 将收藏转换为 Index7080Item 格式（需要获取完整数据）
+    // 这里先返回基本信息，实际使用时需要根据 symbol 获取完整数据
+    const favorites: Index7080Item[] = (data || []).map((f) => ({
+      name: f.name || f.symbol,
+      code: f.symbol,
+      current: 0, // 需要从 API 获取
+      peak: 0, // 需要从 API 获取
+      peakDate: "",
+      tradingDate: "",
+    }));
+
+    return { indices7080: favorites };
+  } catch (err) {
+    console.error("加载收藏失败:", err);
     return { indices7080: [] };
   }
-
-  return {
-    indices7080: data.indices7080 || [],
-  };
 }
 
-async function saveToFirestore(
-  userId: string,
-  newData: FavoritesState
-): Promise<void> {
+async function saveFavorite(item: Index7080Item): Promise<void> {
+  // 获取当前会话
+  const { data, error: sessionError } = await supabase.auth.getSession();
+
+  if (sessionError || !data?.session?.user?.id) {
+    throw new Error("用户未登录或会话无效");
+  }
+
+  const userId = data.session.user.id;
+
   try {
-    await supabase.from("user_settings").upsert(
+    const { error } = await supabase.from("favorites").upsert(
       {
         user_id: userId,
-        app_id: appId,
-        indices7080: newData.indices7080,
+        symbol: item.code,
+        name: item.name,
       },
       {
-        onConflict: "user_id,app_id",
+        onConflict: "user_id,symbol",
       }
     );
+
+    if (error) {
+      console.error("Supabase 错误:", error);
+      throw error;
+    }
   } catch (err) {
-    console.error("Save error:", err);
+    console.error("保存收藏失败:", err);
+    throw err;
+  }
+}
+
+async function deleteFavorite(symbol: string): Promise<void> {
+  // 获取当前会话
+  const { data, error: sessionError } = await supabase.auth.getSession();
+
+  if (sessionError || !data?.session?.user?.id) {
+    throw new Error("用户未登录或会话无效");
+  }
+
+  const userId = data.session.user.id;
+
+  try {
+    const { error } = await supabase
+      .from("favorites")
+      .delete()
+      .eq("user_id", userId)
+      .eq("symbol", symbol);
+
+    if (error) {
+      console.error("Supabase 错误:", error);
+      throw error;
+    }
+  } catch (err) {
+    console.error("删除收藏失败:", err);
+    throw err;
   }
 }
 
@@ -147,8 +200,8 @@ function ResultCard({
 }
 
 export default function HomePage() {
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [userId, setUserId] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<FavoritesState>({
     indices7080: [],
   });
@@ -157,29 +210,44 @@ export default function HomePage() {
     null
   );
   const [loading, setLoading] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
-  // 初始化用户ID（模拟匿名登录）
+  // 加载用户收藏数据
   useEffect(() => {
-    const tempUserId = localStorage.getItem("etf_terminal_temp_user_id");
-    if (tempUserId) {
-      setUserId(tempUserId);
-    } else {
-      const newTempId = `temp_${Date.now()}_${Math.random()
-        .toString(36)
-        .slice(2, 11)}`;
-      localStorage.setItem("etf_terminal_temp_user_id", newTempId);
-      setUserId(newTempId);
+    if (!isAuthenticated || !user?.id) {
+      setFavorites({ indices7080: [] });
+      return;
     }
-  }, []);
 
-  // 加载用户数据
-  useEffect(() => {
-    if (!userId) return;
+    loadFavorites(user.id).then((data) => {
+      // 加载收藏后，需要获取每个收藏项的完整数据
+      const loadFullData = async () => {
+        const fullData = await Promise.all(
+          data.indices7080.map(async (item) => {
+            try {
+              const indexData = await fetchIndexDataFromAPI(item.code);
+              return {
+                ...item,
+                current: indexData.current,
+                peak: indexData.peak,
+                peakDate: indexData.peakDate,
+                tradingDate: indexData.tradingDate,
+              };
+            } catch {
+              return item;
+            }
+          })
+        );
+        setFavorites({ indices7080: fullData });
+      };
 
-    loadUserSettings(userId).then((data) => {
-      setFavorites(data);
+      if (data.indices7080.length > 0) {
+        loadFullData();
+      } else {
+        setFavorites(data);
+      }
     });
-  }, [userId]);
+  }, [isAuthenticated, user?.id]);
 
   const fetchIndexData = async () => {
     if (!searchCode || loading) return;
@@ -209,16 +277,38 @@ export default function HomePage() {
     }
   };
 
-  const handleFavorite = (item: Index7080Item) => {
-    if (!userId) return;
+  const handleFavorite = async (item: Index7080Item) => {
+    // 等待认证状态加载完成
+    if (authLoading) {
+      return;
+    }
+
+    // 检查是否登录
+    if (!isAuthenticated || !user?.id) {
+      setShowAuthModal(true);
+      return;
+    }
+
     const list = favorites.indices7080 || [];
     const exists = list.find((i) => i.code === item.code);
-    const newList = exists
-      ? list.filter((i) => i.code !== item.code)
-      : [...list, item];
-    const newFavorites = { ...favorites, indices7080: newList };
-    setFavorites(newFavorites);
-    saveToFirestore(userId, newFavorites);
+
+    try {
+      if (exists) {
+        // 取消收藏
+        await deleteFavorite(item.code);
+        const newList = list.filter((i) => i.code !== item.code);
+        setFavorites({ indices7080: newList });
+      } else {
+        // 添加收藏
+        await saveFavorite(item);
+        setFavorites({ indices7080: [...list, item] });
+      }
+    } catch (error) {
+      console.error("收藏操作失败:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "操作失败，请重试";
+      alert(errorMessage);
+    }
   };
 
   const calculateMetrics = (curr: number, peak: number) => {
@@ -233,73 +323,82 @@ export default function HomePage() {
   };
 
   return (
-    <TerminalLayout theme={theme} onToggleTheme={toggleTheme}>
-      <div className="space-y-6">
-        <section
-          className={`p-6 rounded-2xl ${
-            theme === "dark" ? "bg-slate-800" : "bg-white"
-          } shadow-sm border border-transparent dark:border-slate-700`}
-        >
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-            <Search className="text-blue-500" /> 指数查询 (数据源: 东方财富)
-          </h2>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="输入指数代码 (如: 000300)"
-              className={`flex-1 p-3 rounded-lg border ${
-                theme === "dark"
-                  ? "bg-slate-900 border-slate-700"
-                  : "bg-slate-50 border-slate-200"
-              } outline-none focus:ring-2 focus:ring-blue-500`}
-              value={searchCode}
-              onChange={(e) => setSearchCode(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={loading}
-            />
-            <button
-              onClick={fetchIndexData}
-              disabled={loading || !searchCode}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
-            >
-              {loading ? "查询中..." : "查询"}
-            </button>
-          </div>
-        </section>
-
-        {currentResult && (
-          <ResultCard
-            item={currentResult}
-            metrics={calculateMetrics(
-              currentResult.current,
-              currentResult.peak
-            )}
-            onFavorite={() => handleFavorite(currentResult)}
-            isFav={favorites.indices7080?.some(
-              (i) => i.code === currentResult.code
-            )}
-            theme={theme}
-          />
-        )}
-
-        {favorites.indices7080?.length > 0 && (
-          <div className="mt-8">
-            <h3 className="text-lg font-bold mb-4">我的收藏</h3>
-            <div className="grid md:grid-cols-2 gap-4">
-              {favorites.indices7080.map((item) => (
-                <ResultCard
-                  key={item.code}
-                  item={item}
-                  metrics={calculateMetrics(item.current, item.peak)}
-                  onFavorite={() => handleFavorite(item)}
-                  isFav
-                  theme={theme}
-                />
-              ))}
+    <>
+      <TerminalLayout theme={theme} onToggleTheme={toggleTheme}>
+        <div className="space-y-6">
+          <section
+            className={`p-6 rounded-2xl ${
+              theme === "dark" ? "bg-slate-800" : "bg-white"
+            } shadow-sm border border-transparent dark:border-slate-700`}
+          >
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <Search className="text-blue-500" /> 指数查询
+            </h2>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="输入指数代码 (如: 000300)"
+                className={`flex-1 p-3 rounded-lg border ${
+                  theme === "dark"
+                    ? "bg-slate-900 border-slate-700"
+                    : "bg-slate-50 border-slate-200"
+                } outline-none focus:ring-2 focus:ring-blue-500`}
+                value={searchCode}
+                onChange={(e) => setSearchCode(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={loading}
+              />
+              <button
+                onClick={fetchIndexData}
+                disabled={loading || !searchCode}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+              >
+                {loading ? "查询中..." : "查询"}
+              </button>
             </div>
-          </div>
-        )}
-      </div>
-    </TerminalLayout>
+          </section>
+
+          {currentResult && (
+            <ResultCard
+              item={currentResult}
+              metrics={calculateMetrics(
+                currentResult.current,
+                currentResult.peak
+              )}
+              onFavorite={() => handleFavorite(currentResult)}
+              isFav={favorites.indices7080?.some(
+                (i) => i.code === currentResult.code
+              )}
+              theme={theme}
+            />
+          )}
+
+          {favorites.indices7080?.length > 0 && (
+            <div className="mt-8">
+              <h3 className="text-lg font-bold mb-4">我的收藏</h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                {favorites.indices7080.map((item) => (
+                  <ResultCard
+                    key={item.code}
+                    item={item}
+                    metrics={calculateMetrics(item.current, item.peak)}
+                    onFavorite={() => handleFavorite(item)}
+                    isFav
+                    theme={theme}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </TerminalLayout>
+
+      {/* 登录模态框 */}
+      <AuthModal
+        open={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        theme={theme}
+      />
+    </>
   );
 }
