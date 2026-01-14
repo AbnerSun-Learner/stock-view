@@ -42,3 +42,10 @@ next-env.d.ts
 
 # spec-kit
 .specify
+
+# python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python

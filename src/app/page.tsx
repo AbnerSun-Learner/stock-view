@@ -1,404 +1,258 @@
-/**
- * 首页：默认展示 7080 指数页面
- */
-
 "use client";
 
-import { AuthModal } from "@/components/etf-terminal/auth-modal";
-import { TerminalLayout } from "@/components/etf-terminal/layout";
-import { useAuth } from "@/lib/auth";
 import {
-  fetchIndexData as fetchIndexDataFromAPI,
-  formatNum,
-} from "@/lib/etf-terminal-utils";
-import { supabase } from "@/lib/supabase-client";
-import { Search, Star } from "lucide-react";
-import { useEffect, useState } from "react";
+  ArrowRight,
+  BookOpen,
+  ChevronDown,
+  Compass,
+  LayoutGrid,
+  Moon,
+  Sun,
+  User,
+  Wind,
+} from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 
-interface Index7080Item {
-  name: string;
-  code: string;
-  current: number;
-  peak: number;
-  peakDate: string;
-  tradingDate: string;
-}
+export default function LandingPage() {
+  const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
-interface FavoritesState {
-  indices7080: Index7080Item[];
-}
-
-async function loadFavorites(userId: string): Promise<FavoritesState> {
-  try {
-    const { data, error } = await supabase
-      .from("favorites")
-      .select("symbol, name")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("加载收藏失败:", error);
-      return { indices7080: [] };
-    }
-
-    // 将收藏转换为 Index7080Item 格式（需要获取完整数据）
-    // 这里先返回基本信息，实际使用时需要根据 symbol 获取完整数据
-    const favorites: Index7080Item[] = (data || []).map((f) => ({
-      name: f.name || f.symbol,
-      code: f.symbol,
-      current: 0, // 需要从 API 获取
-      peak: 0, // 需要从 API 获取
-      peakDate: "",
-      tradingDate: "",
-    }));
-
-    return { indices7080: favorites };
-  } catch (err) {
-    console.error("加载收藏失败:", err);
-    return { indices7080: [] };
-  }
-}
-
-async function saveFavorite(item: Index7080Item): Promise<void> {
-  // 获取当前会话
-  const { data, error: sessionError } = await supabase.auth.getSession();
-
-  if (sessionError || !data?.session?.user?.id) {
-    throw new Error("用户未登录或会话无效");
-  }
-
-  const userId = data.session.user.id;
-
-  try {
-    const { error } = await supabase.from("favorites").upsert(
-      {
-        user_id: userId,
-        symbol: item.code,
-        name: item.name,
-      },
-      {
-        onConflict: "user_id,symbol",
-      }
-    );
-
-    if (error) {
-      console.error("Supabase 错误:", error);
-      throw error;
-    }
-  } catch (err) {
-    console.error("保存收藏失败:", err);
-    throw err;
-  }
-}
-
-async function deleteFavorite(symbol: string): Promise<void> {
-  // 获取当前会话
-  const { data, error: sessionError } = await supabase.auth.getSession();
-
-  if (sessionError || !data?.session?.user?.id) {
-    throw new Error("用户未登录或会话无效");
-  }
-
-  const userId = data.session.user.id;
-
-  try {
-    const { error } = await supabase
-      .from("favorites")
-      .delete()
-      .eq("user_id", userId)
-      .eq("symbol", symbol);
-
-    if (error) {
-      console.error("Supabase 错误:", error);
-      throw error;
-    }
-  } catch (err) {
-    console.error("删除收藏失败:", err);
-    throw err;
-  }
-}
-
-function ResultCard({
-  item,
-  metrics,
-  onFavorite,
-  isFav,
-  theme,
-}: {
-  item: Index7080Item;
-  metrics: { dropFromPeak: number; target70: number; distTo70: number };
-  onFavorite: () => void;
-  isFav: boolean;
-  theme: "light" | "dark";
-}) {
-  const { dropFromPeak, target70, distTo70 } = metrics;
   return (
     <div
-      className={`p-5 rounded-2xl border ${
-        theme === "dark"
-          ? "bg-slate-800 border-slate-700"
-          : "bg-white border-slate-200"
-      } shadow-sm relative overflow-hidden`}
+      className={`min-h-screen transition-colors duration-500 ${
+        isDarkMode ? "dark" : ""
+      } ${
+        isDarkMode
+          ? "bg-[#0F172A] text-[#E2E8F0]"
+          : "bg-[#F0F4F8] text-[#243B53]"
+      } font-sans selection:bg-blue-100 selection:text-blue-900`}
     >
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <h4 className="text-lg font-bold">
-            {item.name}{" "}
-            <span className="text-sm font-normal opacity-60">
-              ({item.code})
-            </span>
-          </h4>
-          <p className="text-2xl font-mono font-bold mt-1 text-blue-500">
-            {formatNum(item.current)}
-          </p>
-        </div>
-        <button
-          onClick={onFavorite}
-          className={`p-2 rounded-full ${
-            isFav ? "text-yellow-500" : "text-slate-400 hover:text-yellow-500"
-          }`}
-        >
-          <Star fill={isFav ? "currentColor" : "none"} size={24} />
-        </button>
-      </div>
-      <div className="space-y-4">
-        <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span>距离历史最高 ({formatNum(item.peak)})</span>
-            <span className="font-bold text-red-500">
-              已跌 {formatNum(dropFromPeak)}%
-            </span>
-          </div>
-          <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-red-500"
-              style={{ width: `${Math.min(100, dropFromPeak)}%` }}
-            />
-          </div>
-        </div>
-        <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span>距离跌幅 70% 底部 ({formatNum(target70)})</span>
-            <span className="font-bold text-green-500">
-              尚余 {formatNum(distTo70)}% 跌幅
-            </span>
-          </div>
-          <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-green-500"
-              style={{ width: `${Math.max(0, 100 - distTo70)}%` }}
-            />
-          </div>
-        </div>
-      </div>
-      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 text-[10px] opacity-50 flex justify-between">
-        <span>数据交易日: {item.tradingDate}</span>
-        <span>历史最高日期: {item.peakDate}</span>
-      </div>
-    </div>
-  );
-}
-
-export default function HomePage() {
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [favorites, setFavorites] = useState<FavoritesState>({
-    indices7080: [],
-  });
-  const [searchCode, setSearchCode] = useState("");
-  const [currentResult, setCurrentResult] = useState<Index7080Item | null>(
-    null
-  );
-  const [loading, setLoading] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-
-  // 加载用户收藏数据
-  useEffect(() => {
-    if (!isAuthenticated || !user?.id) {
-      setFavorites({ indices7080: [] });
-      return;
-    }
-
-    loadFavorites(user.id).then((data) => {
-      // 加载收藏后，需要获取每个收藏项的完整数据
-      const loadFullData = async () => {
-        const fullData = await Promise.all(
-          data.indices7080.map(async (item) => {
-            try {
-              const indexData = await fetchIndexDataFromAPI(item.code);
-              return {
-                ...item,
-                current: indexData.current,
-                peak: indexData.peak,
-                peakDate: indexData.peakDate,
-                tradingDate: indexData.tradingDate,
-              };
-            } catch {
-              return item;
-            }
-          })
-        );
-        setFavorites({ indices7080: fullData });
-      };
-
-      if (data.indices7080.length > 0) {
-        loadFullData();
-      } else {
-        setFavorites(data);
-      }
-    });
-  }, [isAuthenticated, user?.id]);
-
-  const fetchIndexData = async () => {
-    if (!searchCode || loading) return;
-    setLoading(true);
-    try {
-      const data = await fetchIndexDataFromAPI(searchCode);
-      const result: Index7080Item = {
-        name: data.name || searchCode,
-        code: searchCode,
-        current: data.current,
-        peak: data.peak,
-        peakDate: data.peakDate,
-        tradingDate: data.tradingDate,
-      };
-      setCurrentResult(result);
-    } catch (error) {
-      console.error("查询指数失败:", error);
-      alert("查询失败，请检查代码是否正确");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      fetchIndexData();
-    }
-  };
-
-  const handleFavorite = async (item: Index7080Item) => {
-    // 等待认证状态加载完成
-    if (authLoading) {
-      return;
-    }
-
-    // 检查是否登录
-    if (!isAuthenticated || !user?.id) {
-      setShowAuthModal(true);
-      return;
-    }
-
-    const list = favorites.indices7080 || [];
-    const exists = list.find((i) => i.code === item.code);
-
-    try {
-      if (exists) {
-        // 取消收藏
-        await deleteFavorite(item.code);
-        const newList = list.filter((i) => i.code !== item.code);
-        setFavorites({ indices7080: newList });
-      } else {
-        // 添加收藏
-        await saveFavorite(item);
-        setFavorites({ indices7080: [...list, item] });
-      }
-    } catch (error) {
-      console.error("收藏操作失败:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "操作失败，请重试";
-      alert(errorMessage);
-    }
-  };
-
-  const calculateMetrics = (curr: number, peak: number) => {
-    const dropFromPeak = ((peak - curr) / peak) * 100;
-    const target70 = peak * 0.3;
-    const distTo70 = ((curr - target70) / curr) * 100;
-    return { dropFromPeak, target70, distTo70 };
-  };
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
-  };
-
-  return (
-    <>
-      <TerminalLayout theme={theme} onToggleTheme={toggleTheme}>
-        <div className="space-y-6">
-          <section
-            className={`p-6 rounded-2xl ${
-              theme === "dark" ? "bg-slate-800" : "bg-white"
-            } shadow-sm border border-transparent dark:border-slate-700`}
+      {/* 导航栏 */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/70 dark:bg-[#0F172A]/70 backdrop-blur-md border-b border-blue-100/20 dark:border-white/5">
+        <div className="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto relative">
+          {/* 左侧：Logo - 衬线体定制 */}
+          <Link
+            href="/"
+            className="flex items-center space-x-2 cursor-pointer group"
           >
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <Search className="text-blue-500" /> 指数查询
-            </h2>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="输入指数代码 (如: 000300)"
-                className={`flex-1 p-3 rounded-lg border ${
-                  theme === "dark"
-                    ? "bg-slate-900 border-slate-700"
-                    : "bg-slate-50 border-slate-200"
-                } outline-none focus:ring-2 focus:ring-blue-500`}
-                value={searchCode}
-                onChange={(e) => setSearchCode(e.target.value)}
-                onKeyDown={handleKeyDown}
-                disabled={loading}
-              />
-              <button
-                onClick={fetchIndexData}
-                disabled={loading || !searchCode}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
-              >
-                {loading ? "查询中..." : "查询"}
-              </button>
+            <div className="w-8 h-8 bg-[#243B53] dark:bg-blue-400 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm">
+              <div className="w-2 h-2 bg-white dark:bg-[#0F172A] rounded-full animate-pulse"></div>
             </div>
-          </section>
+            <span className="text-2xl font-serif font-bold tracking-tight text-[#243B53] dark:text-blue-100 transition-colors">
+              Stillwell
+            </span>
+          </Link>
 
-          {currentResult && (
-            <ResultCard
-              item={currentResult}
-              metrics={calculateMetrics(
-                currentResult.current,
-                currentResult.peak
-              )}
-              onFavorite={() => handleFavorite(currentResult)}
-              isFav={favorites.indices7080?.some(
-                (i) => i.code === currentResult.code
-              )}
-              theme={theme}
-            />
-          )}
+          {/* 中间：菜单栏 */}
+          <div className="hidden md:flex items-center space-x-10">
+            {/* 工具宝库 Dropdown */}
+            <div
+              className="relative group py-2"
+              onMouseEnter={() => setHoveredMenu("tools")}
+              onMouseLeave={() => setHoveredMenu(null)}
+            >
+              <button className="flex items-center space-x-1 text-sm font-medium uppercase tracking-widest opacity-70 hover:opacity-100 transition-opacity">
+                <span>工具宝库</span>
+                <ChevronDown
+                  size={14}
+                  className={`transition-transform duration-300 ${
+                    hoveredMenu === "tools" ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
 
-          {favorites.indices7080?.length > 0 && (
-            <div className="mt-8">
-              <h3 className="text-lg font-bold mb-4">我的收藏</h3>
-              <div className="grid md:grid-cols-2 gap-4">
-                {favorites.indices7080.map((item) => (
-                  <ResultCard
-                    key={item.code}
-                    item={item}
-                    metrics={calculateMetrics(item.current, item.peak)}
-                    onFavorite={() => handleFavorite(item)}
-                    isFav
-                    theme={theme}
-                  />
-                ))}
+              {/* 工具下拉面板 */}
+              <div
+                className={`absolute top-full left-1/2 -translate-x-1/2 w-80 pt-4 transition-all duration-300 ${
+                  hoveredMenu === "tools"
+                    ? "opacity-100 visible translate-y-0"
+                    : "opacity-0 invisible -translate-y-2"
+                }`}
+              >
+                <div className="bg-white dark:bg-[#1E293B] rounded-2xl shadow-2xl shadow-blue-900/10 border border-blue-50 dark:border-white/5 p-4">
+                  <Link href="/grid">
+                    <div className="flex items-start space-x-4 p-3 rounded-xl hover:bg-blue-50 dark:hover:bg-white/5 transition-colors cursor-pointer group/item">
+                      <div className="w-10 h-10 bg-blue-100/50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg flex items-center justify-center shrink-0">
+                        <LayoutGrid size={20} />
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold mb-1 group-hover/item:text-blue-600 dark:group-hover/item:text-blue-300 transition-colors">
+                          网格交易
+                        </div>
+                        <div className="text-xs text-slate-400 leading-relaxed italic font-light">
+                          这是一个菜单描述，旨在帮助你在市场波动中寻找属于自己的节奏。
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                  <div className="mt-2 p-2 text-[10px] text-center text-slate-300 uppercase tracking-widest border-t border-blue-50/50 dark:border-white/5 pt-3 font-bold">
+                    更多工具 敬请期待
+                  </div>
+                </div>
               </div>
             </div>
-          )}
-        </div>
-      </TerminalLayout>
 
-      {/* 登录模态框 */}
-      <AuthModal
-        open={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        theme={theme}
+            {/* 投资指南 Dropdown */}
+            <div
+              className="relative group py-2"
+              onMouseEnter={() => setHoveredMenu("guide")}
+              onMouseLeave={() => setHoveredMenu(null)}
+            >
+              <button className="flex items-center space-x-1 text-sm font-medium uppercase tracking-widest opacity-70 hover:opacity-100 transition-opacity">
+                <span>投资指南</span>
+                <ChevronDown
+                  size={14}
+                  className={`transition-transform duration-300 ${
+                    hoveredMenu === "guide" ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {/* 指南下拉面板 */}
+              <div
+                className={`absolute top-full left-1/2 -translate-x-1/2 w-80 pt-4 transition-all duration-300 ${
+                  hoveredMenu === "guide"
+                    ? "opacity-100 visible translate-y-0"
+                    : "opacity-0 invisible -translate-y-2"
+                }`}
+              >
+                <div className="bg-white dark:bg-[#1E293B] rounded-2xl shadow-2xl shadow-blue-900/10 border border-blue-50 dark:border-white/5 p-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 dark:hover:bg-white/5 transition-colors cursor-pointer group/item">
+                      <Compass
+                        size={18}
+                        className="text-slate-400 group-hover/item:text-blue-600"
+                      />
+                      <span className="text-sm font-medium">新手入林指南</span>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 dark:hover:bg-white/5 transition-colors cursor-pointer group/item">
+                      <Wind
+                        size={18}
+                        className="text-slate-400 group-hover/item:text-blue-600"
+                      />
+                      <span className="text-sm font-medium">波动冥想手册</span>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 dark:hover:bg-white/5 transition-colors cursor-pointer group/item">
+                      <BookOpen
+                        size={18}
+                        className="text-slate-400 group-hover/item:text-blue-600"
+                      />
+                      <span className="text-sm font-medium">指数之书</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Link
+              href="#"
+              className="text-sm font-medium uppercase tracking-widest opacity-70 hover:opacity-100 transition-opacity"
+            >
+              关于我们
+            </Link>
+          </div>
+
+          {/* 右侧：功能按钮 */}
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="p-2 rounded-full hover:bg-blue-100 dark:hover:bg-white/10 transition-colors text-slate-500 dark:text-slate-400"
+              aria-label="Toggle Theme"
+            >
+              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+            <Link href="/7080">
+              <button className="flex items-center space-x-2 bg-[#243B53] dark:bg-blue-500 text-white px-6 py-2 rounded-full text-sm font-bold hover:scale-105 transition-all active:scale-95 shadow-lg shadow-blue-900/10">
+                <User size={16} />
+                <span>登录</span>
+              </button>
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <div className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
+        {/* 背景装饰：雾霾蓝动态背景 */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-blue-200/20 dark:bg-blue-900/10 rounded-full blur-[140px] -z-10"></div>
+        <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-slate-200/30 dark:bg-slate-800/20 rounded-full blur-[100px] -z-10"></div>
+
+        <header className="px-8 max-w-7xl mx-auto text-center relative z-10">
+          <h1 className="text-6xl md:text-8xl font-serif font-medium leading-[1.1] mb-10 tracking-tight">
+            Still in{" "}
+            <span className="italic font-light text-slate-400 dark:text-slate-500">
+              Volatility
+            </span>
+            ,<br />
+            Rich in{" "}
+            <span
+              className={`${
+                isDarkMode ? "text-blue-300" : "text-[#243B53]"
+              } font-semibold`}
+            >
+              Time
+            </span>
+            .
+          </h1>
+
+          <p className="max-w-3xl mx-auto text-lg md:text-2xl opacity-70 leading-relaxed mb-16 font-light">
+            市场的噪音是暂时的，复利的增长是永恒的。
+            <br className="hidden md:block" />
+            在这里，遇见让指数投资与内心安宁共生的栖息地。
+          </p>
+
+          <div className="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-8">
+            <Link href="/7080">
+              <button className="w-full md:w-auto bg-[#243B53] dark:bg-blue-500 text-white px-12 py-5 rounded-full text-lg flex items-center justify-center group font-bold shadow-xl shadow-blue-900/10 hover:-translate-y-1 transition-all">
+                开启你的旅程{" "}
+                <ArrowRight
+                  className="ml-2 group-hover:translate-x-1 transition-transform"
+                  size={20}
+                />
+              </button>
+            </Link>
+            <Link href="/grid">
+              <button className="w-full md:w-auto px-12 py-5 rounded-full text-lg border border-slate-300 dark:border-slate-700 opacity-60 hover:opacity-100 transition-all hover:bg-blue-50/50 dark:hover:bg-white/5">
+                探索投资指南
+              </button>
+            </Link>
+          </div>
+        </header>
+
+        {/* 极简页脚 */}
+        <div className="absolute bottom-10 left-0 right-0 text-center">
+          <p className="text-[10px] uppercase tracking-[0.3em] opacity-30 font-bold">
+            © 2024 Stillwell · 慢即是快，稳即是远。
+          </p>
+        </div>
+      </div>
+
+      {/* 字体引入与动效样式 */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&display=swap');
+
+        .font-serif {
+          font-family: 'Lora', serif;
+        }
+
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fade-in 1s ease-out forwards;
+        }
+        
+        ::-webkit-scrollbar {
+          width: 0px;
+          background: transparent;
+        }
+      `,
+        }}
       />
-    </>
+    </div>
   );
 }

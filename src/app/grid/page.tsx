@@ -7,15 +7,32 @@
  * 功能完全按照 Home.tsx 实现
  */
 
+import { AntdProvider } from "@/components/antd-provider";
 import { AuthModal } from "@/components/etf-terminal/auth-modal";
-import { TerminalLayout } from "@/components/etf-terminal/layout";
+import { BaseInfoConfig } from "@/components/grid/base-info-config";
+import { FundCoefficientConfig } from "@/components/grid/fund-coefficient-config";
+import { GridStepConfig } from "@/components/grid/grid-step-config";
+import { StrategyComparisonChart } from "@/components/grid/strategy-comparison-chart";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase-client";
-import { AlertCircle, HelpCircle, Save, X } from "lucide-react";
+import { message } from "antd";
+import {
+  AlertCircle,
+  BookOpen,
+  ChevronDown,
+  Compass,
+  HelpCircle,
+  Moon,
+  Save,
+  Sparkles,
+  Sun,
+  User,
+  Wind,
+  X,
+} from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-
 interface GridRow {
-  type: string;
   position: number;
   buyTriggerPrice: number;
   buyPrice: number;
@@ -25,6 +42,7 @@ interface GridRow {
   sellPrice: number;
   sellShares: number;
   sellAmount: number;
+  priceDropRate: number;
 }
 
 interface StressTest {
@@ -49,102 +67,12 @@ interface SavedScheme {
     smallGridStep: number;
     mediumGridStep: number;
     largeGridStep: number;
-    positionMultiplier: number;
     amountMultiplier: number;
     profitReserveMultiplier: number;
   };
   gridData: GridRow[];
   stressTest: StressTest;
 }
-
-const PRESET_SCHEMES = {
-  conservative: {
-    name: "保守型（低风险）",
-    params: {
-      minTradeUnit: 100,
-      basePrice: 1.0,
-      amountPerGrid: 10000,
-      minPrice: 0.7,
-      smallGridStep: 3.0,
-      mediumGridStep: 8.0,
-      largeGridStep: 15.0,
-      positionMultiplier: 1.0,
-      amountMultiplier: 1.0,
-      profitReserveMultiplier: 1.0,
-    },
-  },
-  balanced: {
-    name: "平衡型（中风险）",
-    params: {
-      minTradeUnit: 100,
-      basePrice: 1.0,
-      amountPerGrid: 10000,
-      minPrice: 0.5,
-      smallGridStep: 5.0,
-      mediumGridStep: 15.0,
-      largeGridStep: 30.0,
-      positionMultiplier: 1.0,
-      amountMultiplier: 1.0,
-      profitReserveMultiplier: 1.0,
-    },
-  },
-  aggressive: {
-    name: "激进型（高风险）",
-    params: {
-      minTradeUnit: 100,
-      basePrice: 1.0,
-      amountPerGrid: 10000,
-      minPrice: 0.3,
-      smallGridStep: 8.0,
-      mediumGridStep: 20.0,
-      largeGridStep: 40.0,
-      positionMultiplier: 1.0,
-      amountMultiplier: 1.0,
-      profitReserveMultiplier: 1.0,
-    },
-  },
-};
-
-const PARAM_FIELDS = [
-  { key: "minTradeUnit", label: "最小交易单位", tooltip: "单次交易的最小股数" },
-  { key: "basePrice", label: "基准价", tooltip: "网格交易的起始价格" },
-  { key: "minPrice", label: "最低价", tooltip: "网格交易的最低价格限制" },
-  {
-    key: "amountPerGrid",
-    label: "每份金额",
-    tooltip: "每个网格档位的投资金额",
-  },
-  {
-    key: "smallGridStep",
-    label: "小网步长 (%)",
-    tooltip: "小网格的价格间隔百分比",
-  },
-  {
-    key: "mediumGridStep",
-    label: "中网步长 (%)",
-    tooltip: "中网格的价格间隔百分比",
-  },
-  {
-    key: "largeGridStep",
-    label: "大网步长 (%)",
-    tooltip: "大网格的价格间隔百分比",
-  },
-  {
-    key: "positionMultiplier",
-    label: "档位加码系数",
-    tooltip: "控制卖出股数随档位增加的倍数",
-  },
-  {
-    key: "amountMultiplier",
-    label: "金额加码系数",
-    tooltip: "控制买入金额随档位增加的倍数",
-  },
-  {
-    key: "profitReserveMultiplier",
-    label: "保留利润系数",
-    tooltip: "控制卖出价相对于卖出触发价的利润幅度",
-  },
-];
 
 // 加载用户保存的方案
 async function loadUserSchemes(userId: string): Promise<SavedScheme[]> {
@@ -171,30 +99,68 @@ async function loadUserSchemes(userId: string): Promise<SavedScheme[]> {
         small_grid_step: number;
         medium_grid_step: number;
         large_grid_step: number;
-        position_multiplier: number;
         amount_multiplier: number;
         profit_reserve_multiplier: number;
-        grid_data: GridRow[];
+        grid_data: Array<{
+          position: number;
+          buyTriggerPrice: number;
+          buyPrice: number;
+          buyAmount: number;
+          buyShares: number;
+          sellTriggerPrice: number;
+          sellPrice: number;
+          sellShares: number;
+          sellAmount: number;
+          priceDropRate?: number;
+          expectedProfit?: number; // 兼容旧数据
+          type?: string; // 兼容旧数据
+        }>;
         stress_test: StressTest;
-      }) => ({
-        id: item.id,
-        name: item.name,
-        timestamp: new Date(item.created_at).getTime(),
-        params: {
-          minTradeUnit: item.min_trade_unit,
-          basePrice: item.base_price,
-          amountPerGrid: item.amount_per_grid,
-          minPrice: item.min_price,
-          smallGridStep: item.small_grid_step,
-          mediumGridStep: item.medium_grid_step,
-          largeGridStep: item.large_grid_step,
-          positionMultiplier: item.position_multiplier,
-          amountMultiplier: item.amount_multiplier,
-          profitReserveMultiplier: item.profit_reserve_multiplier,
-        },
-        gridData: item.grid_data || [],
-        stressTest: item.stress_test || null,
-      })
+      }) => {
+        // 转换旧格式数据，计算跌幅
+        const gridData: GridRow[] = (item.grid_data || []).map((row, index) => {
+          // 如果有 priceDropRate 就用，否则计算
+          let priceDropRate = row.priceDropRate ?? 0;
+          if (priceDropRate === 0 && index > 0 && item.grid_data[index - 1]) {
+            const prevBuyPrice = item.grid_data[index - 1].buyPrice;
+            priceDropRate = parseFloat(
+              (((row.buyPrice - prevBuyPrice) / prevBuyPrice) * 100).toFixed(2)
+            );
+          }
+
+          return {
+            position: row.position,
+            buyTriggerPrice: row.buyTriggerPrice,
+            buyPrice: row.buyPrice,
+            buyAmount: row.buyAmount,
+            buyShares: row.buyShares,
+            sellTriggerPrice: row.sellTriggerPrice,
+            sellPrice: row.sellPrice,
+            sellShares: row.sellShares,
+            sellAmount: row.sellAmount,
+            priceDropRate,
+          };
+        });
+
+        return {
+          id: item.id,
+          name: item.name,
+          timestamp: new Date(item.created_at).getTime(),
+          params: {
+            minTradeUnit: item.min_trade_unit,
+            basePrice: item.base_price,
+            amountPerGrid: item.amount_per_grid,
+            minPrice: item.min_price,
+            smallGridStep: item.small_grid_step,
+            mediumGridStep: item.medium_grid_step,
+            largeGridStep: item.large_grid_step,
+            amountMultiplier: item.amount_multiplier,
+            profitReserveMultiplier: item.profit_reserve_multiplier,
+          },
+          gridData,
+          stressTest: item.stress_test || null,
+        };
+      }
     );
   } catch (error) {
     console.error("加载方案失败:", error);
@@ -217,7 +183,6 @@ async function saveSchemeToSupabase(
     small_grid_step: scheme.params.smallGridStep,
     medium_grid_step: scheme.params.mediumGridStep,
     large_grid_step: scheme.params.largeGridStep,
-    position_multiplier: scheme.params.positionMultiplier,
     amount_multiplier: scheme.params.amountMultiplier,
     profit_reserve_multiplier: scheme.params.profitReserveMultiplier,
     grid_data: scheme.gridData,
@@ -230,18 +195,25 @@ async function saveSchemeToSupabase(
 export default function GridPage() {
   const { user, isAuthenticated } = useAuth();
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
   const [params, setParams] = useState({
     minTradeUnit: 100,
+    priceUnit: 0.001,
     basePrice: 1.0,
     amountPerGrid: 10000,
     minPrice: 0.5,
     smallGridStep: 5.0,
     mediumGridStep: 15.0,
     largeGridStep: 30.0,
-    positionMultiplier: 1.0,
     amountMultiplier: 1.0,
     profitReserveMultiplier: 1.0,
   });
+
+  // 动态网格步长状态
+  const [dynamicGridEnabled, setDynamicGridEnabled] = useState(false);
+  const [dynamicGridMode, setDynamicGridMode] = useState<
+    "stable" | "aggressive"
+  >("stable");
 
   const [gridData, setGridData] = useState<GridRow[]>([]);
   const [stressTest, setStressTest] = useState<StressTest | null>(null);
@@ -250,10 +222,6 @@ export default function GridPage() {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [schemeName, setSchemeName] = useState("");
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [message, setMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
 
   // 初始化：加载本地存储的方案
   useEffect(() => {
@@ -309,12 +277,8 @@ export default function GridPage() {
     ) {
       newErrors.push("步长不能超过100%");
     }
-    if (
-      params.positionMultiplier <= 0 ||
-      params.amountMultiplier <= 0 ||
-      params.profitReserveMultiplier <= 0
-    ) {
-      newErrors.push("系数必须大于0");
+    if (params.amountMultiplier < 0 || params.profitReserveMultiplier < 0) {
+      newErrors.push("系数不能小于0");
     }
 
     return { isValid: newErrors.length === 0, errors: newErrors };
@@ -330,14 +294,18 @@ export default function GridPage() {
     setErrors(validationErrors);
   }, [validationErrors]);
 
-  // 辅助函数
-  const roundToMinUnit = (price: number): number => {
-    const minUnit = 0.001;
-    return Math.round(price / minUnit) * minUnit;
-  };
+  // 计算价格显示的小数位数
+  const priceDecimals = useMemo(() => {
+    const unit = params.priceUnit;
+    if (unit >= 1) return 0;
+    if (unit >= 0.1) return 1;
+    if (unit >= 0.01) return 2;
+    if (unit >= 0.001) return 3;
+    return 4;
+  }, [params.priceUnit]);
 
-  // 计算网格
-  const calculationResult = useMemo(() => {
+  // 计算网格（改为普通函数，不再自动计算）
+  const calculateGrid = useCallback(() => {
     const validation = validateParams();
     if (!validation.isValid) {
       return { gridData: [], stressTest: null };
@@ -349,200 +317,132 @@ export default function GridPage() {
       amountPerGrid,
       minPrice,
       smallGridStep,
-      mediumGridStep,
-      largeGridStep,
-      positionMultiplier,
       amountMultiplier,
       profitReserveMultiplier,
     } = params;
 
     const grids: GridRow[] = [];
-    let globalPosition = 1;
-    let firstBuyPrice = basePrice; // 记录第一网的买入价（基准价）
 
-    // 生成小网格
-    let currentPrice = basePrice;
-    let smallGridPosition = 1;
-    const smallGridCount = 7;
+    // 辅助函数：根据档位计算金额加码
+    const calculateBuyAmount = (档位: number) => {
+      // 金额加码系数：逐级增加买入金额
+      // 公式：每份金额 + 每份金额 × 系数 × (1 - 当前档位)
+      // 等价于：每份金额 × (1 + 系数 × (1 - 当前档位))
+      // 例如：每份金额10000，系数1，档位0.9 → 10000 + 10000×1×(1-0.9) = 11000
+      return amountPerGrid * (1 + amountMultiplier * (1 - 档位));
+    };
 
-    while (smallGridPosition <= smallGridCount && currentPrice > minPrice) {
-      const stepPercent = smallGridStep / 100;
-      const buyTriggerPrice = roundToMinUnit(currentPrice);
-      const buyPrice = roundToMinUnit(currentPrice * (1 - stepPercent / 2));
+    // 辅助函数：计算卖出股数（保留利润逻辑）
+    const calculateSellShares = (buyShares: number, stepPercent: number) => {
+      // 保留利润系数：控制卖出时是否保留利润
+      // 0 = 不保留利润（全部卖出）
+      // 0.5 = 保留一半利润
+      // 1 = 保留全部利润（只卖回本）
+      // 2 = 保留两倍利润
+      // 公式：出股数 = 入股数 × (1 - 步长% × 保留利润系数)
+      const targetSellShares =
+        buyShares * (1 - stepPercent * profitReserveMultiplier);
 
-      // 记录第一网的买入价作为基准价
-      if (smallGridPosition === 1) {
-        firstBuyPrice = buyPrice;
+      // 取整到最小交易单位
+      return Math.floor(targetSellShares / minTradeUnit) * minTradeUnit;
+    };
+
+    // 动态步长计算逻辑
+    let currentBuyPrice = basePrice;
+    let previousBuyPrice = basePrice; // 上一档的买入价，用于计算跌幅和卖出价
+    let currentStep = smallGridStep / 100; // 基础步长（转为小数）
+    const scale = dynamicGridEnabled
+      ? dynamicGridMode === "stable"
+        ? 0.3
+        : 0.6
+      : 0; // 步长增长系数
+    const maxGrids = 10; // 最大网格数
+
+    // 生成网格（统一处理）
+    for (let i = 0; i < maxGrids; i++) {
+      // 第1档：买入价 = 基准价
+      // 第2档及以后：买入价 = 上一档买入价 × (1 - 当前步长)
+      let buyPrice: number;
+      if (i === 0) {
+        buyPrice = basePrice;
+      } else {
+        // 先计算精确的买入价，保留3位小数
+        buyPrice = parseFloat((currentBuyPrice * (1 - currentStep)).toFixed(3));
       }
 
-      // 金额加码系数：每份金额 + 每份金额 * 系数 * (1 - 当前档位)
-      // 当前档位 = currentPrice / basePrice
-      const currentLevel = currentPrice / basePrice;
-      const buyAmount =
-        amountPerGrid + amountPerGrid * amountMultiplier * (1 - currentLevel);
+      if (buyPrice <= minPrice) break;
 
+      // 档位按步长严格递减，保留2位小数
+      // 档位 = 1 - (步长累计)
+      const position = parseFloat((buyPrice / basePrice).toFixed(2));
+
+      // 买入金额：根据档位计算（价格越低买的越多）
+      const buyAmount = calculateBuyAmount(position);
+
+      // 买入股数：必须是最小交易单位的整数倍
       const buyShares =
         Math.floor(buyAmount / buyPrice / minTradeUnit) * minTradeUnit;
-      const sellTriggerPrice = roundToMinUnit(
-        currentPrice * (1 + stepPercent / 2)
-      );
 
-      // 保留利润系数：每份金额 + 每份金额 * 系数 * (1 - 当前档位)
-      // 用于计算卖出价的利润幅度
-      const profitAmount =
-        amountPerGrid +
-        amountPerGrid * profitReserveMultiplier * (1 - currentLevel);
-      const profitRate = profitAmount / amountPerGrid;
-      const sellPrice = roundToMinUnit(
-        sellTriggerPrice * (1 + (stepPercent / 2) * profitRate)
-      );
+      // 实际买入金额
+      const actualBuyAmount = buyShares * buyPrice;
 
-      const sellShares =
-        Math.floor(
-          buyShares /
-            Math.pow(positionMultiplier, globalPosition - 1) /
-            minTradeUnit
-        ) * minTradeUnit;
+      // 卖出价计算
+      // 第一档：卖出价 = 基准价 × (1 + 当前步长)，保留3位小数
+      // 后续档：卖出价 = 上一档的买入价
+      const sellPrice =
+        i === 0
+          ? parseFloat((basePrice * (1 + currentStep)).toFixed(3))
+          : previousBuyPrice;
+
+      // 买入/卖出触发价（滑点 = 5 × 最小报价单位），保留3位小数
+      const slippage = params.priceUnit * 5;
+      const buyTriggerPrice = parseFloat((buyPrice + slippage).toFixed(3));
+      const sellTriggerPrice = parseFloat((sellPrice - slippage).toFixed(3));
+
+      // 卖出股数：根据保留利润系数计算
+      const sellShares = calculateSellShares(buyShares, currentStep);
+
       const sellAmount = sellShares * sellPrice;
 
-      // 档位 = 当前买入价 / 基准价（第一网的买入价），第一网固定为1.0
-      const position =
-        smallGridPosition === 1
-          ? 1.0
-          : parseFloat((buyPrice / firstBuyPrice).toFixed(2));
+      // 跌幅 = (本档位的买入价 - 上一档位的买入价) / 上一档位的买入价
+      // 第一档跌幅为 0
+      const priceDropRate =
+        i === 0
+          ? 0
+          : parseFloat(
+              (
+                ((buyPrice - previousBuyPrice) / previousBuyPrice) *
+                100
+              ).toFixed(2)
+            );
 
       grids.push({
-        type: "小网",
         position,
-        buyTriggerPrice: parseFloat(buyTriggerPrice.toFixed(3)),
-        buyPrice: parseFloat(buyPrice.toFixed(3)),
-        buyAmount: Math.round(buyAmount),
+        buyTriggerPrice,
+        buyPrice,
+        buyAmount: Math.round(actualBuyAmount),
         buyShares,
-        sellTriggerPrice: parseFloat(sellTriggerPrice.toFixed(3)),
-        sellPrice: parseFloat(sellPrice.toFixed(3)),
+        sellTriggerPrice,
+        sellPrice,
         sellShares,
         sellAmount: Math.round(sellAmount),
+        priceDropRate,
       });
 
-      currentPrice = currentPrice * (1 - stepPercent);
-      smallGridPosition++;
-      globalPosition++;
-    }
+      // 更新：当前买入价成为下一档的"上一档买入价"
+      previousBuyPrice = buyPrice;
+      currentBuyPrice = buyPrice;
 
-    // 生成中网格
-    let mediumGridPosition = 1;
-    const mediumGridCount = 2;
-
-    while (mediumGridPosition <= mediumGridCount && currentPrice > minPrice) {
-      const stepPercent = mediumGridStep / 100;
-      const buyTriggerPrice = roundToMinUnit(currentPrice);
-      const buyPrice = roundToMinUnit(currentPrice * (1 - stepPercent / 2));
-
-      // 金额加码系数：每份金额 + 每份金额 * 系数 * (1 - 当前档位)
-      const currentLevel = currentPrice / basePrice;
-      const buyAmount =
-        amountPerGrid + amountPerGrid * amountMultiplier * (1 - currentLevel);
-
-      const buyShares =
-        Math.floor(buyAmount / buyPrice / minTradeUnit) * minTradeUnit;
-      const sellTriggerPrice = roundToMinUnit(
-        currentPrice * (1 + stepPercent / 2)
-      );
-
-      // 保留利润系数：每份金额 + 每份金额 * 系数 * (1 - 当前档位)
-      const profitAmount =
-        amountPerGrid +
-        amountPerGrid * profitReserveMultiplier * (1 - currentLevel);
-      const profitRate = profitAmount / amountPerGrid;
-      const sellPrice = roundToMinUnit(
-        sellTriggerPrice * (1 + (stepPercent / 2) * profitRate)
-      );
-
-      const sellShares =
-        Math.floor(
-          buyShares /
-            Math.pow(positionMultiplier, globalPosition - 1) /
-            minTradeUnit
-        ) * minTradeUnit;
-      const sellAmount = sellShares * sellPrice;
-
-      // 档位 = 当前买入价 / 基准价（第一网的买入价）
-      const position = parseFloat((buyPrice / firstBuyPrice).toFixed(2));
-
-      grids.push({
-        type: "中网",
-        position,
-        buyTriggerPrice: parseFloat(buyTriggerPrice.toFixed(3)),
-        buyPrice: parseFloat(buyPrice.toFixed(3)),
-        buyAmount: Math.round(buyAmount),
-        buyShares,
-        sellTriggerPrice: parseFloat(sellTriggerPrice.toFixed(3)),
-        sellPrice: parseFloat(sellPrice.toFixed(3)),
-        sellShares,
-        sellAmount: Math.round(sellAmount),
-      });
-
-      currentPrice = currentPrice * (1 - stepPercent);
-      mediumGridPosition++;
-      globalPosition++;
-    }
-
-    // 生成大网格
-    let largeGridPosition = 1;
-    const largeGridCount = 1;
-
-    while (largeGridPosition <= largeGridCount && currentPrice > minPrice) {
-      const stepPercent = largeGridStep / 100;
-      const buyTriggerPrice = roundToMinUnit(currentPrice);
-      const buyPrice = roundToMinUnit(currentPrice * (1 - stepPercent / 2));
-
-      // 金额加码系数：每份金额 + 每份金额 * 系数 * (1 - 当前档位)
-      const currentLevel = currentPrice / basePrice;
-      const buyAmount =
-        amountPerGrid + amountPerGrid * amountMultiplier * (1 - currentLevel);
-
-      const buyShares =
-        Math.floor(buyAmount / buyPrice / minTradeUnit) * minTradeUnit;
-      const sellTriggerPrice = roundToMinUnit(
-        currentPrice * (1 + stepPercent / 2)
-      );
-
-      // 保留利润系数：每份金额 + 每份金额 * 系数 * (1 - 当前档位)
-      const profitAmount =
-        amountPerGrid +
-        amountPerGrid * profitReserveMultiplier * (1 - currentLevel);
-      const profitRate = profitAmount / amountPerGrid;
-      const sellPrice = roundToMinUnit(
-        sellTriggerPrice * (1 + (stepPercent / 2) * profitRate)
-      );
-
-      const sellShares =
-        Math.floor(
-          buyShares /
-            Math.pow(positionMultiplier, globalPosition - 1) /
-            minTradeUnit
-        ) * minTradeUnit;
-      const sellAmount = sellShares * sellPrice;
-
-      // 档位 = 当前买入价 / 基准价（第一网的买入价）
-      const position = parseFloat((buyPrice / firstBuyPrice).toFixed(2));
-
-      grids.push({
-        type: "大网",
-        position,
-        buyTriggerPrice: parseFloat(buyTriggerPrice.toFixed(3)),
-        buyPrice: parseFloat(buyPrice.toFixed(3)),
-        buyAmount: Math.round(buyAmount),
-        buyShares,
-        sellTriggerPrice: parseFloat(sellTriggerPrice.toFixed(3)),
-        sellPrice: parseFloat(sellPrice.toFixed(3)),
-        sellShares,
-        sellAmount: Math.round(sellAmount),
-      });
-
-      currentPrice = currentPrice * (1 - stepPercent);
-      largeGridPosition++;
-      globalPosition++;
+      // 动态步长更新逻辑
+      // 第1档到第2档：使用基础步长
+      // 第2档之后（i >= 1）：步长按指数倍率加速扩张
+      if (i >= 1 && dynamicGridEnabled) {
+        // Step_n = Step_{n-1} × (1 + Scale)
+        currentStep = currentStep * (1 + scale);
+      } else if (!dynamicGridEnabled) {
+        // 固定步长模式：始终使用基础步长
+        currentStep = smallGridStep / 100;
+      }
     }
 
     // 计算压力测试
@@ -551,7 +451,12 @@ export default function GridPage() {
     const totalSellAmount = grids.reduce((sum, row) => sum + row.sellAmount, 0);
     const totalSellShares = grids.reduce((sum, row) => sum + row.sellShares, 0);
     const remainingShares = totalBuyShares - totalSellShares;
-    const profit = totalSellAmount - totalBuyAmount;
+
+    // 预期利润 = 卖出金额 - 买入金额 + 剩余股数 * 基准价
+    const profit =
+      totalSellAmount - totalBuyAmount + remainingShares * basePrice;
+
+    // 收益率 = 利润 / 买入金额 * 100
     const profitRate = totalBuyAmount > 0 ? (profit / totalBuyAmount) * 100 : 0;
 
     const stressTestResult: StressTest = {
@@ -565,39 +470,22 @@ export default function GridPage() {
     };
 
     return { gridData: grids, stressTest: stressTestResult };
-  }, [params, validateParams]);
-
-  // 更新结果
-  useEffect(() => {
-    setGridData(calculationResult.gridData);
-    setStressTest(calculationResult.stressTest);
-  }, [calculationResult]);
+  }, [params, validateParams, dynamicGridEnabled, dynamicGridMode]);
 
   // 更新参数
-  const updateParam = (key: string, value: number) => {
+  const updateParam = (key: string, value: number | null) => {
+    if (value === null) return; // 当值为 null 时，保持当前值不变
     setParams({ ...params, [key]: value });
-  };
-
-  // 应用预设
-  const applyPreset = (presetKey: string) => {
-    const preset = PRESET_SCHEMES[presetKey as keyof typeof PRESET_SCHEMES];
-    if (preset) {
-      setParams(preset.params);
-      setMessage({ type: "success", text: `已应用${preset.name}预设` });
-      setTimeout(() => setMessage(null), 3000);
-    }
   };
 
   // 保存方案
   const saveScheme = async () => {
     if (!schemeName.trim()) {
-      setMessage({ type: "error", text: "请输入方案名称" });
-      setTimeout(() => setMessage(null), 3000);
+      message.error("请输入方案名称");
       return;
     }
     if (gridData.length === 0 || !stressTest) {
-      setMessage({ type: "error", text: "请先生成网格" });
-      setTimeout(() => setMessage(null), 3000);
+      message.error("请先生成网格");
       return;
     }
 
@@ -616,20 +504,17 @@ export default function GridPage() {
         await saveSchemeToSupabase(user.id, newScheme);
         const updated = await loadUserSchemes(user.id);
         setSavedSchemes(updated);
-        setMessage({ type: "success", text: "方案已保存" });
-        setTimeout(() => setMessage(null), 3000);
+        message.success("方案已保存");
       } catch (error) {
         console.error("保存失败:", error);
-        setMessage({ type: "error", text: "保存失败，请重试" });
-        setTimeout(() => setMessage(null), 3000);
+        message.error("保存失败，请重试");
       }
     } else {
       // 未登录，保存到本地存储
       const updated = [...savedSchemes, newScheme];
       setSavedSchemes(updated);
       localStorage.setItem("gridTradingSchemes", JSON.stringify(updated));
-      setMessage({ type: "success", text: "方案已保存到本地" });
-      setTimeout(() => setMessage(null), 3000);
+      message.success("方案已保存到本地");
     }
 
     setSchemeName("");
@@ -641,42 +526,142 @@ export default function GridPage() {
   };
 
   return (
-    <>
-      <TerminalLayout theme={theme} onToggleTheme={toggleTheme}>
-        <div className="py-8 space-y-8 max-w-[1400px] mx-auto">
-          {/* 页面标题 */}
-          <header className="text-center space-y-3">
-            <h1 className="text-3xl font-medium tracking-wide text-slate-800 dark:text-slate-100">
-              网格交易计算器
-            </h1>
-            <p className="text-slate-600 dark:text-slate-400 font-light text-sm">
-              专业的网格交易策略计算工具，支持小网、中网、大网三种网格类型
-            </p>
-          </header>
+    <AntdProvider>
+      <div
+        className={`min-h-screen transition-colors duration-500 ${
+          theme === "dark"
+            ? "bg-[#0F172A] text-[#E2E8F0]"
+            : "bg-[#F0F4F8] text-[#243B53]"
+        }`}
+      >
+        {/* 背景装饰：雾霾蓝动态背景 */}
+        <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-blue-200/20 dark:bg-blue-900/10 rounded-full blur-[140px]"></div>
+          <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-slate-200/30 dark:bg-slate-800/20 rounded-full blur-[100px]"></div>
+        </div>
 
-          {/* 消息提示 */}
-          {message && (
-            <div
-              className={`p-4 rounded-lg border ${
-                message.type === "success"
-                  ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400"
-                  : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400"
-              }`}
-            >
-              {message.text}
+        {/* 自定义导航栏 */}
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-white/70 dark:bg-[#0F172A]/70 backdrop-blur-md border-b border-blue-100/20 dark:border-white/5">
+          <div className="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto relative">
+            {/* 左侧：Logo - 衬线体定制 */}
+            <div className="flex items-center space-x-2 group">
+              <Link href="/" className="flex items-center space-x-2 cursor-pointer">
+                <div className="w-8 h-8 bg-[#243B53] dark:bg-blue-400 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm">
+                  <div className="w-2 h-2 bg-white dark:bg-[#0F172A] rounded-full animate-pulse"></div>
+                </div>
+                <span className="text-2xl font-serif font-bold tracking-tight text-[#243B53] dark:text-blue-100 transition-colors">
+                  <span className="hover:text-blue-600 dark:hover:text-blue-300 transition-colors cursor-pointer">
+                    Stillwell
+                  </span>
+                  <span className="opacity-70">.grid</span>
+                </span>
+              </Link>
             </div>
-          )}
+
+            {/* 中间：菜单栏 - 只保留投资指南 */}
+            <div className="hidden md:flex items-center space-x-10">
+              {/* 投资指南 Dropdown */}
+              <div
+                className="relative group py-2"
+                onMouseEnter={() => setHoveredMenu("guide")}
+                onMouseLeave={() => setHoveredMenu(null)}
+              >
+                <button className="flex items-center space-x-1 text-sm font-medium uppercase tracking-widest opacity-70 hover:opacity-100 transition-opacity">
+                  <span>投资指南</span>
+                  <ChevronDown
+                    size={14}
+                    className={`transition-transform duration-300 ${
+                      hoveredMenu === "guide" ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {/* 指南下拉面板 */}
+                <div
+                  className={`absolute top-full left-1/2 -translate-x-1/2 w-80 pt-4 transition-all duration-300 ${
+                    hoveredMenu === "guide"
+                      ? "opacity-100 visible translate-y-0"
+                      : "opacity-0 invisible -translate-y-2"
+                  }`}
+                >
+                  <div className="bg-white dark:bg-[#1E293B] rounded-2xl shadow-2xl shadow-blue-900/10 border border-blue-50 dark:border-white/5 p-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 dark:hover:bg-white/5 transition-colors cursor-pointer group/item">
+                        <Compass
+                          size={18}
+                          className="text-slate-400 group-hover/item:text-blue-600"
+                        />
+                        <span className="text-sm font-medium">新手入林指南</span>
+                      </div>
+                      <div className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 dark:hover:bg-white/5 transition-colors cursor-pointer group/item">
+                        <Wind
+                          size={18}
+                          className="text-slate-400 group-hover/item:text-blue-600"
+                        />
+                        <span className="text-sm font-medium">波动冥想手册</span>
+                      </div>
+                      <div className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 dark:hover:bg-white/5 transition-colors cursor-pointer group/item">
+                        <BookOpen
+                          size={18}
+                          className="text-slate-400 group-hover/item:text-blue-600"
+                        />
+                        <span className="text-sm font-medium">指数之书</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 右侧：功能按钮 */}
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-full hover:bg-blue-100 dark:hover:bg-white/10 transition-colors text-slate-500 dark:text-slate-400"
+                aria-label="Toggle Theme"
+              >
+                {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+              </button>
+              {isAuthenticated ? (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#243B53] dark:bg-blue-500 text-white text-sm font-bold">
+                  <User size={16} />
+                  <span>{user?.email?.split("@")[0] || "用户"}</span>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className="flex items-center space-x-2 bg-[#243B53] dark:bg-blue-500 text-white px-6 py-2 rounded-full text-sm font-bold hover:scale-105 transition-all active:scale-95 shadow-lg shadow-blue-900/10"
+                >
+                  <User size={16} />
+                  <span>登录</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </nav>
+
+        <div className="pt-20">
+          <div className="py-8 space-y-8 max-w-[1400px] mx-auto px-4">
+            {/* 页面标题 */}
+            <div className="text-center mb-8">
+              <h1 className="text-4xl md:text-5xl font-serif font-medium leading-tight mb-3 tracking-tight">
+                网格交易策略
+              </h1>
+              <p className="text-lg opacity-70 leading-relaxed font-light max-w-2xl mx-auto">
+                在市场波动中寻找属于自己的节奏，通过科学的网格策略实现稳健收益
+              </p>
+            </div>
 
           {/* 错误提示 */}
           {errors.length > 0 && (
-            <div className="p-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+              <div className="p-5 rounded-2xl border border-red-200/50 dark:border-red-800/50 bg-red-50/80 dark:bg-red-900/20 backdrop-blur-sm shadow-lg">
               <div className="flex items-center gap-2 mb-2">
-                <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-                <span className="font-medium text-red-800 dark:text-red-200">
+                  <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                  <span className="font-semibold text-red-800 dark:text-red-200">
                   参数错误
                 </span>
               </div>
-              <ul className="list-disc list-inside text-sm text-red-700 dark:text-red-300">
+                <ul className="list-disc list-inside text-sm text-red-700 dark:text-red-300 space-y-1">
                 {errors.map((error, i) => (
                   <li key={i}>{error}</li>
                 ))}
@@ -684,239 +669,341 @@ export default function GridPage() {
             </div>
           )}
 
-          {/* 卡片网格布局 */}
-          <div className="grid grid-cols-5 gap-4 auto-rows-max">
-            {/* 快速预设卡片 - 跨越全宽 */}
-            <div className="col-span-5">
-              <div className="p-6 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm bg-gradient-to-br from-indigo-50/50 to-transparent dark:from-indigo-900/10">
-                <h3 className="text-lg font-semibold mb-4 text-slate-800 dark:text-slate-100">
-                  快速预设
-                </h3>
-                <div className="flex gap-3">
+          {/* 左右布局 */}
+          <div className="grid grid-cols-12 gap-6">
+            {/* 左侧：参数配置 */}
+            <div className="col-span-12 lg:col-span-4">
+              <div className="rounded-2xl border border-blue-50/50 dark:border-white/5 bg-white/70 dark:bg-[#1E293B]/70 backdrop-blur-md shadow-2xl shadow-blue-900/10 overflow-hidden">
+                {/* 基本信息 */}
+                <div className="bg-blue-50/50 dark:bg-blue-900/10">
+                  <BaseInfoConfig
+                    minTradeUnit={params.minTradeUnit}
+                    onMinTradeUnitChange={(value) =>
+                      updateParam("minTradeUnit", value)
+                    }
+                    priceUnit={params.priceUnit}
+                    onPriceUnitChange={(value) =>
+                      updateParam("priceUnit", value)
+                    }
+                    basePrice={params.basePrice}
+                    onBasePriceChange={(value) =>
+                      updateParam("basePrice", value)
+                    }
+                    minPrice={params.minPrice}
+                    onMinPriceChange={(value) => updateParam("minPrice", value)}
+                    theme={theme}
+                  />
+                </div>
+
+                {/* 分隔线 */}
+                <div className="h-px bg-gradient-to-r from-transparent via-blue-100/50 dark:via-white/5 to-transparent" />
+
+                {/* 资金系数 */}
+                <div className="bg-purple-50/50 dark:bg-purple-900/10">
+                  <FundCoefficientConfig
+                    amountPerGrid={params.amountPerGrid}
+                    onAmountPerGridChange={(value) =>
+                      updateParam("amountPerGrid", value)
+                    }
+                    amountMultiplier={params.amountMultiplier}
+                    onAmountMultiplierChange={(value) =>
+                      updateParam("amountMultiplier", value)
+                    }
+                    profitReserveMultiplier={params.profitReserveMultiplier}
+                    onProfitReserveMultiplierChange={(value) =>
+                      updateParam("profitReserveMultiplier", value)
+                    }
+                    theme={theme}
+                  />
+                </div>
+
+                {/* 分隔线 */}
+                <div className="h-px bg-gradient-to-r from-transparent via-blue-100/50 dark:via-white/5 to-transparent" />
+
+                {/* 网格步长 */}
+                <div className="bg-indigo-50/50 dark:bg-indigo-900/10 p-6">
+                  <GridStepConfig
+                    baseStep={params.smallGridStep}
+                    onBaseStepChange={(value) =>
+                      updateParam("smallGridStep", value)
+                    }
+                    dynamicEnabled={dynamicGridEnabled}
+                    onDynamicEnabledChange={setDynamicGridEnabled}
+                    mode={dynamicGridMode}
+                    onModeChange={setDynamicGridMode}
+                    theme={theme}
+                  />
+                </div>
+
+                {/* 生成策略按钮 */}
+                <div className="p-6 bg-slate-50/50 dark:bg-slate-900/20">
                   <button
-                    onClick={() => applyPreset("conservative")}
-                    className="flex-1 py-2 px-4 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition-all duration-400 font-medium"
+                    onClick={() => {
+                      // 验证参数
+                      const validation = validateParams();
+                      if (!validation.isValid) {
+                        message.error("请检查参数设置");
+                        return;
+                      }
+
+                      // 执行计算并更新状态
+                      const result = calculateGrid();
+                      setGridData(result.gridData);
+                      setStressTest(result.stressTest);
+
+                      // 显示成功提示
+                      message.success("策略已生成");
+                    }}
+                    disabled={errors.length > 0}
+                    className="w-full px-6 py-4 rounded-full bg-[#243B53] dark:bg-blue-500 text-white font-bold text-lg shadow-xl shadow-blue-900/10 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
                   >
-                    保守型
-                  </button>
-                  <button
-                    onClick={() => applyPreset("balanced")}
-                    className="flex-1 py-2 px-4 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition-all duration-400 font-medium"
-                  >
-                    平衡型
-                  </button>
-                  <button
-                    onClick={() => applyPreset("aggressive")}
-                    className="flex-1 py-2 px-4 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition-all duration-400 font-medium"
-                  >
-                    激进型
+                    <Sparkles className="w-5 h-5" />
+                    生成策略
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* 参数卡片 - 5列布局 */}
-            {PARAM_FIELDS.map((field) => (
-              <div
-                key={field.key}
-                className="p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm"
-              >
-                <div className="mb-3">
-                  <h4 className="text-sm font-medium flex items-center gap-1 text-slate-800 dark:text-slate-100">
-                    <span className="text-red-500">*</span>
-                    {field.label}
-                    <div className="group relative">
-                      <HelpCircle className="w-3.5 h-3.5 cursor-help text-slate-400" />
-                      <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-10 w-48 p-2 text-xs rounded-lg bg-slate-900 text-slate-100 shadow-lg">
-                        {field.tooltip}
-                      </div>
+            {/* 右侧：计算结果 */}
+            <div className="col-span-12 lg:col-span-8 space-y-6">
+              {gridData.length === 0 || !stressTest ? (
+                <div className="h-full min-h-[600px] flex items-center justify-center p-12 rounded-2xl border border-dashed border-blue-100/50 dark:border-white/10 bg-white/50 dark:bg-[#1E293B]/50 backdrop-blur-sm">
+                  <div className="text-center space-y-4">
+                    <div className="text-slate-400 dark:text-slate-500">
+                      <svg
+                        className="w-20 h-20 mx-auto mb-4 opacity-50"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1}
+                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                        />
+                      </svg>
                     </div>
-                  </h4>
+                    <p className="text-slate-600 dark:text-slate-400 text-lg font-light">
+                      设置参数后，计算结果将在这里展示
+                    </p>
+                    <p className="text-slate-400 dark:text-slate-500 text-sm">
+                      包括网格策略对比图和详细数据表格
+                    </p>
+                  </div>
                 </div>
-                <input
-                  type="number"
-                  step={
-                    field.key === "basePrice" || field.key === "minPrice"
-                      ? "0.001"
-                      : "0.1"
-                  }
-                  value={params[field.key as keyof typeof params]}
-                  onChange={(e) =>
-                    updateParam(field.key, parseFloat(e.target.value) || 0)
-                  }
-                  className="w-full p-2 rounded border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-center transition-all duration-400 focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
-              </div>
-            ))}
-
-            {/* 计算结果表格 - 跨越全宽 */}
-            {gridData.length > 0 && stressTest && (
-              <div className="col-span-5">
-                <div className="p-6 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm">
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
-                        网格计算结果
-                      </h3>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 font-light mt-1">
-                        共 {gridData.length} 个网格档位
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        if (!isAuthenticated) {
-                          setShowAuthModal(true);
-                        } else {
-                          setShowSaveDialog(true);
-                        }
-                      }}
-                      className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all duration-400 flex items-center gap-2 font-medium"
-                    >
-                      <Save className="w-4 h-4" />
-                      保存方案
-                    </button>
-                  </div>
-
-                  {/* 统计数据 */}
-                  <div className="grid grid-cols-4 gap-4 mb-6">
-                    <div className="p-4 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
-                      <div className="text-xs text-slate-600 dark:text-slate-400 mb-2">
-                        总买入金额
-                      </div>
-                      <div className="text-2xl font-medium text-slate-800 dark:text-slate-100">
-                        {stressTest.totalBuyAmount.toLocaleString()}
-                      </div>
-                    </div>
-                    <div className="p-4 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
-                      <div className="text-xs text-slate-600 dark:text-slate-400 mb-2">
-                        总卖出金额
-                      </div>
-                      <div className="text-2xl font-medium text-slate-800 dark:text-slate-100">
-                        {stressTest.totalSellAmount.toLocaleString()}
-                      </div>
-                    </div>
-                    <div className="p-4 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
-                      <div className="text-xs text-slate-600 dark:text-slate-400 mb-2">
-                        预期利润
-                      </div>
-                      <div
-                        className={`text-2xl font-medium ${
-                          stressTest.profit > 0
-                            ? "text-green-600 dark:text-green-400"
-                            : "text-red-600 dark:text-red-400"
-                        }`}
-                      >
-                        {stressTest.profit.toLocaleString()}
-                      </div>
-                    </div>
-                    <div className="p-4 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
-                      <div className="text-xs text-slate-600 dark:text-slate-400 mb-2">
-                        收益率
-                      </div>
-                      <div
-                        className={`text-2xl font-medium ${
-                          stressTest.profitRate > 0
-                            ? "text-green-600 dark:text-green-400"
-                            : "text-red-600 dark:text-red-400"
-                        }`}
-                      >
-                        {stressTest.profitRate}%
-                      </div>
+              ) : (
+                <>
+                  {/* 策略对比折线图 */}
+                  <div className="rounded-2xl border border-blue-50/50 dark:border-white/5 bg-white/70 dark:bg-[#1E293B]/70 backdrop-blur-md shadow-2xl shadow-blue-900/10 overflow-hidden">
+                    <div className="p-6">
+                      <StrategyComparisonChart
+                        gridData={gridData}
+                        basePrice={params.basePrice}
+                        priceDecimals={priceDecimals}
+                        theme={theme}
+                      />
                     </div>
                   </div>
 
-                  {/* 表格 */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="border-b border-slate-200 dark:border-slate-700">
-                          <th className="p-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
-                            网格种类
-                          </th>
-                          <th className="p-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
-                            档位
-                          </th>
-                          <th className="p-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
-                            买入触发价
-                          </th>
-                          <th className="p-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
-                            买入价
-                          </th>
-                          <th className="p-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
-                            买入金额
-                          </th>
-                          <th className="p-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
-                            入股数
-                          </th>
-                          <th className="p-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
-                            卖出触发价
-                          </th>
-                          <th className="p-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
-                            卖出价
-                          </th>
-                          <th className="p-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
-                            出股数
-                          </th>
-                          <th className="p-3 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
-                            卖出金额
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {gridData.map((row, index) => (
-                          <tr
-                            key={index}
-                            className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all duration-300"
-                          >
-                            <td className="p-3 font-medium text-slate-800 dark:text-slate-100">
-                              {row.type}
-                            </td>
-                            <td className="p-3 text-slate-600 dark:text-slate-400">
-                              {row.position}
-                            </td>
-                            <td className="p-3 text-slate-600 dark:text-slate-400">
-                              {row.buyTriggerPrice}
-                            </td>
-                            <td className="p-3 text-slate-600 dark:text-slate-400">
-                              {row.buyPrice}
-                            </td>
-                            <td className="p-3 text-slate-600 dark:text-slate-400">
-                              {row.buyAmount.toLocaleString()}
-                            </td>
-                            <td className="p-3 text-slate-600 dark:text-slate-400">
-                              {row.buyShares.toLocaleString()}
-                            </td>
-                            <td className="p-3 text-slate-600 dark:text-slate-400">
-                              {row.sellTriggerPrice}
-                            </td>
-                            <td className="p-3 text-slate-600 dark:text-slate-400">
-                              {row.sellPrice}
-                            </td>
-                            <td className="p-3 text-slate-600 dark:text-slate-400">
-                              {row.sellShares.toLocaleString()}
-                            </td>
-                            <td className="p-3 text-slate-600 dark:text-slate-400">
-                              {row.sellAmount.toLocaleString()}
-                            </td>
+                  {/* 计算结果表格 */}
+                  <div className="p-6 rounded-2xl border border-blue-50/50 dark:border-white/5 bg-white/70 dark:bg-[#1E293B]/70 backdrop-blur-md shadow-2xl shadow-blue-900/10">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="text-2xl font-serif font-medium text-[#243B53] dark:text-blue-100 mb-2">
+                          网格计算结果
+                        </h3>
+                        <p className="text-sm opacity-70 font-light">
+                          共 {gridData.length} 个网格档位
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (!isAuthenticated) {
+                            setShowAuthModal(true);
+                          } else {
+                            setShowSaveDialog(true);
+                          }
+                        }}
+                        className="px-6 py-2.5 rounded-full bg-[#243B53] dark:bg-blue-500 text-white hover:scale-105 transition-all duration-300 flex items-center gap-2 font-bold shadow-lg shadow-blue-900/10 active:scale-95"
+                      >
+                        <Save className="w-4 h-4" />
+                        保存方案
+                      </button>
+                    </div>
+
+                    {/* 统计数据 */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+                      <div className="p-5 bg-blue-50/50 dark:bg-blue-900/20 rounded-2xl border border-blue-100/50 dark:border-white/5 shadow-lg shadow-blue-900/5 hover:shadow-xl transition-all duration-300">
+                        <div className="text-[10px] font-bold text-blue-700 dark:text-blue-300 mb-2 uppercase tracking-widest opacity-70">
+                          总买入金额
+                        </div>
+                        <div className="text-2xl font-bold text-[#243B53] dark:text-blue-100">
+                          {stressTest.totalBuyAmount.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="p-5 bg-purple-50/50 dark:bg-purple-900/20 rounded-2xl border border-purple-100/50 dark:border-white/5 shadow-lg shadow-purple-900/5 hover:shadow-xl transition-all duration-300">
+                        <div className="text-[10px] font-bold text-purple-700 dark:text-purple-300 mb-2 uppercase tracking-widest opacity-70">
+                          总卖出金额
+                        </div>
+                        <div className="text-2xl font-bold text-[#243B53] dark:text-purple-100">
+                          {stressTest.totalSellAmount.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="p-5 bg-indigo-50/50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100/50 dark:border-white/5 shadow-lg shadow-indigo-900/5 hover:shadow-xl transition-all duration-300">
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-indigo-700 dark:text-indigo-300 mb-2 uppercase tracking-widest opacity-70">
+                          <span>剩余股数</span>
+                          <div className="group relative">
+                            <HelpCircle className="w-3 h-3 cursor-help text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-200 transition-colors" />
+                            <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-[99999] w-48 p-2 text-xs rounded-lg bg-slate-900 text-slate-100 shadow-lg whitespace-normal pointer-events-none">
+                              剩余股数 = 总买入股数 - 总卖出股数
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-2xl font-bold text-[#243B53] dark:text-indigo-100">
+                          {stressTest.remainingShares.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="p-5 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100/50 dark:border-white/5 shadow-lg shadow-emerald-900/5 hover:shadow-xl transition-all duration-300">
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 mb-2 uppercase tracking-widest opacity-70">
+                          <span>预期利润</span>
+                          <div className="group relative">
+                            <HelpCircle className="w-3 h-3 cursor-help text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-200 transition-colors" />
+                            <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-[99999] w-56 p-2 text-xs rounded-lg bg-slate-900 text-slate-100 shadow-lg whitespace-normal pointer-events-none">
+                              利润 = 卖出金额 - 买入金额 + 剩余股数 × 基准价
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          className={`text-2xl font-bold ${
+                            stressTest.profit > 0
+                              ? "text-emerald-600 dark:text-emerald-400"
+                              : stressTest.profit < 0
+                              ? "text-red-600 dark:text-red-400"
+                              : "text-[#243B53] dark:text-slate-400"
+                          }`}
+                        >
+                          {stressTest.profit > 0 ? "+" : ""}
+                          {stressTest.profit.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="p-5 bg-amber-50/50 dark:bg-amber-900/20 rounded-2xl border border-amber-100/50 dark:border-white/5 shadow-lg shadow-amber-900/5 hover:shadow-xl transition-all duration-300">
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-300 mb-2 uppercase tracking-widest opacity-70">
+                          <span>收益率</span>
+                          <div className="group relative">
+                            <HelpCircle className="w-3 h-3 cursor-help text-amber-400 hover:text-amber-600 dark:hover:text-amber-200 transition-colors" />
+                            <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-[99999] w-48 p-2 text-xs rounded-lg bg-slate-900 text-slate-100 shadow-lg whitespace-normal pointer-events-none">
+                              利润 / 买入金额 × 100
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          className={`text-2xl font-bold ${
+                            stressTest.profitRate > 0
+                              ? "text-emerald-600 dark:text-emerald-400"
+                              : stressTest.profitRate < 0
+                              ? "text-red-600 dark:text-red-400"
+                              : "text-[#243B53] dark:text-slate-400"
+                          }`}
+                        >
+                          {stressTest.profitRate > 0 ? "+" : ""}
+                          {stressTest.profitRate}%
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 表格 */}
+                    <div className="overflow-x-auto rounded-xl border border-blue-50/50 dark:border-white/5">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="border-b border-blue-100/50 dark:border-white/5 bg-blue-50/30 dark:bg-blue-900/10">
+                            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[#243B53] dark:text-blue-100 opacity-70">
+                              档位
+                            </th>
+                            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[#243B53] dark:text-blue-100 opacity-70">
+                              买入价
+                            </th>
+                            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[#243B53] dark:text-blue-100 opacity-70">
+                              <div className="flex items-center gap-1">
+                                <span>跌幅</span>
+                                <div className="group relative">
+                                  <HelpCircle className="w-3 h-3 cursor-help text-slate-400" />
+                                  <div className="absolute left-0 top-full mt-2 hidden group-hover:block z-[99999] w-48 p-2 text-xs rounded-lg bg-slate-900 text-slate-100 shadow-lg whitespace-normal font-normal pointer-events-none">
+                                    相对于上一档位的跌幅
+                                  </div>
+                                </div>
+                              </div>
+                            </th>
+                            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[#243B53] dark:text-blue-100 opacity-70">
+                              买入金额
+                            </th>
+                            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[#243B53] dark:text-blue-100 opacity-70">
+                              买入股数
+                            </th>
+                            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[#243B53] dark:text-blue-100 opacity-70">
+                              卖出价
+                            </th>
+                            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[#243B53] dark:text-blue-100 opacity-70">
+                              卖出股数
+                            </th>
+                            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[#243B53] dark:text-blue-100 opacity-70">
+                              卖出金额
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {[...gridData]
+                            .sort((a, b) => b.position - a.position)
+                            .map((row, index) => {
+                              return (
+                                <tr
+                                  key={index}
+                                  className="border-b border-blue-50/30 dark:border-white/5 hover:bg-blue-50/50 dark:hover:bg-white/5 transition-all duration-300"
+                                >
+                                  <td className="p-4 font-medium text-[#243B53] dark:text-blue-100">
+                                    {row.position.toFixed(2)}
+                                  </td>
+                                  <td className="p-4 text-[#243B53] dark:text-blue-100">
+                                    {row.buyPrice.toFixed(3)}
+                                  </td>
+                                  <td
+                                    className={`p-4 font-medium ${
+                                      row.priceDropRate < 0
+                                        ? "text-red-600 dark:text-red-400"
+                                        : "text-[#243B53] dark:text-blue-100"
+                                    }`}
+                                  >
+                                    {row.priceDropRate === 0
+                                      ? "-"
+                                      : `${row.priceDropRate.toFixed(2)}%`}
+                                  </td>
+                                  <td className="p-4 text-[#243B53] dark:text-blue-100">
+                                    {row.buyAmount.toLocaleString()}
+                                  </td>
+                                  <td className="p-4 text-[#243B53] dark:text-blue-100">
+                                    {row.buyShares.toLocaleString()}
+                                  </td>
+                                  <td className="p-4 text-[#243B53] dark:text-blue-100">
+                                    {row.sellPrice.toFixed(3)}
+                                  </td>
+                                  <td className="p-4 text-[#243B53] dark:text-blue-100">
+                                    {row.sellShares.toLocaleString()}
+                                  </td>
+                                  <td className="p-4 text-[#243B53] dark:text-blue-100">
+                                    {row.sellAmount.toLocaleString()}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
-              </div>
-            )}
+                </>
+              )}
+            </div>
           </div>
-
-          {/* 页脚 */}
-          <footer className="text-center text-xs text-slate-500 dark:text-slate-400 font-light pt-4 space-y-2">
-            <p>
-              本工具根据设定的参数自动生成网格交易策略，包含小网、中网、大网三种类型
-            </p>
-            <p className="opacity-70">投资有风险，决策需谨慎，本工具仅供参考</p>
-          </footer>
         </div>
-      </TerminalLayout>
 
       {/* 登录模态框 */}
       <AuthModal
@@ -932,26 +1019,26 @@ export default function GridPage() {
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setShowSaveDialog(false)}
           />
-          <div className="relative w-full max-w-md rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl p-6">
+          <div className="relative w-full max-w-md rounded-2xl border border-blue-50/50 dark:border-white/5 bg-white/90 dark:bg-[#1E293B]/90 backdrop-blur-md shadow-2xl shadow-blue-900/20 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">
+              <h2 className="text-xl font-serif font-medium text-[#243B53] dark:text-blue-100">
                 保存交易方案
               </h2>
               <button
                 onClick={() => setShowSaveDialog(false)}
-                className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700"
+                className="p-1 rounded-full hover:bg-blue-50 dark:hover:bg-white/10 transition-colors"
               >
-                <X className="w-5 h-5 text-slate-500" />
+                <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
               </button>
             </div>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+            <p className="text-sm opacity-70 mb-4 font-light">
               为您的交易方案输入一个名称，方便后续查看和对比
             </p>
             <div className="space-y-4">
               <div>
                 <label
                   htmlFor="scheme-name"
-                  className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2"
+                  className="block text-sm font-semibold text-[#243B53] dark:text-blue-100 mb-2 uppercase tracking-wide text-xs"
                 >
                   方案名称
                 </label>
@@ -966,7 +1053,7 @@ export default function GridPage() {
                       saveScheme();
                     }
                   }}
-                  className="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full p-3 rounded-xl border border-blue-100/50 dark:border-white/5 bg-white/50 dark:bg-slate-800/50 text-[#243B53] dark:text-blue-100 focus:ring-2 focus:ring-blue-500 outline-none backdrop-blur-sm"
                   autoFocus
                 />
               </div>
@@ -976,13 +1063,13 @@ export default function GridPage() {
                     setShowSaveDialog(false);
                     setSchemeName("");
                   }}
-                  className="flex-1 py-2 px-4 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 transition-all font-medium"
+                  className="flex-1 py-3 px-4 rounded-full border border-blue-100/50 dark:border-white/5 bg-white/50 dark:bg-slate-800/50 text-[#243B53] dark:text-blue-100 hover:bg-blue-50/50 dark:hover:bg-white/10 transition-all font-bold"
                 >
                   取消
                 </button>
                 <button
                   onClick={saveScheme}
-                  className="flex-1 py-2 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all font-medium"
+                  className="flex-1 py-3 px-4 rounded-full bg-[#243B53] dark:bg-blue-500 hover:scale-105 active:scale-95 text-white transition-all font-bold shadow-lg shadow-blue-900/10"
                 >
                   保存
                 </button>
@@ -991,6 +1078,21 @@ export default function GridPage() {
           </div>
         </div>
       )}
-    </>
+        </div>
+      </div>
+
+      {/* 字体引入与样式 */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&display=swap');
+
+        .font-serif {
+          font-family: 'Lora', serif;
+        }
+      `,
+        }}
+      />
+    </AntdProvider>
   );
 }
