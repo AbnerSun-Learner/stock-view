@@ -2,11 +2,15 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Filter, HelpCircle, Shield } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface GridStepConfigProps {
   baseStep: number;
   onBaseStepChange: (value: number) => void;
+  mediumStep: number;
+  onMediumStepChange: (value: number) => void;
+  largeStep: number;
+  onLargeStepChange: (value: number) => void;
   dynamicEnabled: boolean;
   onDynamicEnabledChange: (enabled: boolean) => void;
   mode: "stable" | "aggressive";
@@ -17,6 +21,10 @@ interface GridStepConfigProps {
 export function GridStepConfig({
   baseStep,
   onBaseStepChange,
+  mediumStep,
+  onMediumStepChange,
+  largeStep,
+  onLargeStepChange,
   dynamicEnabled,
   onDynamicEnabledChange,
   mode,
@@ -24,6 +32,21 @@ export function GridStepConfig({
   theme = "light",
 }: GridStepConfigProps) {
   const [inputValue, setInputValue] = useState(baseStep.toString());
+  const [mediumInputValue, setMediumInputValue] = useState(mediumStep.toString());
+  const [largeInputValue, setLargeInputValue] = useState(largeStep.toString());
+
+  // 同步外部值变化
+  useEffect(() => {
+    setInputValue(baseStep.toString());
+  }, [baseStep]);
+
+  useEffect(() => {
+    setMediumInputValue(mediumStep.toString());
+  }, [mediumStep]);
+
+  useEffect(() => {
+    setLargeInputValue(largeStep.toString());
+  }, [largeStep]);
 
   // 获取当前模式的系数
   const getScaleFactor = () => {
@@ -48,6 +71,38 @@ export function GridStepConfig({
     const clamped = Math.min(99, Math.max(1, numValue));
     setInputValue(clamped.toString());
     onBaseStepChange(clamped);
+  }
+
+  // 处理中网步长输入变化
+  function handleMediumInputChange(value: string) {
+    const filtered = value.replace(/[^\d.]/g, "");
+    setMediumInputValue(filtered);
+    const numValue = parseFloat(filtered) || 0;
+    const clamped = Math.min(100, Math.max(0.1, numValue));
+    onMediumStepChange(clamped);
+  }
+
+  function handleMediumBlur() {
+    const numValue = parseFloat(mediumInputValue) || 15;
+    const clamped = Math.min(100, Math.max(0.1, numValue));
+    setMediumInputValue(clamped.toString());
+    onMediumStepChange(clamped);
+  }
+
+  // 处理大网步长输入变化
+  function handleLargeInputChange(value: string) {
+    const filtered = value.replace(/[^\d.]/g, "");
+    setLargeInputValue(filtered);
+    const numValue = parseFloat(filtered) || 0;
+    const clamped = Math.min(100, Math.max(0.1, numValue));
+    onLargeStepChange(clamped);
+  }
+
+  function handleLargeBlur() {
+    const numValue = parseFloat(largeInputValue) || 30;
+    const clamped = Math.min(100, Math.max(0.1, numValue));
+    setLargeInputValue(clamped.toString());
+    onLargeStepChange(clamped);
   }
 
   return (
@@ -116,7 +171,7 @@ export function GridStepConfig({
               htmlFor="base-step-input"
               className="text-sm font-semibold text-slate-700 dark:text-slate-300"
             >
-              基础步长
+              基础步长（小网）
             </label>
           </div>
 
@@ -135,35 +190,94 @@ export function GridStepConfig({
               %
             </span>
           </div>
-
-          {/* 动态模式提示 */}
-          <AnimatePresence>
-            {dynamicEnabled && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="flex items-start gap-2 px-3 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800"
-              >
-                <svg
-                  className="w-4 h-4 mt-0.5 text-indigo-600 dark:text-indigo-400 flex-shrink-0"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <p className="text-xs text-indigo-700 dark:text-indigo-300 leading-relaxed">
-                  动态模式已激活
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
+
+        {/* 中网步长和大网步长配置区 - 一行两列 */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* 中网步长配置区 */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label
+                htmlFor="medium-step-input"
+                className="text-sm font-semibold text-slate-700 dark:text-slate-300"
+              >
+                中网步长
+              </label>
+            </div>
+
+            <div className="relative">
+              <input
+                id="medium-step-input"
+                type="text"
+                inputMode="decimal"
+                value={mediumInputValue}
+                onChange={(e) => handleMediumInputChange(e.target.value)}
+                onBlur={handleMediumBlur}
+                className="w-full px-4 py-3 pr-10 text-center text-lg font-semibold rounded-xl border-2 border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-all duration-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                placeholder="15"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-slate-500 dark:text-slate-400 pointer-events-none">
+                %
+              </span>
+            </div>
+          </div>
+
+          {/* 大网步长配置区 */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label
+                htmlFor="large-step-input"
+                className="text-sm font-semibold text-slate-700 dark:text-slate-300"
+              >
+                大网步长
+              </label>
+            </div>
+
+            <div className="relative">
+              <input
+                id="large-step-input"
+                type="text"
+                inputMode="decimal"
+                value={largeInputValue}
+                onChange={(e) => handleLargeInputChange(e.target.value)}
+                onBlur={handleLargeBlur}
+                className="w-full px-4 py-3 pr-10 text-center text-lg font-semibold rounded-xl border-2 border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-all duration-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                placeholder="30"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-slate-500 dark:text-slate-400 pointer-events-none">
+                %
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 动态模式提示 */}
+        <AnimatePresence>
+          {dynamicEnabled && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="flex items-start gap-2 px-3 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800"
+            >
+              <svg
+                className="w-4 h-4 mt-0.5 text-indigo-600 dark:text-indigo-400 flex-shrink-0"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <p className="text-xs text-indigo-700 dark:text-indigo-300 leading-relaxed">
+                动态模式已激活
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* 动态增强面板 - 展开层 */}
         <AnimatePresence>

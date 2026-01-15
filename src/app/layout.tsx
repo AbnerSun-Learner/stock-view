@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -14,7 +13,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Stillwell - 慢即是快，稳即是远",
-  description: "市场的噪音是暂时的，复利的增长是永恒的。在这里，遇见让指数投资与内心安宁共生的栖息地。",
+  description:
+    "市场的噪音是暂时的，复利的增长是永恒的。在这里，遇见让指数投资与内心安宁共生的栖息地。",
 };
 
 export default function RootLayout({
