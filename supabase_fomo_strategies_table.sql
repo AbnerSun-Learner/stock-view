@@ -71,3 +71,5 @@ CREATE TRIGGER update_fomo_strategies_updated_at
 
 
 
+
+

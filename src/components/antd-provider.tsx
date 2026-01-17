@@ -1,6 +1,6 @@
 "use client";
 
-import { ConfigProvider } from "antd";
+import { App, ConfigProvider } from "antd";
 
 interface AntdProviderProps {
   children: React.ReactNode;
@@ -25,7 +25,7 @@ export function AntdProvider({ children }: AntdProviderProps) {
         },
       }}
     >
-      {children}
+      <App>{children}</App>
     </ConfigProvider>
   );
 }

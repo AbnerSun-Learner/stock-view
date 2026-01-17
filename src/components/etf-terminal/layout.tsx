@@ -5,13 +5,21 @@
  * 包含导航栏和主题切换，完全按照 demo.jsx 的样式
  */
 
-import { Activity, Grid, LineChart, Target, LogIn, LogOut, User } from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import {
+  Activity,
+  Grid,
+  LineChart,
+  LogIn,
+  LogOut,
+  Target,
+  User,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { JSX, useState } from "react";
-import { ThemeToggleButton } from "./shared-components";
 import { AuthModal } from "./auth-modal";
-import { useAuth } from "@/lib/auth";
+import { ThemeToggleButton } from "./shared-components";
 
 function TabButton({
   active,
@@ -97,7 +105,10 @@ export function TerminalLayout({
             {isAuthenticated ? (
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
-                  <User size={16} className="text-indigo-600 dark:text-indigo-400" />
+                  <User
+                    size={16}
+                    className="text-indigo-600 dark:text-indigo-400"
+                  />
                   <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
                     {user?.email?.split("@")[0] || "用户"}
                   </span>

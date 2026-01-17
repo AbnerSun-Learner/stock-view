@@ -1,0 +1,82 @@
+{
+  "index_code": "399971",
+  "start_date": "2018-01-01",
+  "trade_points": [
+    {
+      "date": "2017-01-01",
+      "action": "buy",
+      "note": "两份"
+    },
+    {
+      "date": "2018-05-15",
+      "action": "buy",
+      "note": "一份"
+    },
+    {
+      "date": "2018-07-16",
+      "action": "buy",
+      "note": "一份"
+    },
+    {
+      "date": "2018-08-20",
+      "action": "buy",
+      "note": "一份"
+    },
+    {
+      "date": "2019-04-26",
+      "action": "buy",
+      "note": "一份"
+    },
+    {
+      "date": "2020-03-09",
+      "action": "sell",
+      "note": "一份"
+    },
+    {
+      "date": "2021-04-29",
+      "action": "buy",
+      "note": "一份"
+    },
+    {
+      "date": "2021-08-30",
+      "action": "buy",
+      "note": "一份"
+    },
+    {
+      "date": "2023-03-20",
+      "action": "sell",
+      "note": "一份"
+    },
+    {
+      "date": "2023-04-03",
+      "action": "sell",
+      "note": "一份"
+    },
+    {
+      "date": "2023-04-14",
+      "action": "sell",
+      "note": "一份"
+    },
+    {
+      "date": "2023-05-31",
+      "action": "sell",
+      "note": "两份"
+    },
+    {
+      "date": "2025-08-22",
+      "action": "sell",
+      "note": "一份"
+    },
+    {
+      "date": "2026-01-15",
+      "action": "sell",
+      "note": "一份"
+    }
+  ],
+  "key_points": [
+    {
+      "pressure_level": ["1220", "1400", "1700"],
+      "support_level": ["931"]
+    }
+  ]
+}
