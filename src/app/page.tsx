@@ -6,9 +6,6 @@ import {
   ChevronDown,
   Compass,
   LayoutGrid,
-  Moon,
-  Sun,
-  User,
   Wind,
 } from "lucide-react";
 import Link from "next/link";
@@ -16,30 +13,23 @@ import { useState } from "react";
 
 export default function LandingPage() {
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState(false);
 
   return (
     <div
-      className={`min-h-screen transition-colors duration-500 ${
-        isDarkMode ? "dark" : ""
-      } ${
-        isDarkMode
-          ? "bg-[#0F172A] text-[#E2E8F0]"
-          : "bg-[#F0F4F8] text-[#243B53]"
-      } font-sans selection:bg-blue-100 selection:text-blue-900`}
+      className="min-h-screen transition-colors duration-500 bg-[#F0F4F8] text-[#243B53] font-sans selection:bg-blue-100 selection:text-blue-900"
     >
       {/* 导航栏 */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/70 dark:bg-[#0F172A]/70 backdrop-blur-md border-b border-blue-100/20 dark:border-white/5">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/70 backdrop-blur-md border-b border-blue-100/20">
         <div className="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto relative">
           {/* 左侧：Logo - 衬线体定制 */}
           <Link
             href="/"
             className="flex items-center space-x-2 cursor-pointer group"
           >
-            <div className="w-8 h-8 bg-[#243B53] dark:bg-blue-400 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm">
-              <div className="w-2 h-2 bg-white dark:bg-[#0F172A] rounded-full animate-pulse"></div>
+            <div className="w-8 h-8 bg-[#243B53] rounded-full flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm">
+              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
             </div>
-            <span className="text-2xl font-serif font-bold tracking-tight text-[#243B53] dark:text-blue-100 transition-colors">
+            <span className="text-2xl font-serif font-bold tracking-tight text-[#243B53] transition-colors">
               Stillwell
             </span>
           </Link>
@@ -155,19 +145,6 @@ export default function LandingPage() {
 
           {/* 右侧：功能按钮 */}
           <div className="flex items-center space-x-4">
-            <button
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className="p-2 rounded-full hover:bg-blue-100 dark:hover:bg-white/10 transition-colors text-slate-500 dark:text-slate-400"
-              aria-label="Toggle Theme"
-            >
-              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
-            <Link href="/7080">
-              <button className="flex items-center space-x-2 bg-[#243B53] dark:bg-blue-500 text-white px-6 py-2 rounded-full text-sm font-bold hover:scale-105 transition-all active:scale-95 shadow-lg shadow-blue-900/10">
-                <User size={16} />
-                <span>登录</span>
-              </button>
-            </Link>
           </div>
         </div>
       </nav>
@@ -175,8 +152,8 @@ export default function LandingPage() {
       {/* Hero Section */}
       <div className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
         {/* 背景装饰：雾霾蓝动态背景 */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-blue-200/20 dark:bg-blue-900/10 rounded-full blur-[140px] -z-10"></div>
-        <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-slate-200/30 dark:bg-slate-800/20 rounded-full blur-[100px] -z-10"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-blue-200/20 rounded-full blur-[140px] -z-10"></div>
+        <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-slate-200/30 rounded-full blur-[100px] -z-10"></div>
 
         <header className="px-8 max-w-7xl mx-auto text-center relative z-10">
           <h1 className="text-6xl md:text-8xl font-serif font-medium leading-[1.1] mb-10 tracking-tight">
@@ -187,9 +164,7 @@ export default function LandingPage() {
             ,<br />
             Rich in{" "}
             <span
-              className={`${
-                isDarkMode ? "text-blue-300" : "text-[#243B53]"
-              } font-semibold`}
+              className="text-[#243B53] font-semibold"
             >
               Time
             </span>
@@ -203,9 +178,9 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-8">
-            <Link href="/7080">
-              <button className="w-full md:w-auto bg-[#243B53] dark:bg-blue-500 text-white px-12 py-5 rounded-full text-lg flex items-center justify-center group font-bold shadow-xl shadow-blue-900/10 hover:-translate-y-1 transition-all">
-                开启你的旅程{" "}
+            <Link href="/grid">
+              <button className="w-full md:w-auto bg-[#243B53] text-white px-12 py-5 rounded-full text-lg flex items-center justify-center group font-bold shadow-xl shadow-blue-900/10 hover:-translate-y-1 transition-all">
+                进入网格策略{" "}
                 <ArrowRight
                   className="ml-2 group-hover:translate-x-1 transition-transform"
                   size={20}

@@ -6,32 +6,25 @@
  */
 
 import { AntdProvider } from "@/components/antd-provider";
-import { AuthModal } from "@/components/etf-terminal/auth-modal";
 import { BaseInfoConfig } from "@/components/grid/base-info-config";
 import { ErrorAlert } from "@/components/grid/error-alert";
 import { FundCoefficientConfig } from "@/components/grid/fund-coefficient-config";
 import { GridNavbar } from "@/components/grid/grid-navbar";
 import { GridStepConfig } from "@/components/grid/grid-step-config";
 import { GridTable } from "@/components/grid/grid-table";
-import { SaveSchemeModal } from "@/components/grid/save-scheme-modal";
 import { StatsCards } from "@/components/grid/stats-cards";
 import { StrategyComparisonChart } from "@/components/grid/strategy-comparison-chart";
 import { useGridCalculator } from "@/hooks/use-grid-calculator";
 import { useGridParams } from "@/hooks/use-grid-params";
-import { useGridSchemes } from "@/hooks/use-grid-schemes";
-import { useAuth } from "@/lib/auth";
 import type { GridRow, StressTest } from "@/types/grid";
 import { message } from "antd";
-import { Save, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { useState } from "react";
 
 export default function GridPage() {
-  const { user, isAuthenticated } = useAuth();
-  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [gridData, setGridData] = useState<GridRow[]>([]);
   const [stressTest, setStressTest] = useState<StressTest | null>(null);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const theme = "light" as const;
 
   // 动态网格步长状态
   const [dynamicGridEnabled, setDynamicGridEnabled] = useState(false);
@@ -62,12 +55,6 @@ export default function GridPage() {
     dynamicGridMode,
   });
 
-  // 方案管理
-  const { saveScheme } = useGridSchemes({
-    isAuthenticated,
-    userId: user?.id,
-  });
-
   // 生成策略
   const handleGenerateStrategy = () => {
     const validation = validateParams();
@@ -82,36 +69,10 @@ export default function GridPage() {
     message.success("策略已生成");
   };
 
-  // 保存方案
-  const handleSaveScheme = async (schemeName: string) => {
-    if (!stressTest) {
-      message.error("请先生成网格");
-      return;
-    }
-    try {
-      await saveScheme(schemeName, params, gridData, stressTest);
-      message.success("方案已保存");
-      setShowSaveDialog(false);
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "保存失败，请重试";
-      message.error(errorMessage);
-      throw error;
-    }
-  };
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
-  };
-
   return (
     <AntdProvider>
       <div
-        className={`min-h-screen transition-colors duration-500 ${
-          theme === "dark"
-            ? "bg-[#0F172A] text-[#E2E8F0]"
-            : "bg-[#F0F4F8] text-[#243B53]"
-        }`}
+        className="min-h-screen transition-colors duration-500 bg-[#F0F4F8] text-[#243B53]"
       >
         {/* 背景装饰：雾霾蓝动态背景 */}
         <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
@@ -120,11 +81,7 @@ export default function GridPage() {
         </div>
 
         {/* 导航栏 */}
-        <GridNavbar
-          theme={theme}
-          onThemeToggle={toggleTheme}
-          onLoginClick={() => setShowAuthModal(true)}
-        />
+        <GridNavbar />
 
         <div className="pt-20">
           <div className="py-8 space-y-8 max-w-[1400px] mx-auto px-4">
@@ -284,19 +241,6 @@ export default function GridPage() {
                             共 {gridData.length} 个网格档位
                           </p>
                         </div>
-                        <button
-                          onClick={() => {
-                            if (!isAuthenticated) {
-                              setShowAuthModal(true);
-                            } else {
-                              setShowSaveDialog(true);
-                            }
-                          }}
-                          className="px-6 py-2.5 rounded-full bg-[#243B53] dark:bg-blue-500 text-white hover:scale-105 transition-all duration-300 flex items-center gap-2 font-bold shadow-lg shadow-blue-900/10 active:scale-95 cursor-pointer"
-                        >
-                          <Save className="w-4 h-4" />
-                          保存方案
-                        </button>
                       </div>
 
                       {/* 统计数据 */}
@@ -314,20 +258,6 @@ export default function GridPage() {
             </div>
           </div>
 
-          {/* 登录模态框 */}
-          <AuthModal
-            open={showAuthModal}
-            onClose={() => setShowAuthModal(false)}
-            theme={theme}
-          />
-
-          {/* 保存方案Modal */}
-          <SaveSchemeModal
-            open={showSaveDialog}
-            onClose={() => setShowSaveDialog(false)}
-            onSave={handleSaveScheme}
-            theme={theme}
-          />
         </div>
       </div>
 

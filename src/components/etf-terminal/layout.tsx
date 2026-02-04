@@ -2,24 +2,12 @@
 
 /**
  * ETF Terminal 通用布局组件
- * 包含导航栏和主题切换，完全按照 demo.jsx 的样式
  */
 
-import { useAuth } from "@/lib/auth";
-import {
-  Activity,
-  Grid,
-  LineChart,
-  LogIn,
-  LogOut,
-  Target,
-  User,
-} from "lucide-react";
+import { Activity, Grid, Target } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { JSX, useState } from "react";
-import { AuthModal } from "./auth-modal";
-import { ThemeToggleButton } from "./shared-components";
+import { JSX } from "react";
 
 function TabButton({
   active,
@@ -49,16 +37,12 @@ function TabButton({
 
 export function TerminalLayout({
   theme,
-  onToggleTheme,
   children,
 }: {
   theme: "light" | "dark";
-  onToggleTheme: () => void;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { user, signOut, isAuthenticated } = useAuth();
-  const [showAuthModal, setShowAuthModal] = useState(false);
   const containerClass =
     theme === "dark"
       ? "min-h-screen bg-slate-900 text-slate-100 transition-colors duration-300 pb-20 md:pb-0 font-sans"
@@ -88,59 +72,14 @@ export function TerminalLayout({
               label="网格策略"
             />
             <TabButton
-              active={pathname === "/7080" || pathname === "/"}
-              href="/7080"
-              icon={<LineChart size={18} />}
-              label="7080 指数"
-            />
-            <TabButton
               active={pathname === "/tracker"}
               href="/tracker"
               icon={<Target size={18} />}
               label="点位追踪"
             />
           </div>
-          <div className="flex items-center gap-3 pl-4 border-l border-slate-300">
-            <ThemeToggleButton theme={theme} onToggle={onToggleTheme} />
-            {isAuthenticated ? (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
-                  <User
-                    size={16}
-                    className="text-indigo-600 dark:text-indigo-400"
-                  />
-                  <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                    {user?.email?.split("@")[0] || "用户"}
-                  </span>
-                </div>
-                <button
-                  onClick={signOut}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                  title="登出"
-                >
-                  <LogOut size={16} />
-                  <span className="text-sm font-bold">登出</span>
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowAuthModal(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/30 transition-all"
-              >
-                <LogIn size={16} />
-                <span className="text-sm font-bold">登录</span>
-              </button>
-            )}
-          </div>
         </div>
       </nav>
-
-      {/* 登录模态框 */}
-      <AuthModal
-        open={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        theme={theme}
-      />
 
       <main className="max-w-7xl mx-auto p-4 md:p-8">{children}</main>
 
@@ -162,17 +101,6 @@ export function TerminalLayout({
         >
           <Grid size={20} />
           <span className="text-sm font-bold tracking-tight">网格</span>
-        </Link>
-        <Link
-          href="/7080"
-          className={`flex flex-col py-2 w-full items-center gap-2 rounded-xl transition-all ${
-            pathname === "/7080" || pathname === "/"
-              ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30"
-              : "opacity-60 hover:opacity-100"
-          }`}
-        >
-          <LineChart size={20} />
-          <span className="text-sm font-bold tracking-tight">7080</span>
         </Link>
         <Link
           href="/tracker"

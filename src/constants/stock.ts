@@ -3,12 +3,10 @@
  */
 
 export const STORAGE_KEYS = {
-  favorites: "stock-view:favorites",
   history: "stock-view:history",
 } as const;
 
 export const LIMITS = {
-  maxFavorites: 50,
   maxHistory: 20,
   recentCandlesDays: 120, // 约 6 个月交易日
 } as const;

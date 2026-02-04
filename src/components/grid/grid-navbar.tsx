@@ -1,6 +1,5 @@
 "use client";
 
-import { NavbarRightActions } from "@/components/shared/navbar-right-actions";
 import {
   BookOpen,
   ChevronDown,
@@ -10,17 +9,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 
-interface GridNavbarProps {
-  theme: "light" | "dark";
-  onThemeToggle: () => void;
-  onLoginClick: () => void;
-}
-
-export function GridNavbar({
-  theme,
-  onThemeToggle,
-  onLoginClick,
-}: GridNavbarProps) {
+export function GridNavbar() {
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
 
   return (
@@ -98,13 +87,6 @@ export function GridNavbar({
             </div>
           </div>
         </div>
-
-        {/* 右侧：功能按钮 */}
-        <NavbarRightActions
-          theme={theme}
-          onThemeToggle={onThemeToggle}
-          onLoginClick={onLoginClick}
-        />
       </div>
     </nav>
   );

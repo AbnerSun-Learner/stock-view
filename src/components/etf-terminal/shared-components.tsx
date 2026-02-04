@@ -10,9 +10,7 @@ import {
   Calculator,
   ChevronRight,
   Info,
-  Moon,
   Save,
-  Sun,
   Trash2,
 } from "lucide-react";
 
@@ -74,23 +72,6 @@ export function InputGroup({
         className="p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm font-mono font-bold"
       />
     </div>
-  );
-}
-
-export function ThemeToggleButton({
-  theme,
-  onToggle,
-}: {
-  theme: "light" | "dark";
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      onClick={onToggle}
-      className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-    >
-      {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
-    </button>
   );
 }
 
