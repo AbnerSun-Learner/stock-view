@@ -15,9 +15,7 @@ export default function LandingPage() {
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
 
   return (
-    <div
-      className="min-h-screen transition-colors duration-500 bg-[#F0F4F8] text-[#243B53] font-sans selection:bg-blue-100 selection:text-blue-900"
-    >
+    <div className="min-h-screen transition-colors duration-500 bg-[#F0F4F8] text-[#243B53] font-sans selection:bg-blue-100 selection:text-blue-900">
       {/* 导航栏 */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/70 backdrop-blur-md border-b border-blue-100/20">
         <div className="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto relative">
@@ -144,8 +142,7 @@ export default function LandingPage() {
           </div>
 
           {/* 右侧：功能按钮 */}
-          <div className="flex items-center space-x-4">
-          </div>
+          <div className="flex items-center space-x-4"></div>
         </div>
       </nav>
 
@@ -162,13 +159,7 @@ export default function LandingPage() {
               Volatility
             </span>
             ,<br />
-            Rich in{" "}
-            <span
-              className="text-[#243B53] font-semibold"
-            >
-              Time
-            </span>
-            .
+            Rich in <span className="text-[#243B53] font-semibold">Time</span>.
           </h1>
 
           <p className="max-w-3xl mx-auto text-lg md:text-2xl opacity-70 leading-relaxed mb-16 font-light">
