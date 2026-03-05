@@ -48,5 +48,6 @@
   "editor.mouseWheelZoom": true,
   "editor.fontSize": 15,
   "terminal.integrated.fontSize": 15,
-  "debug.console.fontSize": 15
+  "debug.console.fontSize": 15,
+  "editor.wordWrapColumn": 100
 }

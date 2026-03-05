@@ -1,25 +1,15 @@
 "use client";
 
-import {
-  ArrowRight,
-  BookOpen,
-  ChevronDown,
-  Compass,
-  LayoutGrid,
-  Wind,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 
 export default function LandingPage() {
-  const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
-
   return (
     <div className="min-h-screen transition-colors duration-500 bg-[#F0F4F8] text-[#243B53] font-sans selection:bg-blue-100 selection:text-blue-900">
-      {/* 导航栏 */}
+      {/* 导航栏：左侧 Logo，中间 网格交易/指数估值，右侧 关于我们 */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/70 backdrop-blur-md border-b border-blue-100/20">
         <div className="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto relative">
-          {/* 左侧：Logo - 衬线体定制 */}
+          {/* 左侧：Logo */}
           <Link
             href="/"
             className="flex items-center space-x-2 cursor-pointer group"
@@ -32,107 +22,20 @@ export default function LandingPage() {
             </span>
           </Link>
 
-          {/* 中间：菜单栏 */}
-          <div className="hidden md:flex items-center space-x-10">
-            {/* 工具宝库 Dropdown */}
-            <div
-              className="relative group py-2"
-              onMouseEnter={() => setHoveredMenu("tools")}
-              onMouseLeave={() => setHoveredMenu(null)}
+          {/* 中间一体：网格交易 / 指数估值 / 关于我们 */}
+          <div className="hidden md:flex items-center justify-center space-x-10 flex-1">
+            <Link
+              href="/grid"
+              className="text-sm font-medium uppercase tracking-widest opacity-70 hover:opacity-100 transition-opacity"
             >
-              <button className="flex items-center space-x-1 text-sm font-medium uppercase tracking-widest opacity-70 hover:opacity-100 transition-opacity">
-                <span>工具宝库</span>
-                <ChevronDown
-                  size={14}
-                  className={`transition-transform duration-300 ${
-                    hoveredMenu === "tools" ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {/* 工具下拉面板 */}
-              <div
-                className={`absolute top-full left-1/2 -translate-x-1/2 w-80 pt-4 transition-all duration-300 ${
-                  hoveredMenu === "tools"
-                    ? "opacity-100 visible translate-y-0"
-                    : "opacity-0 invisible -translate-y-2"
-                }`}
-              >
-                <div className="bg-white dark:bg-[#1E293B] rounded-2xl shadow-2xl shadow-blue-900/10 border border-blue-50 dark:border-white/5 p-4">
-                  <Link href="/grid">
-                    <div className="flex items-start space-x-4 p-3 rounded-xl hover:bg-blue-50 dark:hover:bg-white/5 transition-colors cursor-pointer group/item">
-                      <div className="w-10 h-10 bg-blue-100/50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg flex items-center justify-center shrink-0">
-                        <LayoutGrid size={20} />
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold mb-1 group-hover/item:text-blue-600 dark:group-hover/item:text-blue-300 transition-colors">
-                          网格交易
-                        </div>
-                        <div className="text-xs text-slate-400 leading-relaxed italic font-light">
-                          这是一个菜单描述，旨在帮助你在市场波动中寻找属于自己的节奏。
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                  <div className="mt-2 p-2 text-[10px] text-center text-slate-300 uppercase tracking-widest border-t border-blue-50/50 dark:border-white/5 pt-3 font-bold">
-                    更多工具 敬请期待
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 投资指南 Dropdown */}
-            <div
-              className="relative group py-2"
-              onMouseEnter={() => setHoveredMenu("guide")}
-              onMouseLeave={() => setHoveredMenu(null)}
+              网格交易
+            </Link>
+            <Link
+              href="/valuation"
+              className="text-sm font-medium uppercase tracking-widest opacity-70 hover:opacity-100 transition-opacity"
             >
-              <button className="flex items-center space-x-1 text-sm font-medium uppercase tracking-widest opacity-70 hover:opacity-100 transition-opacity">
-                <span>投资指南</span>
-                <ChevronDown
-                  size={14}
-                  className={`transition-transform duration-300 ${
-                    hoveredMenu === "guide" ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {/* 指南下拉面板 */}
-              <div
-                className={`absolute top-full left-1/2 -translate-x-1/2 w-80 pt-4 transition-all duration-300 ${
-                  hoveredMenu === "guide"
-                    ? "opacity-100 visible translate-y-0"
-                    : "opacity-0 invisible -translate-y-2"
-                }`}
-              >
-                <div className="bg-white dark:bg-[#1E293B] rounded-2xl shadow-2xl shadow-blue-900/10 border border-blue-50 dark:border-white/5 p-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 dark:hover:bg-white/5 transition-colors cursor-pointer group/item">
-                      <Compass
-                        size={18}
-                        className="text-slate-400 group-hover/item:text-blue-600"
-                      />
-                      <span className="text-sm font-medium">新手入林指南</span>
-                    </div>
-                    <div className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 dark:hover:bg-white/5 transition-colors cursor-pointer group/item">
-                      <Wind
-                        size={18}
-                        className="text-slate-400 group-hover/item:text-blue-600"
-                      />
-                      <span className="text-sm font-medium">波动冥想手册</span>
-                    </div>
-                    <div className="flex items-center space-x-3 p-3 rounded-xl hover:bg-blue-50 dark:hover:bg-white/5 transition-colors cursor-pointer group/item">
-                      <BookOpen
-                        size={18}
-                        className="text-slate-400 group-hover/item:text-blue-600"
-                      />
-                      <span className="text-sm font-medium">指数之书</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
+              指数估值
+            </Link>
             <Link
               href="#"
               className="text-sm font-medium uppercase tracking-widest opacity-70 hover:opacity-100 transition-opacity"
@@ -141,8 +44,8 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          {/* 右侧：功能按钮 */}
-          <div className="flex items-center space-x-4"></div>
+          {/* 右侧占位，与左侧 Logo 对称 */}
+          <div className="w-[120px]" aria-hidden />
         </div>
       </nav>
 
@@ -178,9 +81,9 @@ export default function LandingPage() {
                 />
               </button>
             </Link>
-            <Link href="/grid">
+            <Link href="/valuation">
               <button className="w-full md:w-auto px-12 py-5 rounded-full text-lg border border-slate-300 dark:border-slate-700 opacity-60 hover:opacity-100 transition-all hover:bg-blue-50/50 dark:hover:bg-white/5">
-                探索投资指南
+                指数估值
               </button>
             </Link>
           </div>

@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 
-export function GridNavbar() {
+export function ValuationNavbar() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/70 dark:bg-[#0F172A]/70 backdrop-blur-md border-b border-blue-100/20 dark:border-white/5">
-      <div className="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto relative">
+      <div className="flex justify-between items-center px-4 py-4 max-w-[1400px] mx-auto relative">
         {/* 左侧：Logo */}
         <div className="flex items-center space-x-2 group">
           <Link
@@ -15,38 +15,25 @@ export function GridNavbar() {
             <div className="w-8 h-8 bg-[#243B53] dark:bg-blue-400 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm">
               <div className="w-2 h-2 bg-white dark:bg-[#0F172A] rounded-full animate-pulse"></div>
             </div>
-            <span className="text-2xl font-serif font-bold tracking-tight text-[#243B53] dark:text-blue-100 transition-colors">
-              <span className="hover:text-blue-600 dark:hover:text-blue-300 transition-colors cursor-pointer">
-                Stillwell
-              </span>
-              <span className="opacity-70">.grid</span>
+            <span className="text-2xl font-serif font-bold tracking-tight text-[#243B53] dark:text-blue-100 hover:text-blue-600 dark:hover:text-blue-300 transition-colors">
+              Stillwell
             </span>
-          </Link>
-        </div>
-
-        {/* 中间：网格交易 / 指数估值 */}
-        <div className="hidden md:flex items-center space-x-10">
-          <Link
-            href="/grid"
-            className="text-sm font-medium uppercase tracking-widest opacity-100 transition-opacity"
-          >
-            网格交易
           </Link>
           <Link
             href="/valuation"
-            className="text-sm font-medium uppercase tracking-widest opacity-70 hover:opacity-100 transition-opacity"
+            className="text-2xl font-serif font-bold tracking-tight text-[#243B53]/70 dark:text-blue-100/70 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
           >
-            指数估值
+            .valuation
           </Link>
         </div>
 
-        {/* 右侧：关于我们 */}
-        <div className="flex items-center space-x-4">
+        {/* 右侧：仅保留 投资心法 */}
+        <div className="flex items-center">
           <Link
             href="#"
             className="text-sm font-medium uppercase tracking-widest opacity-70 hover:opacity-100 transition-opacity"
           >
-            关于我们
+            投资心法
           </Link>
         </div>
       </div>
