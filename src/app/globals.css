@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 /* 金融应用专业配色方案 */
 :root {
   /* 背景色 */
@@ -44,36 +46,23 @@
   --color-loss: var(--loss);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* 深色模式背景 */
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    
-    /* 主色调 - 深色模式下稍微提亮 */
-    --primary: #3b82f6;
-    --primary-dark: #2563eb;
-    --primary-light: #60a5fa;
-    
-    /* 强调色 */
-    --accent: #fb923c;
-    --accent-light: #fdba74;
-    
-    /* 数据可视化色 - 深色模式 */
-    --profit: #22c55e;
-    --loss: #f87171;
-    --neutral: #9ca3af;
-    
-    /* 网格类型背景色 - 深色模式 */
-    --grid-small: transparent;
-    --grid-medium: rgba(59, 130, 246, 0.15);  /* 深蓝色透明 */
-    --grid-large: rgba(168, 85, 247, 0.15);   /* 深紫色透明 */
-    
-    /* 卡片和边框 - 深色模式 */
-    --card-bg: #1a1a1a;
-    --border-color: #374151;
-    --hover-bg: #262626;
-  }
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --primary: #3b82f6;
+  --primary-dark: #2563eb;
+  --primary-light: #60a5fa;
+  --accent: #fb923c;
+  --accent-light: #fdba74;
+  --profit: #22c55e;
+  --loss: #f87171;
+  --neutral: #9ca3af;
+  --grid-small: transparent;
+  --grid-medium: rgba(59, 130, 246, 0.15);
+  --grid-large: rgba(168, 85, 247, 0.15);
+  --card-bg: #1a1a1a;
+  --border-color: #374151;
+  --hover-bg: #262626;
 }
 
 body {

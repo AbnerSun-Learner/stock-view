@@ -1,17 +1,30 @@
 "use client";
 
-import { useMemo } from "react";
+import ReactEChartsCore from "echarts-for-react/lib/core";
+import * as echarts from "echarts/core";
+import { LineChart as ELineChart } from "echarts/charts";
 import {
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-  ReferenceArea,
-  ReferenceLine,
-  CartesianGrid,
-} from "recharts";
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  DataZoomComponent,
+  MarkAreaComponent,
+  MarkLineComponent,
+} from "echarts/components";
+import { CanvasRenderer } from "echarts/renderers";
+import { useMemo } from "react";
+import type { EChartsOption } from "echarts";
+
+echarts.use([
+  ELineChart,
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  DataZoomComponent,
+  MarkAreaComponent,
+  MarkLineComponent,
+  CanvasRenderer,
+]);
 
 export interface ValuationPoint {
   date: string;
@@ -40,7 +53,6 @@ function computeBands(data: ValuationPoint[]) {
 
   const rangeBelow = median - min;
   const rangeAbove = max - median;
-  const b1 = min;
   const b2 = min + rangeBelow * 0.25;
   const b3 = min + rangeBelow * 0.5;
   const b4 = min + rangeBelow * 0.75;
@@ -49,25 +61,47 @@ function computeBands(data: ValuationPoint[]) {
   const t3 = median + rangeAbove * 0.75;
 
   return {
-    min: b1,
+    min,
     max,
     median,
     bands: [
-      { y1: b1, y2: b2, fill: "#dcfce7", label: "大买" },
-      { y1: b2, y2: b3, fill: "#bbf7d0", label: "中买" },
-      { y1: b3, y2: b4, fill: "#86efac", label: "小买" },
-      { y1: b4, y2: median, fill: "#fef9c3", label: "不买不卖" },
-      { y1: median, y2: t1, fill: "#fef9c3", label: "不买不卖" },
-      { y1: t1, y2: t2, fill: "#fed7aa", label: "小卖" },
-      { y1: t2, y2: t3, fill: "#fdba74", label: "中卖" },
-      { y1: t3, y2: max, fill: "#f97316", label: "大卖" },
+      { y1: min, y2: b2, color: "rgba(220,252,231,0.5)", label: "大买" },
+      { y1: b2, y2: b3, color: "rgba(187,247,208,0.5)", label: "中买" },
+      { y1: b3, y2: b4, color: "rgba(134,239,172,0.5)", label: "小买" },
+      { y1: b4, y2: median, color: "rgba(254,249,195,0.5)", label: "不买不卖" },
+      { y1: median, y2: t1, color: "rgba(254,249,195,0.5)", label: "不买不卖" },
+      { y1: t1, y2: t2, color: "rgba(254,215,170,0.5)", label: "小卖" },
+      { y1: t2, y2: t3, color: "rgba(253,186,116,0.5)", label: "中卖" },
+      { y1: t3, y2: max, color: "rgba(249,115,22,0.5)", label: "大卖" },
     ],
   };
 }
 
-function formatDateLabel(dateStr: string) {
-  const [y, m] = dateStr.split("-");
-  return m ? `${y}/${m}` : dateStr;
+function buildDateIndex(data: ValuationPoint[]): Map<number, number> {
+  const map = new Map<number, number>();
+  for (let i = 0; i < data.length; i++) {
+    map.set(new Date(data[i].date).getTime(), i);
+  }
+  return map;
+}
+
+function findClosestIndex(
+  dateIndex: Map<number, number>,
+  timestamps: number[],
+  ts: number
+): number {
+  const exact = dateIndex.get(ts);
+  if (exact !== undefined) return exact;
+  let best = 0
+  let bestDiff = Infinity
+  for (const t of timestamps) {
+    const diff = Math.abs(t - ts)
+    if (diff < bestDiff) {
+      bestDiff = diff
+      best = dateIndex.get(t) ?? 0
+    }
+  }
+  return best;
 }
 
 export function ValuationChart({
@@ -78,17 +112,6 @@ export function ValuationChart({
   chartHeaderRight,
 }: ValuationChartProps) {
   const bands = useMemo(() => computeBands(data), [data]);
-
-  const colors = useMemo(
-    () => ({
-      grid: theme === "dark" ? "#374151" : "#e5e7eb",
-      line: "#243B53",
-      median: "#0ea5e9",
-      text: theme === "dark" ? "#e5e7eb" : "#243B53",
-      closeLine: "#9333ea",
-    }),
-    [theme]
-  );
 
   const hasClose = useMemo(
     () => data.some((d) => typeof d.close === "number"),
@@ -123,16 +146,230 @@ export function ValuationChart({
     };
   }, [data, bands]);
 
+  const dateIndex = useMemo(() => buildDateIndex(data), [data]);
+  const timestamps = useMemo(
+    () => data.map((d) => new Date(d.date).getTime()),
+    [data]
+  );
+
+  const option = useMemo<EChartsOption>(() => {
+    if (!data.length || !bands || !stats) return {};
+
+    const peTimeData = data.map((d) => [d.date, d.value]);
+    const closeTimeData = data.map((d) => [
+      d.date,
+      typeof d.close === "number" ? d.close : null,
+    ]);
+
+    const textColor = theme === "dark" ? "#e5e7eb" : "#243B53";
+    const gridColor = theme === "dark" ? "#374151" : "#e5e7eb";
+
+    const bandMarkArea = bands.bands.map((b) => [
+      { yAxis: b.y1, itemStyle: { color: b.color } },
+      { yAxis: b.y2 },
+    ]);
+
+    const peMarkLines: Record<string, unknown>[] = [
+      {
+        yAxis: bands.max,
+        label: { formatter: bands.max.toFixed(2), position: "end", fontSize: 11, color: textColor },
+        lineStyle: { color: textColor, type: "dashed" as const, width: 1, opacity: 0.5 },
+      },
+      {
+        yAxis: bands.median,
+        label: { formatter: bands.median.toFixed(2), position: "start", fontSize: 12, color: "#0ea5e9" },
+        lineStyle: { color: "#0ea5e9", type: "dashed" as const, width: 2 },
+      },
+      {
+        yAxis: bands.min,
+        label: { formatter: bands.min.toFixed(2), position: "end", fontSize: 11, color: textColor },
+        lineStyle: { color: textColor, type: "dashed" as const, width: 1, opacity: 0.5 },
+      },
+    ];
+
+    const yAxes: EChartsOption["yAxis"] = [
+      {
+        type: "value",
+        name: "估值 (PE)",
+        nameTextStyle: { color: textColor, fontSize: 12 },
+        min: Math.floor(bands.min - 1),
+        max: Math.ceil(bands.max + 1),
+        axisLabel: { color: textColor, fontSize: 11 },
+        axisLine: { lineStyle: { color: textColor } },
+        splitLine: { lineStyle: { color: gridColor, opacity: 0.4, type: "dashed" as const } },
+      },
+    ];
+
+    if (hasClose && closeRange) {
+      yAxes.push({
+        type: "value",
+        name: "收盘点位",
+        nameTextStyle: { color: "#9333ea", fontSize: 12 },
+        min: Math.floor(closeRange.low * 0.9),
+        max: Math.ceil(closeRange.high * 1.05),
+        axisLabel: { color: "#9333ea", fontSize: 11 },
+        axisLine: { lineStyle: { color: "#9333ea" } },
+        splitLine: { show: false },
+      });
+    }
+
+    const series: EChartsOption["series"] = [
+      {
+        name: "PE",
+        type: "line",
+        yAxisIndex: 0,
+        data: peTimeData,
+        symbol: "none",
+        lineStyle: { color: "#243B53", width: 2.5 },
+        itemStyle: { color: "#243B53" },
+        emphasis: {
+          lineStyle: { width: 3 },
+          itemStyle: { borderColor: "#fff", borderWidth: 2, color: "#243B53" },
+        },
+        markArea: { silent: true, data: bandMarkArea as never },
+        markLine: {
+          silent: true,
+          symbol: "none",
+          data: peMarkLines as never,
+        },
+        z: 10,
+      },
+    ];
+
+    if (hasClose) {
+      const closeSeries: Record<string, unknown> = {
+        name: "收盘点位",
+        type: "line",
+        yAxisIndex: 1,
+        data: closeTimeData,
+        symbol: "none",
+        lineStyle: { color: "#9333ea", width: 2 },
+        itemStyle: { color: "#9333ea" },
+        emphasis: {
+          lineStyle: { width: 2.5 },
+          itemStyle: { borderColor: "#fff", borderWidth: 1, color: "#9333ea" },
+        },
+        z: 9,
+      };
+
+      if (showDropZones && closeRange) {
+        closeSeries.markArea = {
+          silent: true,
+          data: [
+            [
+              { yAxis: closeRange.drop80, itemStyle: { color: "rgba(239,68,68,0.12)" } },
+              { yAxis: closeRange.drop70 },
+            ],
+          ],
+        };
+        closeSeries.markLine = {
+          silent: true,
+          symbol: "none",
+          data: [
+            {
+              yAxis: closeRange.drop70,
+              label: { formatter: `跌 70% (${closeRange.drop70.toFixed(0)})`, position: "end", fontSize: 10, color: "#dc2626" },
+              lineStyle: { color: "#dc2626", type: "dashed", width: 1 },
+            },
+            {
+              yAxis: closeRange.drop80,
+              label: { formatter: `跌 80% (${closeRange.drop80.toFixed(0)})`, position: "end", fontSize: 10, color: "#991b1b" },
+              lineStyle: { color: "#991b1b", type: "dashed", width: 1 },
+            },
+          ],
+        };
+      }
+
+      series.push(closeSeries as never);
+    }
+
+    function getBandLabel(value: number): string {
+      const band = bands!.bands.find((b) => value >= b.y1 && value <= b.y2);
+      return band?.label ?? "—";
+    }
+
+    return {
+      grid: {
+        top: 40,
+        right: hasClose ? 80 : 40,
+        bottom: 80,
+        left: 60,
+        containLabel: false,
+      },
+      xAxis: {
+        type: "time",
+        axisLabel: {
+          color: textColor,
+          fontSize: 11,
+          hideOverlap: true,
+        },
+        axisLine: { lineStyle: { color: gridColor } },
+        splitLine: { show: false },
+      },
+      yAxis: yAxes,
+      series,
+      tooltip: {
+        trigger: "axis",
+        backgroundColor: "#fff",
+        borderColor: "#e2e8f0",
+        borderWidth: 1,
+        padding: [12, 16],
+        textStyle: { color: "#18181b", fontSize: 13 },
+        formatter(params: unknown) {
+          const arr = params as { data: [string, number]; axisValue: number }[];
+          if (!arr?.length) return "";
+          const ts = arr[0].axisValue;
+          const idx = findClosestIndex(dateIndex, timestamps, ts);
+          const point = data[idx];
+          if (!point) return "";
+          const suggestion = getBandLabel(point.value);
+          const d = new Date(point.date);
+          const dateLabel = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
+          let html = `<div style="font-size:12px;color:#71717a;margin-bottom:4px">${dateLabel}</div>`;
+          html += `<div style="font-weight:600;color:#18181b">PE：${point.value.toFixed(2)}</div>`;
+          if (typeof point.close === "number") {
+            html += `<div style="font-size:13px;color:#52525b;margin-top:4px">收盘：${point.close.toFixed(2)}</div>`;
+          }
+          html += `<div style="margin-top:6px;font-size:13px;font-weight:500;color:#3f3f46">操作建议：${suggestion}</div>`;
+          return html;
+        },
+      },
+      dataZoom: [
+        {
+          type: "inside",
+          xAxisIndex: 0,
+          filterMode: "none",
+          zoomOnMouseWheel: true,
+          moveOnMouseMove: true,
+          moveOnMouseWheel: false,
+        },
+        {
+          type: "slider",
+          xAxisIndex: 0,
+          filterMode: "none",
+          height: 24,
+          bottom: 8,
+          borderColor: "#e2e8f0",
+          fillerColor: "rgba(36,59,83,0.08)",
+          handleStyle: { color: "#243B53", borderColor: "#243B53" },
+          textStyle: { color: textColor, fontSize: 11 },
+          dataBackground: {
+            lineStyle: { color: "#94a3b8" },
+            areaStyle: { color: "rgba(148,163,184,0.15)" },
+          },
+          selectedDataBackground: {
+            lineStyle: { color: "#243B53" },
+            areaStyle: { color: "rgba(36,59,83,0.12)" },
+          },
+        },
+      ],
+      legend: { show: false },
+      animation: true,
+      animationDuration: 600,
+    };
+  }, [data, bands, stats, theme, hasClose, closeRange, showDropZones, dateIndex, timestamps]);
+
   if (!data.length || !bands || !stats) return null;
-
-  const yMin = Math.floor(Math.min(bands.min - 1, ...data.map((d) => d.value)));
-  const yMax = Math.ceil(Math.max(bands.max + 1, ...data.map((d) => d.value)));
-  const margin = { top: 16, right: hasClose ? 60 : 24, left: 16, bottom: 48 };
-
-  function getBandLabel(value: number): string {
-    const band = bands!.bands.find((b) => value >= b.y1 && value <= b.y2);
-    return band?.label ?? "—";
-  }
 
   return (
     <div className="relative w-full">
@@ -179,224 +416,13 @@ export function ValuationChart({
         )}
       </div>
 
-      <div className="relative h-[480px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={margin}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke={colors.grid}
-              opacity={0.4}
-              vertical={false}
-            />
-            <XAxis
-              dataKey="date"
-              tickFormatter={formatDateLabel}
-              stroke={colors.text}
-              tick={{ fill: colors.text, fontSize: 11 }}
-              label={{
-                value: "日期",
-                position: "insideBottom",
-                offset: -8,
-                style: { fill: colors.text, fontSize: 12 },
-              }}
-            />
-
-            {/* 左 Y 轴：PE 估值 */}
-            <YAxis
-              yAxisId="left"
-              domain={[yMin, yMax]}
-              stroke={colors.text}
-              tick={{ fill: colors.text, fontSize: 11 }}
-              label={{
-                value: "估值 (PE)",
-                angle: -90,
-                position: "insideLeft",
-                style: { fill: colors.text, fontSize: 12 },
-              }}
-            />
-
-            {/* 右 Y 轴：收盘点位 */}
-            {hasClose && closeRange && (
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                domain={[
-                  Math.floor(closeRange.low * 0.9),
-                  Math.ceil(closeRange.high * 1.05),
-                ]}
-                stroke={colors.closeLine}
-                tick={{ fill: colors.closeLine, fontSize: 11 }}
-                label={{
-                  value: "收盘点位",
-                  angle: 90,
-                  position: "insideRight",
-                  style: { fill: colors.closeLine, fontSize: 12 },
-                }}
-              />
-            )}
-
-            <Tooltip
-              content={({ active, payload }) => {
-                if (!active || !payload?.[0]) return null;
-                const p = payload[0].payload as ValuationPoint;
-                const suggestion = getBandLabel(p.value);
-                return (
-                  <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-lg">
-                    <div className="text-xs text-zinc-500 mb-1">
-                      {formatDateLabel(p.date)}
-                    </div>
-                    <div className="font-semibold text-zinc-900">
-                      PE：{p.value.toFixed(2)}
-                    </div>
-                    {typeof p.close === "number" && (
-                      <div className="text-sm text-zinc-600 mt-1">
-                        收盘：{p.close.toFixed(2)}
-                      </div>
-                    )}
-                    <div className="mt-1.5 text-sm font-medium text-zinc-700">
-                      操作建议：{suggestion}
-                    </div>
-                  </div>
-                );
-              }}
-            />
-
-            {/* 估值带 - 全部绑定 yAxisId="left" */}
-            {bands.bands.map((band, i) => (
-              <ReferenceArea
-                key={i}
-                yAxisId="left"
-                y1={band.y1}
-                y2={band.y2}
-                fill={band.fill}
-                fillOpacity={0.5}
-              />
-            ))}
-
-            {/* 70%/80% 下跌区域标注（基于右 Y 轴收盘点位） */}
-            {showDropZones && hasClose && closeRange && (
-              <>
-                <ReferenceArea
-                  yAxisId="right"
-                  y1={closeRange.drop70}
-                  y2={closeRange.drop80}
-                  fill="#ef4444"
-                  fillOpacity={0.12}
-                  label={{
-                    value: "下跌 70%~80%",
-                    position: "insideTop",
-                    fill: "#dc2626",
-                    fontSize: 11,
-                  }}
-                />
-                <ReferenceLine
-                  yAxisId="right"
-                  y={closeRange.drop70}
-                  stroke="#dc2626"
-                  strokeDasharray="4 4"
-                  strokeWidth={1}
-                  label={{
-                    value: `跌 70% (${closeRange.drop70.toFixed(0)})`,
-                    position: "right",
-                    fill: "#dc2626",
-                    fontSize: 10,
-                  }}
-                />
-                <ReferenceLine
-                  yAxisId="right"
-                  y={closeRange.drop80}
-                  stroke="#991b1b"
-                  strokeDasharray="4 4"
-                  strokeWidth={1}
-                  label={{
-                    value: `跌 80% (${closeRange.drop80.toFixed(0)})`,
-                    position: "right",
-                    fill: "#991b1b",
-                    fontSize: 10,
-                  }}
-                />
-              </>
-            )}
-
-            {/* 参考线 - 全部绑定 yAxisId="left" */}
-            <ReferenceLine
-              yAxisId="left"
-              y={bands.max}
-              stroke={colors.text}
-              strokeWidth={1}
-              strokeDasharray="2 2"
-              strokeOpacity={0.5}
-              label={{
-                value: bands.max.toFixed(2),
-                position: "right",
-                fill: colors.text,
-                fontSize: 11,
-              }}
-            />
-            <ReferenceLine
-              yAxisId="left"
-              y={bands.median}
-              stroke={colors.median}
-              strokeWidth={2}
-              strokeDasharray="6 4"
-              label={{
-                value: bands.median.toFixed(2),
-                position: "left",
-                fill: colors.median,
-                fontSize: 12,
-              }}
-            />
-            <ReferenceLine
-              yAxisId="left"
-              y={bands.min}
-              stroke={colors.text}
-              strokeWidth={1}
-              strokeDasharray="2 2"
-              strokeOpacity={0.5}
-              label={{
-                value: bands.min.toFixed(2),
-                position: "right",
-                fill: colors.text,
-                fontSize: 11,
-              }}
-            />
-
-            {/* PE 折线 → 左 Y 轴 */}
-            <Line
-              type="monotone"
-              dataKey="value"
-              yAxisId="left"
-              stroke={colors.line}
-              strokeWidth={2.5}
-              dot={false}
-              activeDot={{
-                r: 5,
-                fill: colors.line,
-                stroke: "#fff",
-                strokeWidth: 2,
-              }}
-            />
-
-            {/* 收盘点位折线 → 右 Y 轴 */}
-            {hasClose && (
-              <Line
-                type="monotone"
-                dataKey="close"
-                yAxisId="right"
-                stroke={colors.closeLine}
-                strokeWidth={2}
-                dot={false}
-                activeDot={{
-                  r: 4,
-                  fill: colors.closeLine,
-                  stroke: "#fff",
-                  strokeWidth: 1,
-                }}
-              />
-            )}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+      <ReactEChartsCore
+        echarts={echarts}
+        option={option}
+        style={{ height: 520, width: "100%" }}
+        notMerge
+        lazyUpdate
+      />
 
       <div className="mt-2 flex flex-wrap items-center justify-center gap-4 text-xs">
         <span className="flex items-center gap-1">

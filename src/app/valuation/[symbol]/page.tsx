@@ -1,77 +1,82 @@
-"use client";
+"use client"
 
-import { ValuationChart } from "@/components/valuation/valuation-chart";
-import type { ValuationPoint } from "@/components/valuation/valuation-chart";
-import { ValuationNavbar } from "@/components/valuation/valuation-navbar";
-import { ValuationPePanel } from "@/components/valuation/valuation-pe-panel";
-import { INDEX_LIST, computePeStats } from "@/lib/valuation";
-import { useParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ValuationChart } from "@/components/valuation/valuation-chart"
+import type { ValuationPoint } from "@/components/valuation/valuation-chart"
+import { ValuationDistribution } from "@/components/valuation/valuation-distribution"
+import { ValuationDropPanel } from "@/components/valuation/valuation-drop-panel"
+import { ValuationNavbar } from "@/components/valuation/valuation-navbar"
+import { ValuationPePanel } from "@/components/valuation/valuation-pe-panel"
+import { ValuationWeightChart } from "@/components/valuation/valuation-weight-chart"
+import { INDEX_LIST, computePeStats } from "@/lib/valuation"
+import { useParams } from "next/navigation"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
 interface HoldingItem {
-  rank: number;
-  name: string;
-  code: string;
-  weight: number;
-  industry: string;
+  rank: number
+  name: string
+  code: string
+  weight: number
+  industry: string
 }
 
 export default function ValuationDetailPage() {
-  const params = useParams();
-  const symbol = typeof params.symbol === "string" ? params.symbol : "";
+  const params = useParams()
+  const symbol = typeof params.symbol === "string" ? params.symbol : ""
   const indexName =
-    INDEX_LIST.find((i) => i.symbol === symbol)?.name ?? `${symbol}指数`;
+    INDEX_LIST.find((i) => i.symbol === symbol)?.name ?? `${symbol}指数`
 
-  const [chartData, setChartData] = useState<ValuationPoint[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showDropZones, setShowDropZones] = useState(false);
-  const [holdings, setHoldings] = useState<HoldingItem[]>([]);
-  const [holdingsLoading, setHoldingsLoading] = useState(true);
+  const [chartData, setChartData] = useState<ValuationPoint[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [showDropZones, setShowDropZones] = useState(false)
+  const [holdings, setHoldings] = useState<HoldingItem[]>([])
+  const [holdingsLoading, setHoldingsLoading] = useState(true)
+  const [lastDate, setLastDate] = useState("")
 
   const fetchData = useCallback(async () => {
-    if (!symbol) return;
-    setLoading(true);
-    setError(null);
+    if (!symbol) return
+    setLoading(true)
+    setError(null)
     try {
       const res = await fetch(
         `/api/valuation?symbol=${encodeURIComponent(symbol)}`
-      );
-      const json = await res.json().catch(() => ({}));
+      )
+      const json = await res.json().catch(() => ({}))
       if (!res.ok) {
-        setError(json.error || "获取估值数据失败");
-        setChartData([]);
-        return;
+        setError(json.error || "获取估值数据失败")
+        setChartData([])
+        return
       }
-      setChartData(json.data || []);
+      setChartData(json.data || [])
+      if (json.latest?.date) setLastDate(json.latest.date)
     } catch {
-      setError("网络或服务异常");
-      setChartData([]);
+      setError("网络或服务异常")
+      setChartData([])
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, [symbol]);
+  }, [symbol])
 
   const fetchHoldings = useCallback(async () => {
-    if (!symbol) return;
-    setHoldingsLoading(true);
+    if (!symbol) return
+    setHoldingsLoading(true)
     try {
       const res = await fetch(
         `/api/holdings?symbol=${encodeURIComponent(symbol)}`
-      );
-      const json = await res.json().catch(() => ({}));
-      setHoldings(json.holdings || []);
+      )
+      const json = await res.json().catch(() => ({}))
+      setHoldings(json.holdings || [])
     } catch {
-      setHoldings([]);
+      setHoldings([])
     } finally {
-      setHoldingsLoading(false);
+      setHoldingsLoading(false)
     }
-  }, [symbol]);
+  }, [symbol])
 
   useEffect(() => {
-    fetchData();
-    fetchHoldings();
-  }, [fetchData, fetchHoldings]);
+    fetchData()
+    fetchHoldings()
+  }, [fetchData, fetchHoldings])
 
   const peStats = useMemo(
     () =>
@@ -79,7 +84,36 @@ export default function ValuationDetailPage() {
         ? computePeStats(chartData.map((d) => d.value))
         : null,
     [chartData]
-  );
+  )
+
+  const pbStats = useMemo(() => {
+    const pbValues = chartData
+      .map((d) => d.pb)
+      .filter((v): v is number => typeof v === "number" && !isNaN(v))
+    if (pbValues.length < 10) return null
+    const raw = computePeStats(pbValues)
+    return {
+      currentValue: raw.current,
+      currentPercentile: raw.currentPercentile,
+      percentile80: raw.percentile80,
+      percentile50: raw.percentile50,
+      percentile20: raw.percentile20,
+      max: raw.max,
+      average: raw.average,
+      min: raw.min,
+    }
+  }, [chartData])
+
+  const closeRange = useMemo(() => {
+    const closes = chartData
+      .map((d) => d.close)
+      .filter((c): c is number => typeof c === "number")
+    if (!closes.length) return null
+    return {
+      current: closes[closes.length - 1],
+      high: Math.max(...closes),
+    }
+  }, [chartData])
 
   return (
     <div className="min-h-screen bg-[#F0F4F8] text-[#243B53]">
@@ -91,10 +125,16 @@ export default function ValuationDetailPage() {
 
       <div className="pt-20">
         <div className="max-w-[1400px] mx-auto px-4 py-8">
-          <div className="mb-6">
-            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-zinc-900">
-              {indexName} · 估值分析
-            </h1>
+          {/* 页头 */}
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-zinc-900">
+                {indexName} · 估值分析
+              </h1>
+              {lastDate && (
+                <p className="text-sm text-zinc-400 mt-1">数据更新至 {lastDate}</p>
+              )}
+            </div>
           </div>
 
           {loading && (
@@ -110,10 +150,10 @@ export default function ValuationDetailPage() {
           )}
 
           {!loading && !error && chartData.length > 0 && peStats && (
-            <>
-              {/* 上半部分：左右布局 */}
-              <section className="flex flex-col lg:flex-row gap-6 mb-10 lg:items-center">
-                <aside className="w-full lg:w-[280px] shrink-0">
+            <div className="space-y-6">
+              {/* 第一行：左侧面板 + 主图表 */}
+              <section className="flex flex-col lg:flex-row gap-6">
+                <aside className="w-full lg:w-[280px] shrink-0 space-y-6">
                   <ValuationPePanel
                     currentValue={peStats.current}
                     currentPercentile={peStats.currentPercentile}
@@ -123,9 +163,18 @@ export default function ValuationDetailPage() {
                     max={peStats.max}
                     average={peStats.average}
                     min={peStats.min}
+                    pbStats={pbStats}
                   />
+
+                  {closeRange && (
+                    <ValuationDropPanel
+                      currentClose={closeRange.current}
+                      highestClose={closeRange.high}
+                    />
+                  )}
                 </aside>
-                <main className="flex-1 min-w-0">
+
+                <main className="flex-1 min-w-0 space-y-6">
                   <div className="rounded-2xl border border-slate-200/80 bg-white/95 p-6 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)]">
                     <ValuationChart
                       data={chartData}
@@ -161,11 +210,61 @@ export default function ValuationDetailPage() {
                 </main>
               </section>
 
-              {/* 下半部分：前十大持仓 */}
+              {/* 第二行：估值分布图 */}
+              <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="rounded-2xl border border-slate-200/80 bg-white/95 p-5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)]">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-zinc-800">PE 估值分布</h3>
+                    <span className="text-[11px] text-zinc-400">
+                      历史各 PE 区间出现频次
+                    </span>
+                  </div>
+                  <ValuationDistribution
+                    values={chartData.map((d) => d.value)}
+                    currentValue={peStats.current}
+                    label="PE"
+                    accentColor="#3b82f6"
+                  />
+                </div>
+
+                {pbStats && (
+                  <div className="rounded-2xl border border-slate-200/80 bg-white/95 p-5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)]">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-semibold text-zinc-800">PB 估值分布</h3>
+                      <span className="text-[11px] text-zinc-400">
+                        历史各 PB 区间出现频次
+                      </span>
+                    </div>
+                    <ValuationDistribution
+                      values={chartData
+                        .map((d) => d.pb)
+                        .filter((v): v is number => typeof v === "number" && !isNaN(v))}
+                      currentValue={pbStats.currentValue}
+                      label="PB"
+                      accentColor="#8b5cf6"
+                    />
+                  </div>
+                )}
+
+                {!pbStats && (
+                  <div className="rounded-2xl border border-slate-200/80 bg-white/95 p-5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] flex items-center justify-center text-sm text-zinc-400">
+                    PB 数据不足，暂无分布图
+                  </div>
+                )}
+              </section>
+
+              {/* 第三行：指数权重（行业 + 持仓环形图） */}
+              {!holdingsLoading && holdings.length > 0 && (
+                <section>
+                  <ValuationWeightChart holdings={holdings} />
+                </section>
+              )}
+
+              {/* 第四行：前十大持仓表 */}
               <section className="rounded-2xl border border-slate-200/80 bg-white/95 overflow-hidden shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)]">
                 <div className="border-b border-slate-200 px-6 py-4">
-                  <h2 className="text-lg font-semibold text-zinc-900">
-                    该指数前十大持仓
+                  <h2 className="text-sm font-semibold text-zinc-800">
+                    前十大持仓明细
                   </h2>
                 </div>
                 <div className="overflow-x-auto">
@@ -237,7 +336,7 @@ export default function ValuationDetailPage() {
                   </table>
                 </div>
               </section>
-            </>
+            </div>
           )}
 
           {!loading && !error && chartData.length === 0 && (
@@ -248,5 +347,5 @@ export default function ValuationDetailPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }
