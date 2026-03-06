@@ -9,9 +9,13 @@ import type { ColumnsType } from "antd/es/table";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-type PercentilePeriod = "all" | "10y" | "5y"
+type PercentilePeriod = "all" | "10y" | "5y";
 
-const NULL_PERCENTILES: Record<PercentilePeriod, null> = { all: null, "10y": null, "5y": null }
+const NULL_PERCENTILES: Record<PercentilePeriod, null> = {
+  all: null,
+  "10y": null,
+  "5y": null,
+};
 
 interface ValuationRow {
   symbol: string;
@@ -19,6 +23,7 @@ interface ValuationRow {
   volatility: number | null;
   pe: number | null;
   pePercentiles: Record<PercentilePeriod, number | null>;
+  close: number | null;
   pb: number | null;
   pbPercentiles: Record<PercentilePeriod, number | null>;
   updateDate: string | null;
@@ -43,30 +48,31 @@ function computeAnnualVolatility(closes: number[]): number | null {
   }
   if (returns.length < 10) return null;
   const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
-  const variance = returns.reduce((a, b) => a + (b - mean) ** 2, 0) / (returns.length - 1);
+  const variance =
+    returns.reduce((a, b) => a + (b - mean) ** 2, 0) / (returns.length - 1);
   return Math.round(Math.sqrt(variance) * Math.sqrt(252) * 10000) / 100;
 }
 
 function getDateCutoff(period: PercentilePeriod): string | null {
-  if (period === "all") return null
-  const now = new Date()
-  now.setFullYear(now.getFullYear() - (period === "10y" ? 10 : 5))
-  return now.toISOString().slice(0, 10)
+  if (period === "all") return null;
+  const now = new Date();
+  now.setFullYear(now.getFullYear() - (period === "10y" ? 10 : 5));
+  return now.toISOString().slice(0, 10);
 }
 
 function computeAllPercentiles(
   datedValues: { date: string; value: number }[],
   current: number
 ): Record<PercentilePeriod, number | null> {
-  const result = {} as Record<PercentilePeriod, number | null>
+  const result = {} as Record<PercentilePeriod, number | null>;
   for (const period of ["all", "10y", "5y"] as PercentilePeriod[]) {
-    const cutoff = getDateCutoff(period)
+    const cutoff = getDateCutoff(period);
     const values = cutoff
       ? datedValues.filter((d) => d.date >= cutoff).map((d) => d.value)
-      : datedValues.map((d) => d.value)
-    result[period] = computePercentile(values, current)
+      : datedValues.map((d) => d.value);
+    result[period] = computePercentile(values, current);
   }
-  return result
+  return result;
 }
 
 const PERCENTILE_PERIOD: PercentilePeriod = "10y";
@@ -84,6 +90,7 @@ export default function ValuationPage() {
         volatility: null,
         pe: null,
         pePercentiles: { ...NULL_PERCENTILES },
+        close: null,
         pb: null,
         pbPercentiles: { ...NULL_PERCENTILES },
         updateDate: null,
@@ -95,7 +102,8 @@ export default function ValuationPage() {
       INDEX_LIST.map(async (item) => {
         try {
           const res = await fetch(
-            `/api/valuation?symbol=${encodeURIComponent(item.symbol)}`
+            `/api/valuation?symbol=${encodeURIComponent(item.symbol)}`,
+            { cache: "no-store" }
           );
           const json = await res.json().catch(() => ({}));
           if (!res.ok) {
@@ -105,6 +113,7 @@ export default function ValuationPage() {
               volatility: null,
               pe: null,
               pePercentiles: { ...NULL_PERCENTILES },
+              close: null,
               pb: null,
               pbPercentiles: { ...NULL_PERCENTILES },
               updateDate: null,
@@ -118,12 +127,14 @@ export default function ValuationPage() {
             close?: number;
             pb?: number | null;
           }[];
-          const latest = json.latest as {
-            date: string;
-            pe: number;
-            close?: number;
-            pb?: number | null;
-          } | undefined;
+          const latest = json.latest as
+            | {
+                date: string;
+                pe: number;
+                close?: number;
+                pb?: number | null;
+              }
+            | undefined;
           if (!data?.length) {
             return {
               symbol: item.symbol,
@@ -131,6 +142,7 @@ export default function ValuationPage() {
               volatility: null,
               pe: null,
               pePercentiles: { ...NULL_PERCENTILES },
+              close: null,
               pb: null,
               pbPercentiles: { ...NULL_PERCENTILES },
               updateDate: null,
@@ -140,15 +152,27 @@ export default function ValuationPage() {
           }
           const values = data.map((d) => d.value);
           const currentPe = latest?.pe ?? values[values.length - 1];
-          const updateDate = latest?.date ?? data[data.length - 1]?.date ?? null;
-          const peDatedValues = data.map((d) => ({ date: d.date, value: d.value }));
+          const updateDate =
+            latest?.date ?? data[data.length - 1]?.date ?? null;
+          const peDatedValues = data.map((d) => ({
+            date: d.date,
+            value: d.value,
+          }));
           const pePercentiles = computeAllPercentiles(peDatedValues, currentPe);
           const pbDatedValues = data
-            .filter((d): d is typeof d & { pb: number } => typeof d.pb === "number" && d.pb > 0)
+            .filter(
+              (d): d is typeof d & { pb: number } =>
+                typeof d.pb === "number" && d.pb > 0
+            )
             .map((d) => ({ date: d.date, value: d.pb }));
-          const currentPb = latest?.pb != null
-            ? (typeof latest.pb === "number" ? latest.pb : null)
-            : pbDatedValues.length ? pbDatedValues[pbDatedValues.length - 1].value : null;
+          const currentPb =
+            latest?.pb != null
+              ? typeof latest.pb === "number"
+                ? latest.pb
+                : null
+              : pbDatedValues.length
+              ? pbDatedValues[pbDatedValues.length - 1].value
+              : null;
           const pbPercentiles =
             currentPb != null
               ? computeAllPercentiles(pbDatedValues, currentPb)
@@ -156,6 +180,12 @@ export default function ValuationPage() {
           const closes = data
             .map((d) => d.close)
             .filter((c): c is number => typeof c === "number");
+          const currentClose =
+            typeof latest?.close === "number"
+              ? latest.close
+              : closes.length
+              ? closes[closes.length - 1]
+              : null;
           const volatility = computeAnnualVolatility(closes);
           return {
             symbol: item.symbol,
@@ -163,6 +193,7 @@ export default function ValuationPage() {
             volatility,
             pe: currentPe,
             pePercentiles,
+            close: currentClose,
             pb: currentPb,
             pbPercentiles,
             updateDate,
@@ -176,6 +207,7 @@ export default function ValuationPage() {
             volatility: null,
             pe: null,
             pePercentiles: { ...NULL_PERCENTILES },
+            close: null,
             pb: null,
             pbPercentiles: { ...NULL_PERCENTILES },
             updateDate: null,
@@ -189,7 +221,10 @@ export default function ValuationPage() {
   }, []);
 
   useEffect(() => {
-    fetchRows();
+    const id = requestAnimationFrame(() => {
+      fetchRows();
+    });
+    return () => cancelAnimationFrame(id);
   }, [fetchRows]);
 
   const filteredRows = useMemo(
@@ -208,9 +243,11 @@ export default function ValuationPage() {
         key: "name",
         render: (_: string, r: ValuationRow) => (
           <div>
-            <span className="font-medium text-zinc-900">{r.name}</span>
+            <span className="font-medium text-[var(--foreground)]">
+              {r.name}
+            </span>
             {r.updateDate && (
-              <span className="block text-xs text-zinc-500 mt-0.5">
+              <span className="block text-xs text-[var(--muted-foreground)] mt-0.5">
                 数据更新：{r.updateDate}
               </span>
             )}
@@ -221,65 +258,91 @@ export default function ValuationPage() {
         title: "代码",
         dataIndex: "symbol",
         key: "symbol",
-        className: "font-mono text-zinc-700",
+        className: "font-mono text-[var(--foreground)]",
+      },
+      {
+        title: "收盘点位",
+        key: "close",
+        align: "right",
+        className: "font-mono text-[var(--foreground)]",
+        render: (_: unknown, r: ValuationRow) =>
+          r.loading
+            ? "…"
+            : r.error
+              ? "—"
+              : r.close != null
+                ? r.close.toFixed(2)
+                : "—",
       },
       {
         title: "市盈率",
         key: "pe",
         align: "right",
-        className: "font-mono text-zinc-700",
+        className: "font-mono text-[var(--foreground)]",
         render: (_: unknown, r: ValuationRow) =>
-          r.loading ? "…" : r.error ? "—" : r.pe != null ? r.pe.toFixed(2) : "—",
+          r.loading
+            ? "…"
+            : r.error
+            ? "—"
+            : r.pe != null
+            ? r.pe.toFixed(2)
+            : "—",
       },
       {
         title: (
           <span className="inline-flex items-center gap-1">
-            市盈率分位(10年)
+            市盈率分位
             <Tooltip title="当前百分位使用的时间期限是十年">
-              <QuestionCircleOutlined className="text-zinc-400 text-xs cursor-help" />
+              <QuestionCircleOutlined className="text-[var(--muted-foreground)] text-xs cursor-help" />
             </Tooltip>
           </span>
         ),
         key: "pePercentile",
         align: "right",
-        className: "font-mono text-zinc-700",
+        className: "font-mono text-[var(--foreground)]",
         render: (_: unknown, r: ValuationRow) =>
           r.loading
             ? "…"
             : r.error
-              ? "—"
-              : r.pePercentiles[PERCENTILE_PERIOD] != null
-                ? `${r.pePercentiles[PERCENTILE_PERIOD]}%`
-                : "—",
+            ? "—"
+            : r.pePercentiles[PERCENTILE_PERIOD] != null
+            ? `${r.pePercentiles[PERCENTILE_PERIOD]}%`
+            : "—",
       },
       {
         title: "市净率",
         key: "pb",
         align: "right",
-        className: "font-mono text-zinc-700",
+        className: "font-mono text-[var(--foreground)]",
         render: (_: unknown, r: ValuationRow) =>
-          r.loading ? "…" : r.error ? "—" : r.pb != null ? r.pb.toFixed(2) : "—",
+          r.loading
+            ? "…"
+            : r.error
+            ? "—"
+            : r.pb != null
+            ? r.pb.toFixed(2)
+            : "—",
       },
       {
         title: (
           <span className="inline-flex items-center gap-1">
-            市净率分位(10年)
+            市净率分位
             <Tooltip title="当前百分位使用的时间期限是十年">
-              <QuestionCircleOutlined className="text-zinc-400 text-xs cursor-help" />
+              <QuestionCircleOutlined className="text-[var(--muted-foreground)] text-xs cursor-help" />
             </Tooltip>
           </span>
         ),
         key: "pbPercentile",
         align: "right",
-        className: "font-mono text-zinc-700",
+        className: "font-mono text-[var(--foreground)]",
         render: (_: unknown, r: ValuationRow) =>
           r.loading
             ? "…"
             : r.error
-              ? "—"
-              : r.pbPercentiles[PERCENTILE_PERIOD] != null
-                ? `${r.pbPercentiles[PERCENTILE_PERIOD]}%`
-                : "—",
+            ? "—"
+            : r.pbPercentiles[PERCENTILE_PERIOD] != null
+            ? `${r.pbPercentiles[PERCENTILE_PERIOD]}%`
+            : "—",
       },
       {
         title: "详细分析",
@@ -288,7 +351,7 @@ export default function ValuationPage() {
         render: (_: unknown, r: ValuationRow) => (
           <Link
             href={`/valuation/${r.symbol}`}
-            className="text-[#243B53] underline hover:text-[#243B53]/80 cursor-pointer font-medium"
+            className="text-[var(--brand)] underline hover:opacity-80 cursor-pointer font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--page-bg)] rounded-sm"
           >
             估值分析
           </Link>
@@ -300,60 +363,61 @@ export default function ValuationPage() {
 
   return (
     <AntdProvider>
-      <div className="min-h-screen transition-colors duration-500 bg-[#F0F4F8] text-[#243B53]">
+      <div className="min-h-screen bg-[var(--page-bg)] text-[var(--foreground)]">
         <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-slate-200/20 rounded-full blur-[140px]" />
-          <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-slate-200/30 rounded-full blur-[100px]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-slate-200/10 dark:bg-slate-800/10 rounded-full blur-[100px]" />
         </div>
 
         <ValuationNavbar />
 
-        <div className="pt-20">
-          <div className="max-w-[1400px] mx-auto px-4 py-8">
+        <div className="pt-[4.5rem]">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 py-10">
             <div className="text-center mb-8">
-              <h1 className="text-4xl md:text-5xl font-serif font-medium leading-tight mb-3 tracking-tight">
+              <h1 className="text-4xl md:text-5xl font-semibold leading-tight tracking-tight text-[var(--foreground)] mb-3">
                 指数估值
               </h1>
-              <p className="text-lg opacity-70 leading-relaxed font-light max-w-2xl mx-auto">
-                以十年中值为锚，历史高低为界，看清当前估值所处区间
+              <p className="text-lg text-[var(--muted-foreground)] leading-relaxed font-light max-w-2xl mx-auto">
+                以十年中值为锚，历史高低为界。分位为 10 年历史 PE/PB 的百分位。
               </p>
             </div>
 
-            <div className="rounded-2xl border border-slate-200/80 bg-white/90 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
-              <div className="border-b border-slate-200/80 px-6 py-4 flex flex-wrap items-center justify-end gap-4">
-                <Input.Search
-                  placeholder="搜索指数名称或代码"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  onSearch={() => setAppliedKeyword(searchInput)}
-                  onPressEnter={() => setAppliedKeyword(searchInput)}
-                  allowClear
-                  className="max-w-[280px]"
-                  style={{ borderRadius: 8 }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setAppliedKeyword(searchInput)}
-                  className="h-9 px-4 rounded-lg bg-[#243B53] text-white text-sm font-medium hover:opacity-90 active:scale-[0.98] transition-transform"
-                >
-                  搜索
-                </button>
-              </div>
+            <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+              <Input
+                placeholder="搜索指数名称或代码"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onPressEnter={() => setAppliedKeyword(searchInput)}
+                allowClear
+                className="max-w-[260px] valuation-search-input"
+                style={{ borderRadius: 4 }}
+              />
+              <button
+                type="button"
+                onClick={() => setAppliedKeyword(searchInput)}
+                className="min-w-[72px] h-8 px-4 rounded-[4px] bg-[var(--brand)] text-white text-sm font-medium hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+              >
+                搜索
+              </button>
+            </div>
 
-              <Table<ValuationRow>
-                rowKey="symbol"
-                columns={columns}
-                dataSource={filteredRows}
-                pagination={false}
-                locale={{
-                  emptyText: rows.some((r) => r.loading)
-                    ? "加载中…"
-                    : appliedKeyword.trim()
+            <div className="rounded-xl border border-[color:var(--border-color)] bg-[var(--card-bg-elevated)] overflow-hidden">
+              <div className="valuation-table-wrap overflow-x-auto overflow-y-hidden">
+                <Table<ValuationRow>
+                  rowKey="symbol"
+                  columns={columns}
+                  dataSource={filteredRows}
+                  pagination={false}
+                  scroll={{ x: "max-content" }}
+                  locale={{
+                    emptyText: rows.some((r) => r.loading)
+                      ? "加载中…"
+                      : appliedKeyword.trim()
                       ? "未匹配到相关指数"
                       : "暂无指数数据",
-                }}
-                className="valuation-table"
-              />
+                  }}
+                  className="valuation-table"
+                />
+              </div>
             </div>
           </div>
         </div>

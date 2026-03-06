@@ -14,7 +14,7 @@ export function StatsCards({ stressTest }: StatsCardsProps) {
         <div className="text-[10px] font-bold text-blue-700 dark:text-blue-300 mb-2 uppercase tracking-widest opacity-70">
           总买入金额
         </div>
-        <div className="text-2xl font-bold text-[#243B53] dark:text-blue-100">
+        <div className="text-2xl font-bold text-[var(--foreground)]">
           {stressTest.totalBuyAmount.toLocaleString()}
         </div>
       </div>
@@ -22,7 +22,7 @@ export function StatsCards({ stressTest }: StatsCardsProps) {
         <div className="text-[10px] font-bold text-purple-700 dark:text-purple-300 mb-2 uppercase tracking-widest opacity-70">
           总卖出金额
         </div>
-        <div className="text-2xl font-bold text-[#243B53] dark:text-purple-100">
+        <div className="text-2xl font-bold text-[var(--foreground)]">
           {stressTest.totalSellAmount.toLocaleString()}
         </div>
       </div>
@@ -36,7 +36,7 @@ export function StatsCards({ stressTest }: StatsCardsProps) {
             </div>
           </div>
         </div>
-        <div className="text-2xl font-bold text-[#243B53] dark:text-indigo-100">
+        <div className="text-2xl font-bold text-[var(--foreground)]">
           {stressTest.remainingShares.toLocaleString()}
         </div>
       </div>
@@ -56,7 +56,7 @@ export function StatsCards({ stressTest }: StatsCardsProps) {
               ? "text-emerald-600 dark:text-emerald-400"
               : stressTest.profit < 0
               ? "text-red-600 dark:text-red-400"
-              : "text-[#243B53] dark:text-slate-400"
+              : "text-[var(--foreground)]"
           }`}
         >
           {stressTest.profit > 0 ? "+" : ""}
@@ -79,7 +79,7 @@ export function StatsCards({ stressTest }: StatsCardsProps) {
               ? "text-emerald-600 dark:text-emerald-400"
               : stressTest.profitRate < 0
               ? "text-red-600 dark:text-red-400"
-              : "text-[#243B53] dark:text-slate-400"
+              : "text-[var(--foreground)]"
           }`}
         >
           {stressTest.profitRate > 0 ? "+" : ""}

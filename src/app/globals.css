@@ -4,23 +4,29 @@
 
 /* 金融应用专业配色方案 */
 :root {
-  /* 背景色 */
-  --background: #fafafa;
-  --foreground: #1a1a1a;
+  /* 页面/基础背景 */
+  --page-bg: #f0f4f8;
+  --background: var(--page-bg);
+  --foreground: #243b53;
+  --muted-foreground: #52606d;
   
   /* 主色调 - 深蓝色系（专业、信任） */
   --primary: #0066cc;
   --primary-dark: #004c99;
   --primary-light: #3385d6;
+  --brand: #243b53;
+  --brand-text: #243b53;
   
   /* 强调色 - 橙金色（行动） */
   --accent: #ff6b35;
   --accent-light: #ff8c61;
+  --warning: #f59e0b;
   
   /* 数据可视化色 */
   --profit: #10b981; /* 绿色 - 盈利 */
   --loss: #ef4444;   /* 红色 - 亏损 */
   --neutral: #6b7280; /* 灰色 - 中性 */
+  --chart-secondary: #7c3aed;
   
   /* 网格类型背景色 */
   --grid-small: transparent;
@@ -29,8 +35,10 @@
   
   /* 卡片和边框 */
   --card-bg: #ffffff;
-  --border-color: #e5e7eb;
-  --hover-bg: #f3f4f6;
+  --card-bg-elevated: rgba(255, 255, 255, 0.92);
+  --border-color: #e2e8f0;
+  --hover-bg: rgba(15, 23, 42, 0.04);
+  --ring: rgba(36, 59, 83, 0.35);
 }
 
 @theme inline {
@@ -41,36 +49,51 @@
   
   /* 自定义颜色 */
   --color-primary: var(--primary);
+  --color-brand: var(--brand);
   --color-accent: var(--accent);
+  --color-warning: var(--warning);
   --color-profit: var(--profit);
   --color-loss: var(--loss);
+  --color-muted: var(--muted-foreground);
 }
 
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --page-bg: #0f172a;
+  --background: var(--page-bg);
+  --foreground: #e5e7eb;
+  --muted-foreground: #9ca3af;
   --primary: #3b82f6;
   --primary-dark: #2563eb;
   --primary-light: #60a5fa;
+  --brand: #243b53;
+  --brand-text: #e5e7eb;
   --accent: #fb923c;
   --accent-light: #fdba74;
+  --warning: #fbbf24;
   --profit: #22c55e;
   --loss: #f87171;
   --neutral: #9ca3af;
+  --chart-secondary: #a855f7;
   --grid-small: transparent;
   --grid-medium: rgba(59, 130, 246, 0.15);
   --grid-large: rgba(168, 85, 247, 0.15);
-  --card-bg: #1a1a1a;
-  --border-color: #374151;
-  --hover-bg: #262626;
+  --card-bg: #111827;
+  --card-bg-elevated: rgba(17, 24, 39, 0.84);
+  --border-color: #334155;
+  --hover-bg: rgba(226, 232, 240, 0.06);
+  --ring: rgba(226, 232, 240, 0.24);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.font-serif {
+  font-family: var(--font-brand-serif), ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
 }
 
 /* 数字字体优化 */
@@ -87,4 +110,59 @@ table {
 /* 平滑滚动 */
 html {
   scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 估值页导航栏 .valuation 链接固定颜色 */
+a.valuation-nav-link {
+  color: #52606d !important;
+}
+
+/* 估值列表页：搜索框无白底、与页面背景融合 */
+.valuation-search-input.ant-input,
+.valuation-search-input.ant-input:hover,
+.valuation-search-input.ant-input:focus {
+  background-color: transparent !important;
+  border-color: var(--border-color);
+}
+
+/* 估值列表表格：不出现纵向滚动条，全部行展示 */
+.valuation-table-wrap .ant-table-body,
+.valuation-table-wrap .ant-table-content,
+.valuation-table-wrap .ant-table-container,
+.valuation-table-wrap .ant-table-wrapper,
+.valuation-table .ant-table-body,
+.valuation-table .ant-table-content,
+.valuation-table .ant-table-container {
+  overflow-y: visible !important;
+  max-height: none !important;
+}
+
+/* 估值详情页 Segmented 与页面风格一致 */
+.valuation-segmented.ant-segmented {
+  background: var(--hover-bg) !important;
+}
+.valuation-segmented .ant-segmented-item-selected {
+  background: var(--card-bg-elevated) !important;
+  color: var(--foreground) !important;
+}
+.valuation-segmented .ant-segmented-item {
+  color: var(--muted-foreground);
+}
+.valuation-segmented .ant-segmented-item:hover {
+  color: var(--foreground);
 }

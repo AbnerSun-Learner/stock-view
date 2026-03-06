@@ -26,6 +26,39 @@ echarts.use([
   CanvasRenderer,
 ]);
 
+function resolveCssColor(input: string): string {
+  if (typeof window === "undefined") return input;
+  const match = input.match(/^var\((--[^)]+)\)$/);
+  if (!match) return input;
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue(match[1])
+    .trim();
+  return value || input;
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const normalized = hex.trim();
+  if (!normalized.startsWith("#")) return normalized;
+  const raw = normalized.slice(1);
+  const full =
+    raw.length === 3
+      ? raw
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : raw;
+  if (full.length !== 6) return normalized;
+  const r = parseInt(full.slice(0, 2), 16);
+  const g = parseInt(full.slice(2, 4), 16);
+  const b = parseInt(full.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function prefersReducedMotion(): boolean {
+  if (typeof window === "undefined") return false;
+  return !!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+}
+
 export interface ValuationPoint {
   date: string;
   value: number;
@@ -164,11 +197,33 @@ export function ValuationChart({
       typeof d.close === "number" ? d.close : null,
     ]);
 
-    const textColor = theme === "dark" ? "#e5e7eb" : "#243B53";
-    const gridColor = theme === "dark" ? "#374151" : "#e5e7eb";
+    const reducedMotion = prefersReducedMotion();
+    const isDark = theme === "dark";
+    const textColor = resolveCssColor("var(--foreground)");
+    const mutedColor = resolveCssColor("var(--muted-foreground)");
+    const gridColor = resolveCssColor("var(--border-color)");
+    const brandColor = resolveCssColor("var(--brand)");
+    const primaryColor = resolveCssColor("var(--primary)");
+    const secondaryColor = resolveCssColor("var(--chart-secondary)");
+    const lossColor = resolveCssColor("var(--loss)");
+    const profitColor = resolveCssColor("var(--profit)");
+    const warningColor = resolveCssColor("var(--warning)");
+    const accentColor = resolveCssColor("var(--accent)");
 
-    const bandMarkArea = bands.bands.map((b) => [
-      { yAxis: b.y1, itemStyle: { color: b.color } },
+    const bandColors = [
+      hexToRgba(profitColor, 0.18),
+      hexToRgba(profitColor, 0.26),
+      hexToRgba(profitColor, 0.34),
+      hexToRgba(warningColor, 0.16),
+      hexToRgba(warningColor, 0.16),
+      hexToRgba(accentColor, 0.18),
+      hexToRgba(accentColor, 0.28),
+      hexToRgba(accentColor, 0.38),
+    ];
+    const tooltipBg = hexToRgba(resolveCssColor("var(--card-bg)"), isDark ? 0.94 : 0.96);
+
+    const bandMarkArea = bands.bands.map((b, idx) => [
+      { yAxis: b.y1, itemStyle: { color: bandColors[idx] ?? b.color } },
       { yAxis: b.y2 },
     ]);
 
@@ -180,8 +235,8 @@ export function ValuationChart({
       },
       {
         yAxis: bands.median,
-        label: { formatter: bands.median.toFixed(2), position: "start", fontSize: 12, color: "#0ea5e9" },
-        lineStyle: { color: "#0ea5e9", type: "dashed" as const, width: 2 },
+        label: { formatter: bands.median.toFixed(2), position: "start", fontSize: 12, color: primaryColor },
+        lineStyle: { color: primaryColor, type: "dashed" as const, width: 2 },
       },
       {
         yAxis: bands.min,
@@ -207,11 +262,11 @@ export function ValuationChart({
       yAxes.push({
         type: "value",
         name: "收盘点位",
-        nameTextStyle: { color: "#9333ea", fontSize: 12 },
+        nameTextStyle: { color: secondaryColor, fontSize: 12 },
         min: Math.floor(closeRange.low * 0.9),
         max: Math.ceil(closeRange.high * 1.05),
-        axisLabel: { color: "#9333ea", fontSize: 11 },
-        axisLine: { lineStyle: { color: "#9333ea" } },
+        axisLabel: { color: secondaryColor, fontSize: 11 },
+        axisLine: { lineStyle: { color: secondaryColor } },
         splitLine: { show: false },
       });
     }
@@ -223,11 +278,11 @@ export function ValuationChart({
         yAxisIndex: 0,
         data: peTimeData,
         symbol: "none",
-        lineStyle: { color: "#243B53", width: 2.5 },
-        itemStyle: { color: "#243B53" },
+        lineStyle: { color: brandColor, width: 1.5, opacity: 0.95 },
+        itemStyle: { color: brandColor },
         emphasis: {
           lineStyle: { width: 3 },
-          itemStyle: { borderColor: "#fff", borderWidth: 2, color: "#243B53" },
+          itemStyle: { borderColor: "#fff", borderWidth: 2, color: brandColor },
         },
         ...(showBands ? { markArea: { silent: true, data: bandMarkArea as never } } : {}),
         markLine: {
@@ -246,11 +301,11 @@ export function ValuationChart({
         yAxisIndex: 1,
         data: closeTimeData,
         symbol: "none",
-        lineStyle: { color: "#9333ea", width: 2 },
-        itemStyle: { color: "#9333ea" },
+        lineStyle: { color: secondaryColor, width: 1.5, opacity: 0.9 },
+        itemStyle: { color: secondaryColor },
         emphasis: {
           lineStyle: { width: 2.5 },
-          itemStyle: { borderColor: "#fff", borderWidth: 1, color: "#9333ea" },
+          itemStyle: { borderColor: "#fff", borderWidth: 1, color: secondaryColor },
         },
         z: 9,
       };
@@ -260,7 +315,7 @@ export function ValuationChart({
           silent: true,
           data: [
             [
-              { yAxis: closeRange.drop80, itemStyle: { color: "rgba(239,68,68,0.12)" } },
+              { yAxis: closeRange.drop80, itemStyle: { color: hexToRgba(lossColor, 0.12) } },
               { yAxis: closeRange.drop70 },
             ],
           ],
@@ -271,13 +326,13 @@ export function ValuationChart({
           data: [
             {
               yAxis: closeRange.drop70,
-              label: { formatter: `跌 70% (${closeRange.drop70.toFixed(0)})`, position: "end", fontSize: 10, color: "#dc2626" },
-              lineStyle: { color: "#dc2626", type: "dashed", width: 1 },
+              label: { formatter: `跌 70% (${closeRange.drop70.toFixed(0)})`, position: "end", fontSize: 10, color: warningColor },
+              lineStyle: { color: warningColor, type: "dashed", width: 1 },
             },
             {
               yAxis: closeRange.drop80,
-              label: { formatter: `跌 80% (${closeRange.drop80.toFixed(0)})`, position: "end", fontSize: 10, color: "#991b1b" },
-              lineStyle: { color: "#991b1b", type: "dashed", width: 1 },
+              label: { formatter: `跌 80% (${closeRange.drop80.toFixed(0)})`, position: "end", fontSize: 10, color: lossColor },
+              lineStyle: { color: lossColor, type: "dashed", width: 1 },
             },
           ],
         };
@@ -313,11 +368,11 @@ export function ValuationChart({
       series,
       tooltip: {
         trigger: "axis",
-        backgroundColor: "#fff",
-        borderColor: "#e2e8f0",
+        backgroundColor: tooltipBg,
+        borderColor: gridColor,
         borderWidth: 1,
         padding: [12, 16],
-        textStyle: { color: "#18181b", fontSize: 13 },
+        textStyle: { color: textColor, fontSize: 13 },
         formatter(params: unknown) {
           const arr = params as { data: [string, number]; axisValue: number }[];
           if (!arr?.length) return "";
@@ -328,12 +383,14 @@ export function ValuationChart({
           const suggestion = getBandLabel(point.value);
           const d = new Date(point.date);
           const dateLabel = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
-          let html = `<div style="font-size:12px;color:#71717a;margin-bottom:4px">${dateLabel}</div>`;
-          html += `<div style="font-weight:600;color:#18181b">PE：${point.value.toFixed(2)}</div>`;
+          let html = `<div style="font-size:12px;color:${mutedColor};margin-bottom:4px">${dateLabel}</div>`;
+          html += `<div style="font-weight:600;color:${textColor}">PE：${point.value.toFixed(2)}</div>`;
           if (typeof point.close === "number") {
-            html += `<div style="font-size:13px;color:#52525b;margin-top:4px">收盘：${point.close.toFixed(2)}</div>`;
+            html += `<div style="font-size:13px;color:${mutedColor};margin-top:4px">收盘：${point.close.toFixed(2)}</div>`;
           }
-          html += `<div style="margin-top:6px;font-size:13px;font-weight:500;color:#3f3f46">操作建议：${suggestion}</div>`;
+          if (showBands) {
+            html += `<div style="margin-top:6px;font-size:13px;font-weight:500;color:${textColor}">操作建议：${suggestion}</div>`;
+          }
           return html;
         },
       },
@@ -348,8 +405,8 @@ export function ValuationChart({
         },
       ],
       legend: { show: false },
-      animation: true,
-      animationDuration: 600,
+      animation: !reducedMotion,
+      animationDuration: reducedMotion ? 0 : 600,
     };
   }, [data, bands, stats, theme, hasClose, closeRange, showDropZones, showBands, dateIndex, timestamps]);
 
@@ -359,35 +416,35 @@ export function ValuationChart({
     <div className="relative w-full">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-4">
         {!hideStatsBar && (
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-1 rounded-lg bg-slate-50/80 py-2.5 px-4 text-sm">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1 rounded-lg bg-slate-50/80 dark:bg-white/5 py-2.5 px-4 text-sm">
             <span className="flex items-center gap-2">
-              <span className="text-slate-500">历史估值最高</span>
-              <span className="font-semibold tabular-nums text-[#243B53]">
+              <span className="text-[var(--muted-foreground)]">历史估值最高</span>
+              <span className="font-semibold tabular-nums text-[var(--foreground)]">
                 {stats.high.toFixed(2)}
               </span>
             </span>
             <span className="flex items-center gap-2">
-              <span className="text-slate-500">十年估值</span>
-              <span className="font-semibold tabular-nums text-[#0ea5e9]">
+              <span className="text-[var(--muted-foreground)]">十年估值</span>
+              <span className="font-semibold tabular-nums text-[color:var(--primary)]">
                 {stats.median.toFixed(2)}
               </span>
             </span>
             <span className="flex items-center gap-2">
-              <span className="text-slate-500">历史估值最低</span>
-              <span className="font-semibold tabular-nums text-[#243B53]">
+              <span className="text-[var(--muted-foreground)]">历史估值最低</span>
+              <span className="font-semibold tabular-nums text-[var(--foreground)]">
                 {stats.low.toFixed(2)}
               </span>
             </span>
-            <span className="border-l border-slate-200 pl-4" />
+            <span className="border-l border-[color:var(--border-color)] pl-4" />
             <span className="flex items-center gap-2">
-              <span className="text-slate-500">当前 PE</span>
-              <span className="font-semibold tabular-nums text-[#243B53]">
+              <span className="text-[var(--muted-foreground)]">当前 PE</span>
+              <span className="font-semibold tabular-nums text-[var(--foreground)]">
                 {stats.currentPe.toFixed(2)}
               </span>
             </span>
             <span className="flex items-center gap-2">
-              <span className="text-slate-500">当前分位点</span>
-              <span className="font-semibold tabular-nums text-[#243B53]">
+              <span className="text-[var(--muted-foreground)]">当前分位点</span>
+              <span className="font-semibold tabular-nums text-[var(--foreground)]">
                 {stats.percentile}%
               </span>
             </span>
@@ -409,29 +466,33 @@ export function ValuationChart({
       />
 
       <div className="mt-2 flex flex-wrap items-center justify-center gap-4 text-xs">
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-4 rounded bg-[#dcfce7]" /> 大买
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-4 rounded bg-[#86efac]" /> 小买
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-4 rounded bg-[#fef9c3]" /> 不买不卖
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-4 rounded bg-[#fed7aa]" /> 小卖
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-4 rounded bg-[#f97316]" /> 大卖
-        </span>
-        {hasClose && (
+        {showBands && (
           <>
-            <span className="border-l border-slate-200 pl-3" />
             <span className="flex items-center gap-1">
-              <span className="inline-block h-0.5 w-4 bg-[#243B53]" /> PE
+              <span className="inline-block h-3 w-4 rounded bg-[color:var(--profit)] opacity-30" /> 大买
             </span>
             <span className="flex items-center gap-1">
-              <span className="inline-block h-0.5 w-4 bg-[#9333ea]" /> 收盘点位
+              <span className="inline-block h-3 w-4 rounded bg-[color:var(--profit)] opacity-55" /> 小买
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-3 w-4 rounded bg-[color:var(--warning)] opacity-30" /> 不买不卖
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-3 w-4 rounded bg-[color:var(--accent)] opacity-30" /> 小卖
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-3 w-4 rounded bg-[color:var(--accent)] opacity-60" /> 大卖
+            </span>
+          </>
+        )}
+        {hasClose && (
+          <>
+            {showBands && <span className="border-l border-[color:var(--border-color)] pl-3" />}
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-0.5 w-4 bg-[color:var(--brand)]" /> PE
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-0.5 w-4 bg-[color:var(--chart-secondary)]" /> 收盘点位
             </span>
           </>
         )}

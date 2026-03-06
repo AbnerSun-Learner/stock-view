@@ -8,40 +8,35 @@ export function ValuationNavbar() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/70 dark:bg-[#0F172A]/70 backdrop-blur-md border-b border-blue-100/20 dark:border-white/5">
-      <div className="flex justify-between items-center px-4 py-4 max-w-[1400px] mx-auto relative">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-[var(--card-bg-elevated)] backdrop-blur-md border-b border-[color:var(--border-color)]">
+      <div className="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto relative">
         <div className="flex items-center space-x-2 group">
           <Link
             href="/"
-            className="flex items-center space-x-2 cursor-pointer"
+            className="flex items-center space-x-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--page-bg)] rounded-lg"
           >
-            <div className="w-8 h-8 bg-[#243B53] dark:bg-blue-400 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm">
-              <div className="w-2 h-2 bg-white dark:bg-[#0F172A] rounded-full animate-pulse"></div>
+            <div className="w-8 h-8 bg-[var(--brand)] rounded-full flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm">
+              <div className="w-2 h-2 bg-white dark:bg-[var(--page-bg)] rounded-full animate-pulse" />
             </div>
-            <span className="text-2xl font-serif font-bold tracking-tight text-[#243B53] dark:text-blue-100 hover:text-blue-600 dark:hover:text-blue-300 transition-colors">
+            <span className="text-2xl font-serif font-bold tracking-tight text-[var(--brand-text)] hover:text-[var(--foreground)] transition-colors">
               Stillwell
             </span>
           </Link>
           <Link
             href="/valuation"
-            className="text-2xl font-serif font-bold tracking-tight text-[#243B53]/70 dark:text-blue-100/70 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
+            className="text-2xl font-serif font-bold tracking-tight hover:text-[var(--foreground)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--page-bg)] rounded-md valuation-nav-link"
+            style={{ color: "#52606D" }}
           >
             .valuation
           </Link>
         </div>
 
-        <div className="flex items-center gap-4">
-          <Link
-            href="#"
-            className="text-sm font-medium uppercase tracking-widest opacity-70 hover:opacity-100 transition-opacity"
-          >
-            投资心法
-          </Link>
+        <div className="flex items-center">
           <button
             type="button"
             onClick={toggleTheme}
             aria-label={theme === "light" ? "切换到深色模式" : "切换到浅色模式"}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--muted-foreground)] hover:bg-[var(--hover-bg)] hover:text-[var(--foreground)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--page-bg)]"
           >
             {theme === "light" ? (
               <SunOutlined style={{ fontSize: 16 }} />

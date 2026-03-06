@@ -135,30 +135,30 @@ export function ValuationPePanel({
   showBands = false,
   onBandsChange,
 }: ValuationPePanelProps) {
-  const accentColor = "#243B53"
+  const accentColor = "var(--brand)"
   const labelPrefix = "PE"
 
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white/95 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+    <div className="rounded-2xl border border-[color:var(--border-color)] bg-[var(--card-bg-elevated)] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.06)] overflow-hidden">
       <div className="px-5 pt-4 pb-1 flex items-center justify-between">
         <h3 className="text-base font-bold" style={{ color: accentColor }}>
           PE-TTM
         </h3>
         {typeof onBandsChange === "function" && (
-          <label className="flex items-center gap-2 text-sm text-zinc-600 cursor-pointer select-none">
+          <label className="flex items-center gap-2 text-sm text-[var(--muted-foreground)] cursor-pointer select-none">
             <span>估值带</span>
             <button
               type="button"
               role="switch"
               aria-checked={showBands}
               onClick={() => onBandsChange(!showBands)}
-              className={`relative inline-flex h-6 w-10 shrink-0 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-400 ${
-                showBands ? "bg-[#243B53] border-[#243B53]" : "bg-slate-200 border-slate-300"
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--page-bg)] ${
+                showBands ? "bg-[var(--brand)]" : "bg-slate-300 dark:bg-slate-600"
               }`}
             >
               <span
-                className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition-transform ${
-                  showBands ? "translate-x-4" : "translate-x-0.5"
+                className={`pointer-events-none inline-block h-4 w-4 shrink-0 rounded-full bg-white shadow transition-transform duration-200 ${
+                  showBands ? "translate-x-6" : "translate-x-1"
                 }`}
               />
             </button>
@@ -169,14 +169,14 @@ export function ValuationPePanel({
       <div className="px-5 py-4 space-y-4">
         <div className="flex items-end justify-between">
           <div>
-            <div className="text-[11px] text-zinc-400">当前{labelPrefix}</div>
+            <div className="text-[11px] text-[var(--muted-foreground)]">当前{labelPrefix}</div>
             <div className="text-2xl font-bold tabular-nums" style={{ color: accentColor }}>
               {currentValue.toFixed(2)}
             </div>
           </div>
           <div className="text-right">
-            <div className="text-[11px] text-zinc-400">平均值</div>
-            <div className="text-sm font-semibold tabular-nums text-zinc-600">
+            <div className="text-[11px] text-[var(--muted-foreground)]">平均值</div>
+            <div className="text-sm font-semibold tabular-nums text-[var(--muted-foreground)]">
               {average.toFixed(2)}
             </div>
           </div>
@@ -188,7 +188,7 @@ export function ValuationPePanel({
           accentColor={accentColor}
         />
 
-        <div className="pt-2 border-t border-slate-100">
+        <div className="pt-2 border-t border-[color:var(--border-color)]">
           <StatGrid
             items={[
               { label: "80% 分位", value: percentile80.toFixed(2), color: "text-orange-600" },

@@ -2,14 +2,24 @@
 
 import { ValuationChart } from "@/components/valuation/valuation-chart"
 import type { ValuationPoint } from "@/components/valuation/valuation-chart"
-import { ValuationDistribution } from "@/components/valuation/valuation-distribution"
 import { ValuationDropPanel } from "@/components/valuation/valuation-drop-panel"
 import { ValuationNavbar } from "@/components/valuation/valuation-navbar"
 import { ValuationPePanel } from "@/components/valuation/valuation-pe-panel"
 import { ValuationWeightChart } from "@/components/valuation/valuation-weight-chart"
+import { useTheme } from "@/components/theme-provider"
 import { INDEX_LIST, computePeStats } from "@/lib/valuation"
+import { Segmented } from "antd"
 import { useParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useState } from "react"
+
+type ChartPeriod = "all" | "10y" | "5y"
+
+function getPeriodCutoff(period: ChartPeriod): string | null {
+  if (period === "all") return null
+  const d = new Date()
+  d.setFullYear(d.getFullYear() - (period === "10y" ? 10 : 5))
+  return d.toISOString().slice(0, 10)
+}
 
 interface HoldingItem {
   rank: number
@@ -20,12 +30,14 @@ interface HoldingItem {
 }
 
 export default function ValuationDetailPage() {
+  const { theme } = useTheme()
   const params = useParams()
   const symbol = typeof params.symbol === "string" ? params.symbol : ""
   const indexName =
     INDEX_LIST.find((i) => i.symbol === symbol)?.name ?? `${symbol}指数`
 
   const [chartData, setChartData] = useState<ValuationPoint[]>([])
+  const [chartPeriod, setChartPeriod] = useState<ChartPeriod>("all")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showDropZones, setShowDropZones] = useState(false)
@@ -40,7 +52,8 @@ export default function ValuationDetailPage() {
     setError(null)
     try {
       const res = await fetch(
-        `/api/valuation?symbol=${encodeURIComponent(symbol)}`
+        `/api/valuation?symbol=${encodeURIComponent(symbol)}`,
+        { cache: "no-store" }
       )
       const json = await res.json().catch(() => ({}))
       if (!res.ok) {
@@ -79,16 +92,22 @@ export default function ValuationDetailPage() {
     fetchHoldings()
   }, [fetchData, fetchHoldings])
 
+  const periodCutoff = getPeriodCutoff(chartPeriod)
+  const filteredChartData = useMemo(() => {
+    if (!periodCutoff) return chartData
+    return chartData.filter((d) => d.date >= periodCutoff)
+  }, [chartData, periodCutoff])
+
   const peStats = useMemo(
     () =>
-      chartData.length
-        ? computePeStats(chartData.map((d) => d.value))
+      filteredChartData.length
+        ? computePeStats(filteredChartData.map((d) => d.value))
         : null,
-    [chartData]
+    [filteredChartData]
   )
 
   const closeRange = useMemo(() => {
-    const closes = chartData
+    const closes = filteredChartData
       .map((d) => d.close)
       .filter((c): c is number => typeof c === "number")
     if (!closes.length) return null
@@ -97,46 +116,69 @@ export default function ValuationDetailPage() {
       high: Math.max(...closes),
       min: Math.min(...closes),
     }
-  }, [chartData])
+  }, [filteredChartData])
+
+  const displayLastDate = lastDate
 
   return (
-    <div className="min-h-screen bg-[#F0F4F8] text-[#243B53]">
+    <div className="min-h-screen bg-[var(--page-bg)] text-[var(--foreground)]">
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-slate-200/20 rounded-full blur-[140px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-slate-200/10 dark:bg-slate-800/10 rounded-full blur-[100px]" />
       </div>
 
       <ValuationNavbar />
 
-      <div className="pt-20">
-        <div className="max-w-[1400px] mx-auto px-4 py-8">
-          {/* 页头 */}
-          <div className="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-zinc-900">
-                {indexName} · 估值分析
-              </h1>
-              {lastDate && (
-                <p className="text-sm text-zinc-400 mt-1">数据更新至 {lastDate}</p>
-              )}
-            </div>
+      <div className="pt-[4.5rem]">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+          <div className="mb-8">
+            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-[var(--foreground)]">
+              {indexName}
+            </h1>
+            {displayLastDate && (
+              <p className="text-sm text-[var(--muted-foreground)] mt-1">数据更新至 {displayLastDate}</p>
+            )}
           </div>
 
           {loading && (
-            <div className="flex h-64 items-center justify-center">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-700" />
+            <div className="flex h-72 items-center justify-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-[color:var(--border-color)] border-t-[var(--brand)]" />
             </div>
           )}
 
           {error && !loading && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-6 py-4 text-red-800 text-sm">
+            <div className="rounded-xl border border-[color:var(--loss)]/30 bg-red-50/80 dark:bg-red-950/20 px-6 py-4 text-sm text-red-700 dark:text-red-300">
               {error}
             </div>
           )}
 
           {!loading && !error && chartData.length > 0 && peStats && (
             <div className="space-y-6">
-              {/* 第一行：左侧面板 + 主图表 */}
+              {/* 第一行：图表在左，PE-TTM 与极限跌幅在右 */}
               <section className="flex flex-col lg:flex-row gap-6">
+                <main className="flex-1 min-w-0 space-y-4">
+                  <div className="rounded-xl border border-[color:var(--border-color)] bg-[var(--card-bg-elevated)] p-4 md:p-6">
+                    <div className="mb-4">
+                      <Segmented
+                        value={chartPeriod}
+                        onChange={(v) => setChartPeriod((v as ChartPeriod) || "all")}
+                        options={[
+                          { label: "全部", value: "all" },
+                          { label: "近10年", value: "10y" },
+                          { label: "近5年", value: "5y" },
+                        ]}
+                        className="valuation-segmented"
+                      />
+                    </div>
+                    <ValuationChart
+                      data={filteredChartData}
+                      theme={theme}
+                      showDropZones={showDropZones}
+                      showBands={showBands}
+                      hideStatsBar
+                    />
+                  </div>
+                </main>
+
                 <aside className="w-full lg:w-[280px] shrink-0 space-y-6">
                   <ValuationPePanel
                     currentValue={peStats.current}
@@ -161,77 +203,46 @@ export default function ValuationDetailPage() {
                     />
                   )}
                 </aside>
-
-                <main className="flex-1 min-w-0 space-y-6">
-                  <div className="rounded-2xl border border-slate-200/80 bg-white/95 p-6 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)]">
-                    <ValuationChart
-                      data={chartData}
-                      theme="light"
-                      showDropZones={showDropZones}
-                      showBands={showBands}
-                      hideStatsBar
-                    />
-                  </div>
-                </main>
               </section>
 
-              {/* 第二行：PE 估值分布（仅保留 PE-TTM） */}
-              <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="rounded-2xl border border-slate-200/80 bg-white/95 p-5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)]">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-semibold text-zinc-800">PE 估值分布</h3>
-                    <span className="text-[11px] text-zinc-400">
-                      历史各 PE 区间出现频次
-                    </span>
-                  </div>
-                  <ValuationDistribution
-                    values={chartData.map((d) => d.value)}
-                    currentValue={peStats.current}
-                    label="PE"
-                    accentColor="#243B53"
-                  />
-                </div>
-              </section>
-
-              {/* 第三行：指数权重（成分股 + 行业分布，与 PE 分布同样式） */}
+              {/* 指数权重（成分股 + 行业分布） */}
               {!holdingsLoading && holdings.length > 0 && (
                 <ValuationWeightChart holdings={holdings} />
               )}
 
-              {/* 第四行：前十大持仓表 */}
-              <section className="rounded-2xl border border-slate-200/80 bg-white/95 overflow-hidden shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)]">
-                <div className="border-b border-slate-200 px-6 py-4">
-                  <h2 className="text-sm font-semibold text-zinc-800">
+              <section className="rounded-xl border border-[color:var(--border-color)] bg-[var(--card-bg-elevated)] overflow-hidden">
+                <div className="border-b border-[color:var(--border-color)] px-4 md:px-6 py-3.5">
+                  <h2 className="text-xs font-semibold text-[var(--foreground)] uppercase tracking-wider">
                     前十大持仓明细
                   </h2>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse">
                     <thead>
-                      <tr className="bg-slate-50/80 border-b border-slate-200">
-                        <th className="text-left py-3 px-6 text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                      <tr className="bg-slate-50/80 dark:bg-white/5 border-b border-[color:var(--border-color)]">
+                        <th className="text-left py-2.5 px-4 md:px-6 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
                           序号
                         </th>
-                        <th className="text-left py-3 px-6 text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                        <th className="text-left py-2.5 px-4 md:px-6 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
                           名称
                         </th>
-                        <th className="text-left py-3 px-6 text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                        <th className="text-left py-2.5 px-4 md:px-6 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
                           代码
                         </th>
-                        <th className="text-left py-3 px-6 text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                        <th className="text-left py-2.5 px-4 md:px-6 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
                           申万一级行业
                         </th>
-                        <th className="text-right py-3 px-6 text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                        <th className="text-right py-2.5 px-4 md:px-6 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
                           占净值比例(%)
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-[color:var(--border-color)]">
                       {holdingsLoading && (
                         <tr>
                           <td
                             colSpan={5}
-                            className="py-10 text-center text-zinc-500 text-sm"
+                            className="py-10 text-center text-sm text-[var(--muted-foreground)]"
                           >
                             加载持仓数据中…
                           </td>
@@ -241,7 +252,7 @@ export default function ValuationDetailPage() {
                         <tr>
                           <td
                             colSpan={5}
-                            className="py-10 text-center text-zinc-500 text-sm"
+                            className="py-10 text-center text-sm text-[var(--muted-foreground)]"
                           >
                             暂无持仓数据
                           </td>
@@ -251,21 +262,21 @@ export default function ValuationDetailPage() {
                         holdings.map((row) => (
                           <tr
                             key={row.rank}
-                            className="hover:bg-slate-50/50 transition-colors"
+                            className="hover:bg-[var(--hover-bg)] transition-colors"
                           >
-                            <td className="py-3 px-6 text-sm font-mono text-zinc-700">
+                            <td className="py-2.5 px-4 md:px-6 text-sm font-mono text-[var(--foreground)]">
                               {row.rank}
                             </td>
-                            <td className="py-3 px-6 text-sm font-medium text-zinc-900">
+                            <td className="py-2.5 px-4 md:px-6 text-sm font-medium text-[var(--foreground)]">
                               {row.name}
                             </td>
-                            <td className="py-3 px-6 text-sm font-mono text-zinc-600">
+                            <td className="py-2.5 px-4 md:px-6 text-sm font-mono text-[var(--muted-foreground)]">
                               {row.code}
                             </td>
-                            <td className="py-3 px-6 text-sm text-zinc-700">
+                            <td className="py-2.5 px-4 md:px-6 text-sm text-[var(--foreground)]">
                               {row.industry || "—"}
                             </td>
-                            <td className="py-3 px-6 text-sm font-mono text-right text-zinc-700">
+                            <td className="py-2.5 px-4 md:px-6 text-sm font-mono text-right text-[var(--foreground)]">
                               {row.weight.toFixed(2)}
                             </td>
                           </tr>
@@ -278,7 +289,7 @@ export default function ValuationDetailPage() {
           )}
 
           {!loading && !error && chartData.length === 0 && (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-6 py-8 text-center text-zinc-600">
+            <div className="rounded-xl border border-[color:var(--border-color)] bg-[var(--card-bg-elevated)] px-6 py-10 text-center text-sm text-[var(--muted-foreground)]">
               暂无估值数据
             </div>
           )}

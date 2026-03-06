@@ -11,7 +11,7 @@ export function PageHeader({ title, description }: PageHeaderProps) {
       <h1 className="text-4xl md:text-5xl font-serif font-medium leading-tight mb-3 tracking-tight">
         {title}
       </h1>
-      <p className="text-lg opacity-70 leading-relaxed font-light max-w-2xl mx-auto">
+      <p className="text-lg text-[var(--muted-foreground)] leading-relaxed font-light max-w-2xl mx-auto">
         {description}
       </p>
     </div>

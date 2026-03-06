@@ -44,10 +44,23 @@ const UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
+/** 交易日 15:00 收盘后缩短缓存，便于尽快展示当日收盘数据 */
+const CACHE_TTL_AFTER_CLOSE_MS = 60 * 1000;
 const cache = new Map<string, { data: ValuationResponse; ts: number }>();
 
 function shanghaiDateStr(): string {
   return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" });
+}
+
+/** 是否已过 A 股收盘时间（15:00 上海） */
+function isAfterMarketClose(): boolean {
+  const t = new Date().toLocaleTimeString("en-GB", { timeZone: "Asia/Shanghai", hour: "2-digit", minute: "2-digit", hour12: false });
+  const [h, m] = t.split(":").map(Number);
+  return h > 15 || (h === 15 && m >= 0);
+}
+
+function getCacheTtl(): number {
+  return isAfterMarketClose() ? CACHE_TTL_AFTER_CLOSE_MS : CACHE_TTL_MS;
 }
 
 function generateToken(): string {
@@ -92,7 +105,7 @@ async function fetchLeguData(symbol: string): Promise<ValuationResponse | null> 
   if (!indexCode) return null;
 
   const cached = cache.get(symbol);
-  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) return cached.data;
+  if (cached && Date.now() - cached.ts < getCacheTtl()) return cached.data;
 
   const { csrf, cookie } = await getLeguAuth();
   const token = generateToken();
@@ -202,6 +215,17 @@ export async function GET(request: NextRequest) {
           if (bucket.pbs.length) point.pb = avg(bucket.pbs);
           return point;
         });
+
+      // 聚合会把最后一个点变成当月 01 号，追加真实最新交易日点，避免“03-01”误导
+      const lastAggregatedDate = data[data.length - 1]?.date;
+      if (latest.date && latest.date !== lastAggregatedDate) {
+        data.push({
+          date: latest.date,
+          value: latest.pe,
+          close: latest.close,
+          pb: latest.pb,
+        });
+      }
     }
 
     return NextResponse.json({

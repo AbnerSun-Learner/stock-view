@@ -75,32 +75,30 @@ export function ValuationDropPanel({
       : null
 
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white/95 px-5 py-5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)]">
+    <div className="rounded-2xl border border-[color:var(--border-color)] bg-[var(--card-bg-elevated)] px-5 py-5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.06)]">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-zinc-800">极限跌幅</h3>
+        <h3 className="text-sm font-semibold text-[var(--foreground)]">极限跌幅</h3>
         <div className="flex items-center gap-3">
           {maxDropPercent != null && (
-            <span className="text-[11px] text-zinc-500">
+            <span className="text-[11px] text-[var(--muted-foreground)]">
               历史最大跌幅 -{maxDropPercent.toFixed(1)}%
             </span>
           )}
           {typeof onDropZonesChange === "function" && (
-            <label className="flex items-center gap-2 text-sm text-zinc-600 cursor-pointer select-none">
+            <label className="flex items-center gap-2 text-sm text-[var(--muted-foreground)] cursor-pointer select-none">
               <span>70/80 下跌区域</span>
               <button
                 type="button"
                 role="switch"
                 aria-checked={showDropZones}
                 onClick={() => onDropZonesChange(!showDropZones)}
-                className={`relative inline-flex h-6 w-10 shrink-0 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-400 ${
-                  showDropZones
-                    ? "bg-[#243B53] border-[#243B53]"
-                    : "bg-slate-200 border-slate-300"
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--page-bg)] ${
+                  showDropZones ? "bg-[var(--brand)]" : "bg-slate-300 dark:bg-slate-600"
                 }`}
               >
                 <span
-                  className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition-transform ${
-                    showDropZones ? "translate-x-4" : "translate-x-0.5"
+                  className={`pointer-events-none inline-block h-4 w-4 shrink-0 rounded-full bg-white shadow transition-transform duration-200 ${
+                    showDropZones ? "translate-x-6" : "translate-x-1"
                   }`}
                 />
               </button>
@@ -109,15 +107,15 @@ export function ValuationDropPanel({
         </div>
       </div>
 
-      <div className="mb-4 p-3 rounded-xl bg-slate-50/80">
+      <div className="mb-4 p-3 rounded-xl bg-slate-50/80 dark:bg-white/5">
         <div className="flex items-baseline justify-between">
-          <span className="text-xs text-zinc-500">当前点位</span>
-          <span className="text-base font-bold tabular-nums text-zinc-800">
+          <span className="text-xs text-[var(--muted-foreground)]">当前点位</span>
+          <span className="text-base font-bold tabular-nums text-[var(--foreground)]">
             {currentClose.toFixed(0)}
           </span>
         </div>
         <div className="flex items-baseline justify-between mt-1">
-          <span className="text-xs text-zinc-500">距最高点跌幅</span>
+          <span className="text-xs text-[var(--muted-foreground)]">距最高点跌幅</span>
           <span className="text-sm font-semibold tabular-nums text-amber-600">
             -{currentDropPercent.toFixed(1)}%
           </span>
@@ -130,14 +128,14 @@ export function ValuationDropPanel({
           level={70}
           price={drop70}
           currentClose={currentClose}
-          color="#f59e0b"
+          color="var(--warning)"
         />
         <WaterLevel
           label="80 水位"
           level={80}
           price={drop80}
           currentClose={currentClose}
-          color="#ef4444"
+          color="var(--loss)"
         />
       </div>
     </div>

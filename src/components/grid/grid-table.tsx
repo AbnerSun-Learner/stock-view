@@ -19,20 +19,20 @@ export function GridTable({ gridData, priceDecimals }: GridTableProps) {
   });
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-blue-50/50 dark:border-white/5">
+    <div className="overflow-x-auto rounded-xl border border-[color:var(--border-color)]">
       <table className="w-full border-collapse">
         <thead>
-          <tr className="border-b border-blue-100/50 dark:border-white/5 bg-blue-50/30 dark:bg-blue-900/10">
-            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[#243B53] dark:text-blue-100 opacity-70">
+          <tr className="border-b border-[color:var(--border-color)] bg-blue-50/30 dark:bg-blue-900/10">
+            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
               网格类型
             </th>
-            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[#243B53] dark:text-blue-100 opacity-70">
+            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
               档位
             </th>
-            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[#243B53] dark:text-blue-100 opacity-70">
+            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
               买入价
             </th>
-            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[#243B53] dark:text-blue-100 opacity-70">
+            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
               <div className="flex items-center gap-1">
                 <span>跌幅</span>
                 <div className="group relative">
@@ -43,19 +43,19 @@ export function GridTable({ gridData, priceDecimals }: GridTableProps) {
                 </div>
               </div>
             </th>
-            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[#243B53] dark:text-blue-100 opacity-70">
+            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
               买入金额
             </th>
-            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[#243B53] dark:text-blue-100 opacity-70">
+            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
               买入股数
             </th>
-            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[#243B53] dark:text-blue-100 opacity-70">
+            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
               卖出价
             </th>
-            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[#243B53] dark:text-blue-100 opacity-70">
+            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
               卖出股数
             </th>
-            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[#243B53] dark:text-blue-100 opacity-70">
+            <th className="p-4 text-left text-xs font-bold uppercase tracking-widest text-[var(--muted-foreground)]">
               卖出金额
             </th>
           </tr>
@@ -84,9 +84,9 @@ export function GridTable({ gridData, priceDecimals }: GridTableProps) {
             return (
               <tr
                 key={index}
-                className={`border-b border-blue-50/30 dark:border-white/5 hover:bg-blue-50/50 dark:hover:bg-white/5 transition-all duration-300 ${rowBgClass}`}
+                className={`border-b border-[color:var(--border-color)] hover:bg-[var(--hover-bg)] transition-colors duration-200 ${rowBgClass}`}
               >
-                <td className="p-4 font-medium text-[#243B53] dark:text-blue-100">
+                <td className="p-4 font-medium text-[var(--foreground)]">
                   <span
                     className={`px-2 py-1 rounded text-xs font-bold ${
                       row.gridType === "小网"
@@ -99,36 +99,36 @@ export function GridTable({ gridData, priceDecimals }: GridTableProps) {
                     {row.gridType}
                   </span>
                 </td>
-                <td className="p-4 font-medium text-[#243B53] dark:text-blue-100">
+                <td className="p-4 font-medium text-[var(--foreground)]">
                   {row.position.toFixed(2)}
                 </td>
-                <td className="p-4 text-[#243B53] dark:text-blue-100">
+                <td className="p-4 text-[var(--foreground)]">
                   {row.buyPrice.toFixed(priceDecimals)}
                 </td>
                 <td
                   className={`p-4 font-medium ${
                     displayDropRate < 0
                       ? "text-red-600 dark:text-red-400"
-                      : "text-[#243B53] dark:text-blue-100"
+                      : "text-[var(--foreground)]"
                   }`}
                 >
                   {displayDropRate === 0
                     ? "-"
                     : `${displayDropRate.toFixed(2)}%`}
                 </td>
-                <td className="p-4 text-[#243B53] dark:text-blue-100">
+                <td className="p-4 text-[var(--foreground)]">
                   {row.buyAmount.toLocaleString()}
                 </td>
-                <td className="p-4 text-[#243B53] dark:text-blue-100">
+                <td className="p-4 text-[var(--foreground)]">
                   {row.buyShares.toLocaleString()}
                 </td>
-                <td className="p-4 text-[#243B53] dark:text-blue-100">
+                <td className="p-4 text-[var(--foreground)]">
                   {row.sellPrice.toFixed(priceDecimals)}
                 </td>
-                <td className="p-4 text-[#243B53] dark:text-blue-100">
+                <td className="p-4 text-[var(--foreground)]">
                   {row.sellShares.toLocaleString()}
                 </td>
-                <td className="p-4 text-[#243B53] dark:text-blue-100">
+                <td className="p-4 text-[var(--foreground)]">
                   {row.sellAmount.toLocaleString()}
                 </td>
               </tr>

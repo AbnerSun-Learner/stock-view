@@ -72,7 +72,7 @@ export default function GridPage() {
   return (
     <AntdProvider>
       <div
-        className="min-h-screen transition-colors duration-500 bg-[#F0F4F8] text-[#243B53]"
+        className="min-h-screen transition-colors duration-500 bg-[var(--page-bg)] text-[var(--foreground)]"
       >
         {/* 背景装饰：雾霾蓝动态背景 */}
         <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
@@ -84,13 +84,12 @@ export default function GridPage() {
         <GridNavbar />
 
         <div className="pt-20">
-          <div className="py-8 space-y-8 max-w-[1400px] mx-auto px-4">
-            {/* 页面标题 */}
+          <div className="py-8 space-y-8 max-w-7xl mx-auto px-4">
             <div className="text-center mb-8">
-              <h1 className="text-4xl md:text-5xl font-serif font-medium leading-tight mb-3 tracking-tight">
+              <h1 className="text-4xl md:text-5xl font-semibold leading-tight tracking-tight text-[var(--foreground)] mb-3">
                 网格交易策略
               </h1>
-              <p className="text-lg opacity-70 leading-relaxed font-light max-w-2xl mx-auto">
+              <p className="text-lg text-[var(--muted-foreground)] leading-relaxed font-light max-w-2xl mx-auto">
                 在市场波动中寻找属于自己的节奏，通过科学的网格策略实现稳健收益
               </p>
             </div>
@@ -102,7 +101,7 @@ export default function GridPage() {
             <div className="grid grid-cols-12 gap-6">
               {/* 左侧：参数配置 */}
               <div className="col-span-12 lg:col-span-4">
-                <div className="rounded-2xl border border-blue-50/50 dark:border-white/5 bg-white/70 dark:bg-[#1E293B]/70 backdrop-blur-md shadow-2xl shadow-blue-900/10 overflow-hidden">
+                <div className="rounded-2xl border border-[color:var(--border-color)] bg-[var(--card-bg-elevated)] backdrop-blur-md shadow-2xl shadow-blue-900/10 overflow-hidden">
                   {/* 基本信息 */}
                   <div className="bg-blue-50/50 dark:bg-blue-900/10">
                     <BaseInfoConfig
@@ -179,7 +178,7 @@ export default function GridPage() {
                     <button
                       onClick={handleGenerateStrategy}
                       disabled={errors.length > 0}
-                      className="w-full px-6 py-4 rounded-full bg-[#243B53] dark:bg-blue-500 text-white font-bold text-lg shadow-xl shadow-blue-900/10 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                      className="w-full px-6 py-4 rounded-full bg-[var(--brand)] text-white font-bold text-lg shadow-xl shadow-blue-900/10 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--page-bg)]"
                     >
                       <Sparkles className="w-5 h-5" />
                       生成策略
@@ -191,7 +190,7 @@ export default function GridPage() {
               {/* 右侧：计算结果 */}
               <div className="col-span-12 lg:col-span-8 space-y-6">
                 {gridData.length === 0 || !stressTest ? (
-                  <div className="h-full min-h-[600px] flex items-center justify-center p-12 rounded-2xl border border-dashed border-blue-100/50 dark:border-white/10 bg-white/50 dark:bg-[#1E293B]/50 backdrop-blur-sm">
+                  <div className="h-full min-h-[600px] flex items-center justify-center p-12 rounded-2xl border border-dashed border-[color:var(--border-color)] bg-[var(--card-bg-elevated)] backdrop-blur-sm">
                     <div className="text-center space-y-4">
                       <div className="text-slate-400 dark:text-slate-500">
                         <svg
@@ -219,7 +218,7 @@ export default function GridPage() {
                 ) : (
                   <>
                     {/* 策略对比折线图 */}
-                    <div className="rounded-2xl border border-blue-50/50 dark:border-white/5 bg-white/70 dark:bg-[#1E293B]/70 backdrop-blur-md shadow-2xl shadow-blue-900/10 overflow-hidden">
+                    <div className="rounded-2xl border border-[color:var(--border-color)] bg-[var(--card-bg-elevated)] backdrop-blur-md shadow-2xl shadow-blue-900/10 overflow-hidden">
                       <div className="p-6">
                         <StrategyComparisonChart
                           gridData={gridData}
@@ -231,10 +230,10 @@ export default function GridPage() {
                     </div>
 
                     {/* 计算结果表格 */}
-                    <div className="p-6 rounded-2xl border border-blue-50/50 dark:border-white/5 bg-white/70 dark:bg-[#1E293B]/70 backdrop-blur-md shadow-2xl shadow-blue-900/10">
+                    <div className="p-6 rounded-2xl border border-[color:var(--border-color)] bg-[var(--card-bg-elevated)] backdrop-blur-md shadow-2xl shadow-blue-900/10">
                       <div className="flex items-center justify-between mb-6">
                         <div>
-                          <h3 className="text-2xl font-serif font-medium text-[#243B53] dark:text-blue-100 mb-2">
+                          <h3 className="text-2xl font-serif font-medium text-[var(--foreground)] mb-2">
                             网格计算结果
                           </h3>
                           <p className="text-sm opacity-70 font-light">
@@ -260,19 +259,6 @@ export default function GridPage() {
 
         </div>
       </div>
-
-      {/* 字体引入与样式 */}
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&display=swap');
-
-        .font-serif {
-          font-family: 'Lora', serif;
-        }
-      `,
-        }}
-      />
     </AntdProvider>
   );
 }

@@ -1,37 +1,45 @@
 "use client";
 
 import Link from "next/link";
+import { SunOutlined, MoonOutlined } from "@ant-design/icons";
+import { useTheme } from "@/components/theme-provider";
 
 export function GridNavbar() {
+  const { theme, toggleTheme } = useTheme();
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/70 dark:bg-[#0F172A]/70 backdrop-blur-md border-b border-blue-100/20 dark:border-white/5">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-[var(--card-bg-elevated)] backdrop-blur-md border-b border-[color:var(--border-color)]">
       <div className="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto relative">
-        {/* 左侧：Logo */}
         <div className="flex items-center space-x-2 group">
           <Link
             href="/"
-            className="flex items-center space-x-2 cursor-pointer"
+            className="flex items-center space-x-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--page-bg)] rounded-lg"
           >
-            <div className="w-8 h-8 bg-[#243B53] dark:bg-blue-400 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm">
-              <div className="w-2 h-2 bg-white dark:bg-[#0F172A] rounded-full animate-pulse"></div>
+            <div className="w-8 h-8 bg-[var(--brand)] rounded-full flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm">
+              <div className="w-2 h-2 bg-white dark:bg-[var(--page-bg)] rounded-full animate-pulse" />
             </div>
-            <span className="text-2xl font-serif font-bold tracking-tight text-[#243B53] dark:text-blue-100 transition-colors">
-              <span className="hover:text-blue-600 dark:hover:text-blue-300 transition-colors cursor-pointer">
+            <span className="text-2xl font-serif font-bold tracking-tight text-[var(--brand-text)] transition-colors">
+              <span className="hover:opacity-90 transition-opacity cursor-pointer">
                 Stillwell
               </span>
-              <span className="opacity-70">.grid</span>
+              <span className="text-[var(--muted-foreground)]">.grid</span>
             </span>
           </Link>
         </div>
 
-        {/* 右侧：关于我们 */}
-        <div className="flex items-center space-x-4">
-          <Link
-            href="#"
-            className="text-sm font-medium uppercase tracking-widest opacity-70 hover:opacity-100 transition-opacity"
+        <div className="flex items-center">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={theme === "light" ? "切换到深色模式" : "切换到浅色模式"}
+            className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--muted-foreground)] hover:bg-[var(--hover-bg)] hover:text-[var(--foreground)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--page-bg)]"
           >
-            关于我们
-          </Link>
+            {theme === "light" ? (
+              <SunOutlined style={{ fontSize: 16 }} />
+            ) : (
+              <MoonOutlined style={{ fontSize: 16 }} />
+            )}
+          </button>
         </div>
       </div>
     </nav>

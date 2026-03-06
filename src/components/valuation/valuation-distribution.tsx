@@ -33,6 +33,16 @@ interface HistogramBin {
   count: number
 }
 
+function resolveCssColor(input: string): string {
+  if (typeof window === "undefined") return input
+  const match = input.match(/^var\((--[^)]+)\)$/)
+  if (!match) return input
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue(match[1])
+    .trim()
+  return value || input
+}
+
 function buildHistogram(values: number[], binCount = 40) {
   if (!values.length) return { bins: [] as HistogramBin[], total: 0 }
   const min = Math.min(...values)
@@ -62,6 +72,12 @@ export function ValuationDistribution({
   accentColor = "#3b82f6",
 }: ValuationDistributionProps) {
   const option = useMemo<EChartsOption>(() => {
+    const resolvedAccent = resolveCssColor(accentColor)
+    const axisMuted = resolveCssColor("var(--muted-foreground)")
+    const borderColor = resolveCssColor("var(--border-color)")
+    const tooltipBg = resolveCssColor("var(--card-bg)")
+    const tooltipText = resolveCssColor("var(--foreground)")
+
     const { bins, total } = buildHistogram(values)
     if (!bins.length) return {}
 
@@ -77,7 +93,7 @@ export function ValuationDistribution({
     const maxCount = Math.max(...bins.map((b) => b.count))
 
     const barColors = bins.map((b, idx) => {
-      if (idx === currentBinIdx) return accentColor
+      if (idx === currentBinIdx) return resolvedAccent
       const ratio = b.count / maxCount
       const alpha = 0.15 + ratio * 0.45
       return `rgba(148,163,184,${alpha})`
@@ -92,10 +108,10 @@ export function ValuationDistribution({
         data: xLabels,
         axisLabel: {
           fontSize: 10,
-          color: "#94a3b8",
+          color: axisMuted,
           interval: Math.floor(bins.length / 5),
         },
-        axisLine: { lineStyle: { color: "#e2e8f0" } },
+        axisLine: { lineStyle: { color: borderColor } },
         axisTick: { show: false },
       },
       yAxis: {
@@ -113,13 +129,13 @@ export function ValuationDistribution({
           markLine: {
             silent: true,
             symbol: "none",
-            lineStyle: { color: accentColor, width: 2, type: "solid" },
+            lineStyle: { color: resolvedAccent, width: 2, type: "solid" },
             label: {
               formatter: `当前 ${label} ${currentValue.toFixed(2)}`,
               position: "end",
               fontSize: 11,
               fontWeight: "bold",
-              color: accentColor,
+              color: resolvedAccent,
             },
             data: [{ xAxis: currentBinIdx }],
           },
@@ -127,11 +143,11 @@ export function ValuationDistribution({
       ],
       tooltip: {
         trigger: "axis",
-        backgroundColor: "#fff",
-        borderColor: "#e2e8f0",
+        backgroundColor: tooltipBg,
+        borderColor,
         borderWidth: 1,
         padding: [14, 18],
-        textStyle: { color: "#18181b", fontSize: 13 },
+        textStyle: { color: tooltipText, fontSize: 13 },
         confine: true,
         formatter(params: unknown) {
           const arr = params as { dataIndex: number; value: number }[]
@@ -142,13 +158,13 @@ export function ValuationDistribution({
           const pct = total > 0 ? ((bin.count / total) * 100).toFixed(1) : "0.0"
           const isCurrent = idx === currentBinIdx
           return [
-            `<div style="font-weight:600;color:${isCurrent ? accentColor : "#18181b"};margin-bottom:4px">${label} 区间 [${bin.lower.toFixed(2)} - ${bin.upper.toFixed(2)}]</div>`,
+            `<div style="font-weight:600;color:${isCurrent ? resolvedAccent : tooltipText};margin-bottom:4px">${label} 区间 [${bin.lower.toFixed(2)} - ${bin.upper.toFixed(2)}]</div>`,
             `<div style="display:flex;justify-content:space-between;gap:16px">`,
-            `<span style="color:#71717a">落入天数</span>`,
+            `<span style="color:${axisMuted}">落入天数</span>`,
             `<span style="font-weight:600;font-variant-numeric:tabular-nums">${bin.count} 天</span>`,
             `</div>`,
             `<div style="display:flex;justify-content:space-between;gap:16px">`,
-            `<span style="color:#71717a">占比</span>`,
+            `<span style="color:${axisMuted}">占比</span>`,
             `<span style="font-weight:600;font-variant-numeric:tabular-nums">${pct}%</span>`,
             `</div>`,
           ].join("")

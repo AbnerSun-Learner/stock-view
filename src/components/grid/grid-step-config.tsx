@@ -148,9 +148,9 @@ export function GridStepConfig({
             role="switch"
             aria-checked={dynamicEnabled}
             onClick={() => onDynamicEnabledChange(!dynamicEnabled)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] ${
               dynamicEnabled
-                ? "bg-indigo-600"
+                ? "bg-[var(--brand)]"
                 : "bg-slate-300 dark:bg-slate-600"
             }`}
           >
