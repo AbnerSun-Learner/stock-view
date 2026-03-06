@@ -1,17 +1,15 @@
 "use client";
 
+import { AntdProvider } from "@/components/antd-provider";
 import { ValuationNavbar } from "@/components/valuation/valuation-navbar";
 import { INDEX_LIST, matchIndexFuzzy } from "@/lib/valuation";
+import { QuestionCircleOutlined } from "@ant-design/icons";
+import { Input, Table, Tooltip } from "antd";
+import type { ColumnsType } from "antd/es/table";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type PercentilePeriod = "all" | "10y" | "5y"
-
-const PERIOD_SUFFIX: Record<PercentilePeriod, string> = {
-  all: "",
-  "5y": "(5年)",
-  "10y": "(10年)",
-}
 
 const NULL_PERCENTILES: Record<PercentilePeriod, null> = { all: null, "10y": null, "5y": null }
 
@@ -71,24 +69,12 @@ function computeAllPercentiles(
   return result
 }
 
+const PERCENTILE_PERIOD: PercentilePeriod = "10y";
+
 export default function ValuationPage() {
   const [rows, setRows] = useState<ValuationRow[]>([]);
   const [searchInput, setSearchInput] = useState("");
   const [appliedKeyword, setAppliedKeyword] = useState("");
-  const [percentilePeriod, setPercentilePeriod] = useState<PercentilePeriod>("10y");
-  const [openDropdown, setOpenDropdown] = useState<"pe" | "pb" | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!openDropdown) return
-    function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setOpenDropdown(null)
-      }
-    }
-    document.addEventListener("mousedown", handleClick)
-    return () => document.removeEventListener("mousedown", handleClick)
-  }, [openDropdown])
 
   const fetchRows = useCallback(async () => {
     setRows(
@@ -206,236 +192,172 @@ export default function ValuationPage() {
     fetchRows();
   }, [fetchRows]);
 
-  const filteredRows = appliedKeyword.trim()
-    ? rows.filter((r) => matchIndexFuzzy(appliedKeyword, r.name, r.symbol))
-    : rows;
+  const filteredRows = useMemo(
+    () =>
+      appliedKeyword.trim()
+        ? rows.filter((r) => matchIndexFuzzy(appliedKeyword, r.name, r.symbol))
+        : rows,
+    [rows, appliedKeyword]
+  );
+
+  const columns: ColumnsType<ValuationRow> = useMemo(
+    () => [
+      {
+        title: "指数名称",
+        dataIndex: "name",
+        key: "name",
+        render: (_: string, r: ValuationRow) => (
+          <div>
+            <span className="font-medium text-zinc-900">{r.name}</span>
+            {r.updateDate && (
+              <span className="block text-xs text-zinc-500 mt-0.5">
+                数据更新：{r.updateDate}
+              </span>
+            )}
+          </div>
+        ),
+      },
+      {
+        title: "代码",
+        dataIndex: "symbol",
+        key: "symbol",
+        className: "font-mono text-zinc-700",
+      },
+      {
+        title: "市盈率",
+        key: "pe",
+        align: "right",
+        className: "font-mono text-zinc-700",
+        render: (_: unknown, r: ValuationRow) =>
+          r.loading ? "…" : r.error ? "—" : r.pe != null ? r.pe.toFixed(2) : "—",
+      },
+      {
+        title: (
+          <span className="inline-flex items-center gap-1">
+            市盈率分位(10年)
+            <Tooltip title="当前百分位使用的时间期限是十年">
+              <QuestionCircleOutlined className="text-zinc-400 text-xs cursor-help" />
+            </Tooltip>
+          </span>
+        ),
+        key: "pePercentile",
+        align: "right",
+        className: "font-mono text-zinc-700",
+        render: (_: unknown, r: ValuationRow) =>
+          r.loading
+            ? "…"
+            : r.error
+              ? "—"
+              : r.pePercentiles[PERCENTILE_PERIOD] != null
+                ? `${r.pePercentiles[PERCENTILE_PERIOD]}%`
+                : "—",
+      },
+      {
+        title: "市净率",
+        key: "pb",
+        align: "right",
+        className: "font-mono text-zinc-700",
+        render: (_: unknown, r: ValuationRow) =>
+          r.loading ? "…" : r.error ? "—" : r.pb != null ? r.pb.toFixed(2) : "—",
+      },
+      {
+        title: (
+          <span className="inline-flex items-center gap-1">
+            市净率分位(10年)
+            <Tooltip title="当前百分位使用的时间期限是十年">
+              <QuestionCircleOutlined className="text-zinc-400 text-xs cursor-help" />
+            </Tooltip>
+          </span>
+        ),
+        key: "pbPercentile",
+        align: "right",
+        className: "font-mono text-zinc-700",
+        render: (_: unknown, r: ValuationRow) =>
+          r.loading
+            ? "…"
+            : r.error
+              ? "—"
+              : r.pbPercentiles[PERCENTILE_PERIOD] != null
+                ? `${r.pbPercentiles[PERCENTILE_PERIOD]}%`
+                : "—",
+      },
+      {
+        title: "详细分析",
+        key: "action",
+        align: "center",
+        render: (_: unknown, r: ValuationRow) => (
+          <Link
+            href={`/valuation/${r.symbol}`}
+            className="text-[#243B53] underline hover:text-[#243B53]/80 cursor-pointer font-medium"
+          >
+            估值分析
+          </Link>
+        ),
+      },
+    ],
+    []
+  );
 
   return (
-    <div className="min-h-screen transition-colors duration-500 bg-[#F0F4F8] text-[#243B53]">
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-slate-200/20 rounded-full blur-[140px]" />
-        <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-slate-200/30 rounded-full blur-[100px]" />
-      </div>
+    <AntdProvider>
+      <div className="min-h-screen transition-colors duration-500 bg-[#F0F4F8] text-[#243B53]">
+        <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-slate-200/20 rounded-full blur-[140px]" />
+          <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-slate-200/30 rounded-full blur-[100px]" />
+        </div>
 
-      <ValuationNavbar />
+        <ValuationNavbar />
 
-      <div className="pt-20">
-        <div className="max-w-[1400px] mx-auto px-4 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-zinc-900 mb-2">
-              指数估值
-            </h1>
-            <p className="text-base text-zinc-600 leading-relaxed max-w-2xl">
-              以十年中值为锚，历史高低为界，看清当前估值所处区间
-            </p>
-          </div>
+        <div className="pt-20">
+          <div className="max-w-[1400px] mx-auto px-4 py-8">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl md:text-5xl font-serif font-medium leading-tight mb-3 tracking-tight">
+                指数估值
+              </h1>
+              <p className="text-lg opacity-70 leading-relaxed font-light max-w-2xl mx-auto">
+                以十年中值为锚，历史高低为界，看清当前估值所处区间
+              </p>
+            </div>
 
-          <div className="rounded-2xl border border-slate-200/80 bg-white/90 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
-            <div className="border-b border-slate-200/80 px-6 py-4 flex flex-wrap items-center justify-between gap-4">
-              <span className="text-sm text-zinc-500 font-medium">
-                开盘期间显示上一交易日数据，收盘后显示当日数据
-              </span>
-              <div className="flex items-center gap-2">
-                <input
-                  type="search"
+            <div className="rounded-2xl border border-slate-200/80 bg-white/90 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
+              <div className="border-b border-slate-200/80 px-6 py-4 flex flex-wrap items-center justify-end gap-4">
+                <Input.Search
                   placeholder="搜索指数名称或代码"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") setAppliedKeyword(searchInput);
-                  }}
-                  className="h-9 px-3 rounded-lg border border-slate-200 bg-white text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-300 min-w-[200px]"
+                  onSearch={() => setAppliedKeyword(searchInput)}
+                  onPressEnter={() => setAppliedKeyword(searchInput)}
+                  allowClear
+                  className="max-w-[280px]"
+                  style={{ borderRadius: 8 }}
                 />
                 <button
                   type="button"
                   onClick={() => setAppliedKeyword(searchInput)}
-                  className="h-9 px-4 rounded-lg bg-zinc-900 text-white text-sm font-medium hover:bg-zinc-800 active:scale-[0.98] transition-transform"
+                  className="h-9 px-4 rounded-lg bg-[#243B53] text-white text-sm font-medium hover:opacity-90 active:scale-[0.98] transition-transform"
                 >
                   搜索
                 </button>
               </div>
-            </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-slate-50/80 border-b border-slate-200">
-                    <th className="text-left py-3.5 px-6 text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                      指数名称
-                    </th>
-                    <th className="text-left py-3.5 px-6 text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                      代码
-                    </th>
-                    <th className="text-right py-3.5 px-6 text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                      市盈率
-                    </th>
-                    <th className="text-right py-3.5 px-6 relative">
-                      <div ref={openDropdown === "pe" ? dropdownRef : undefined}>
-                        <button
-                          type="button"
-                          onClick={() => setOpenDropdown(openDropdown === "pe" ? null : "pe")}
-                          className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-zinc-600 hover:text-zinc-900 transition-colors"
-                        >
-                          市盈率分位{PERIOD_SUFFIX[percentilePeriod]}
-                          <svg className={`w-3 h-3 transition-transform ${openDropdown === "pe" ? "rotate-180" : ""}`} viewBox="0 0 12 12" fill="currentColor">
-                            <path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                          </svg>
-                        </button>
-                        {openDropdown === "pe" && (
-                          <div className="absolute right-4 top-full mt-1 z-20 min-w-[140px] rounded-lg border border-slate-200 bg-white shadow-lg py-1">
-                            {(["all", "5y", "10y"] as PercentilePeriod[]).map((p) => (
-                              <button
-                                key={p}
-                                type="button"
-                                onClick={() => { setPercentilePeriod(p); setOpenDropdown(null) }}
-                                className={`w-full text-left px-3 py-1.5 text-xs transition-colors flex items-center justify-between ${
-                                  percentilePeriod === p
-                                    ? "text-zinc-900 font-semibold bg-slate-50"
-                                    : "text-zinc-600 hover:bg-slate-50"
-                                }`}
-                              >
-                                市盈率分位{PERIOD_SUFFIX[p]}
-                                {percentilePeriod === p && (
-                                  <svg className="w-3 h-3 text-zinc-900" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M2 6l3 3 5-5" />
-                                  </svg>
-                                )}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </th>
-                    <th className="text-right py-3.5 px-6 text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                      市净率
-                    </th>
-                    <th className="text-right py-3.5 px-6 relative">
-                      <div ref={openDropdown === "pb" ? dropdownRef : undefined}>
-                        <button
-                          type="button"
-                          onClick={() => setOpenDropdown(openDropdown === "pb" ? null : "pb")}
-                          className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-zinc-600 hover:text-zinc-900 transition-colors"
-                        >
-                          市净率分位{PERIOD_SUFFIX[percentilePeriod]}
-                          <svg className={`w-3 h-3 transition-transform ${openDropdown === "pb" ? "rotate-180" : ""}`} viewBox="0 0 12 12" fill="currentColor">
-                            <path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                          </svg>
-                        </button>
-                        {openDropdown === "pb" && (
-                          <div className="absolute right-4 top-full mt-1 z-20 min-w-[140px] rounded-lg border border-slate-200 bg-white shadow-lg py-1">
-                            {(["all", "5y", "10y"] as PercentilePeriod[]).map((p) => (
-                              <button
-                                key={p}
-                                type="button"
-                                onClick={() => { setPercentilePeriod(p); setOpenDropdown(null) }}
-                                className={`w-full text-left px-3 py-1.5 text-xs transition-colors flex items-center justify-between ${
-                                  percentilePeriod === p
-                                    ? "text-zinc-900 font-semibold bg-slate-50"
-                                    : "text-zinc-600 hover:bg-slate-50"
-                                }`}
-                              >
-                                市净率分位{PERIOD_SUFFIX[p]}
-                                {percentilePeriod === p && (
-                                  <svg className="w-3 h-3 text-zinc-900" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M2 6l3 3 5-5" />
-                                  </svg>
-                                )}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </th>
-                    <th className="text-center py-3.5 px-6 text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                      详细分析
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredRows.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={7}
-                        className="py-16 text-center text-zinc-500 text-sm"
-                      >
-                        {rows.some((r) => r.loading)
-                          ? "加载中…"
-                          : appliedKeyword.trim()
-                            ? "未匹配到相关指数"
-                            : "暂无指数数据"}
-                      </td>
-                    </tr>
-                  )}
-                  {filteredRows.map((row) => (
-                    <tr
-                      key={row.symbol}
-                      className="hover:bg-slate-50/50 transition-colors"
-                    >
-                      <td className="py-3.5 px-6 text-sm">
-                        <span className="font-medium text-zinc-900">
-                          {row.name}
-                        </span>
-                        {row.updateDate && (
-                          <span className="block text-xs text-zinc-500 mt-0.5">
-                            数据更新：{row.updateDate}
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-6 text-sm font-mono text-zinc-700">
-                        {row.symbol}
-                      </td>
-                      <td className="py-3.5 px-6 text-sm font-mono text-right text-zinc-700">
-                        {row.loading
-                          ? "…"
-                          : row.error
-                            ? "—"
-                            : row.pe != null
-                              ? row.pe.toFixed(2)
-                              : "—"}
-                      </td>
-                      <td className="py-3.5 px-6 text-sm font-mono text-right text-zinc-700">
-                        {row.loading
-                          ? "…"
-                          : row.error
-                            ? "—"
-                            : row.pePercentiles[percentilePeriod] != null
-                              ? `${row.pePercentiles[percentilePeriod]}%`
-                              : "—"}
-                      </td>
-                      <td className="py-3.5 px-6 text-sm font-mono text-right text-zinc-700">
-                        {row.loading
-                          ? "…"
-                          : row.error
-                            ? "—"
-                            : row.pb != null
-                              ? row.pb.toFixed(2)
-                              : "—"}
-                      </td>
-                      <td className="py-3.5 px-6 text-sm font-mono text-right text-zinc-700">
-                        {row.loading
-                          ? "…"
-                          : row.error
-                            ? "—"
-                            : row.pbPercentiles[percentilePeriod] != null
-                              ? `${row.pbPercentiles[percentilePeriod]}%`
-                              : "—"}
-                      </td>
-                      <td className="py-3.5 px-6 text-center">
-                        <Link
-                          href={`/valuation/${row.symbol}`}
-                          className="inline-block px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-sm font-medium hover:bg-slate-200 active:scale-[0.98] transition-transform"
-                        >
-                          估值分析
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <Table<ValuationRow>
+                rowKey="symbol"
+                columns={columns}
+                dataSource={filteredRows}
+                pagination={false}
+                locale={{
+                  emptyText: rows.some((r) => r.loading)
+                    ? "加载中…"
+                    : appliedKeyword.trim()
+                      ? "未匹配到相关指数"
+                      : "暂无指数数据",
+                }}
+                className="valuation-table"
+              />
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </AntdProvider>
   );
 }

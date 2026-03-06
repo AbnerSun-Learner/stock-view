@@ -130,8 +130,9 @@ export function ValuationDistribution({
         backgroundColor: "#fff",
         borderColor: "#e2e8f0",
         borderWidth: 1,
-        padding: [10, 14],
-        textStyle: { color: "#18181b", fontSize: 12 },
+        padding: [14, 18],
+        textStyle: { color: "#18181b", fontSize: 13 },
+        confine: true,
         formatter(params: unknown) {
           const arr = params as { dataIndex: number; value: number }[]
           if (!arr?.length) return ""

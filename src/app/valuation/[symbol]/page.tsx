@@ -29,6 +29,7 @@ export default function ValuationDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showDropZones, setShowDropZones] = useState(false)
+  const [showBands, setShowBands] = useState(false)
   const [holdings, setHoldings] = useState<HoldingItem[]>([])
   const [holdingsLoading, setHoldingsLoading] = useState(true)
   const [lastDate, setLastDate] = useState("")
@@ -86,24 +87,6 @@ export default function ValuationDetailPage() {
     [chartData]
   )
 
-  const pbStats = useMemo(() => {
-    const pbValues = chartData
-      .map((d) => d.pb)
-      .filter((v): v is number => typeof v === "number" && !isNaN(v))
-    if (pbValues.length < 10) return null
-    const raw = computePeStats(pbValues)
-    return {
-      currentValue: raw.current,
-      currentPercentile: raw.currentPercentile,
-      percentile80: raw.percentile80,
-      percentile50: raw.percentile50,
-      percentile20: raw.percentile20,
-      max: raw.max,
-      average: raw.average,
-      min: raw.min,
-    }
-  }, [chartData])
-
   const closeRange = useMemo(() => {
     const closes = chartData
       .map((d) => d.close)
@@ -112,6 +95,7 @@ export default function ValuationDetailPage() {
     return {
       current: closes[closes.length - 1],
       high: Math.max(...closes),
+      min: Math.min(...closes),
     }
   }, [chartData])
 
@@ -163,13 +147,17 @@ export default function ValuationDetailPage() {
                     max={peStats.max}
                     average={peStats.average}
                     min={peStats.min}
-                    pbStats={pbStats}
+                    showBands={showBands}
+                    onBandsChange={setShowBands}
                   />
 
                   {closeRange && (
                     <ValuationDropPanel
                       currentClose={closeRange.current}
                       highestClose={closeRange.high}
+                      minClose={closeRange.min}
+                      showDropZones={showDropZones}
+                      onDropZonesChange={setShowDropZones}
                     />
                   )}
                 </aside>
@@ -180,37 +168,14 @@ export default function ValuationDetailPage() {
                       data={chartData}
                       theme="light"
                       showDropZones={showDropZones}
+                      showBands={showBands}
                       hideStatsBar
-                      chartHeaderRight={
-                        <label className="flex items-center gap-2 text-sm text-zinc-600 cursor-pointer select-none">
-                          <span>标注 70%/80% 下跌区域</span>
-                          <button
-                            type="button"
-                            role="switch"
-                            aria-checked={showDropZones}
-                            onClick={() => setShowDropZones((v) => !v)}
-                            className={`relative inline-flex h-6 w-10 shrink-0 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-400 ${
-                              showDropZones
-                                ? "bg-zinc-900 border-zinc-900"
-                                : "bg-slate-200 border-slate-300"
-                            }`}
-                          >
-                            <span
-                              className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition-transform ${
-                                showDropZones
-                                  ? "translate-x-4"
-                                  : "translate-x-0.5"
-                              }`}
-                            />
-                          </button>
-                        </label>
-                      }
                     />
                   </div>
                 </main>
               </section>
 
-              {/* 第二行：估值分布图 */}
+              {/* 第二行：PE 估值分布（仅保留 PE-TTM） */}
               <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="rounded-2xl border border-slate-200/80 bg-white/95 p-5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)]">
                   <div className="flex items-center justify-between mb-2">
@@ -223,41 +188,14 @@ export default function ValuationDetailPage() {
                     values={chartData.map((d) => d.value)}
                     currentValue={peStats.current}
                     label="PE"
-                    accentColor="#3b82f6"
+                    accentColor="#243B53"
                   />
                 </div>
-
-                {pbStats && (
-                  <div className="rounded-2xl border border-slate-200/80 bg-white/95 p-5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)]">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-semibold text-zinc-800">PB 估值分布</h3>
-                      <span className="text-[11px] text-zinc-400">
-                        历史各 PB 区间出现频次
-                      </span>
-                    </div>
-                    <ValuationDistribution
-                      values={chartData
-                        .map((d) => d.pb)
-                        .filter((v): v is number => typeof v === "number" && !isNaN(v))}
-                      currentValue={pbStats.currentValue}
-                      label="PB"
-                      accentColor="#8b5cf6"
-                    />
-                  </div>
-                )}
-
-                {!pbStats && (
-                  <div className="rounded-2xl border border-slate-200/80 bg-white/95 p-5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] flex items-center justify-center text-sm text-zinc-400">
-                    PB 数据不足，暂无分布图
-                  </div>
-                )}
               </section>
 
-              {/* 第三行：指数权重（行业 + 持仓环形图） */}
+              {/* 第三行：指数权重（成分股 + 行业分布，与 PE 分布同样式） */}
               {!holdingsLoading && holdings.length > 0 && (
-                <section>
-                  <ValuationWeightChart holdings={holdings} />
-                </section>
+                <ValuationWeightChart holdings={holdings} />
               )}
 
               {/* 第四行：前十大持仓表 */}

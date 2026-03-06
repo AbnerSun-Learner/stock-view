@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import { Slider } from "antd"
 
 export interface ValuationPePanelProps {
@@ -12,16 +11,8 @@ export interface ValuationPePanelProps {
   max: number
   average: number
   min: number
-  pbStats?: {
-    currentValue: number
-    currentPercentile: number
-    percentile80: number
-    percentile50: number
-    percentile20: number
-    max: number
-    average: number
-    min: number
-  } | null
+  showBands?: boolean
+  onBandsChange?: (show: boolean) => void
 }
 
 const GAUGE_STOPS = [
@@ -141,78 +132,58 @@ export function ValuationPePanel({
   max,
   average,
   min,
-  pbStats,
+  showBands = false,
+  onBandsChange,
 }: ValuationPePanelProps) {
-  const [tab, setTab] = useState<"pe" | "pb">("pe")
-  const hasPb = !!pbStats
-
-  const active = tab === "pb" && pbStats ? pbStats : {
-    currentValue,
-    currentPercentile,
-    percentile80,
-    percentile50,
-    percentile20,
-    max,
-    average,
-    min,
-  }
-
-  const accentColor = tab === "pe" ? "#3b82f6" : "#8b5cf6"
-  const labelPrefix = tab === "pe" ? "PE" : "PB"
+  const accentColor = "#243B53"
+  const labelPrefix = "PE"
 
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-white/95 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
-      {hasPb ? (
-        <div className="flex border-b border-slate-100">
-          <button
-            type="button"
-            onClick={() => setTab("pe")}
-            className={`flex-1 py-3 text-sm font-semibold transition-colors ${
-              tab === "pe"
-                ? "text-blue-600 bg-blue-50/50 border-b-2 border-blue-500"
-                : "text-zinc-500 hover:text-zinc-700"
-            }`}
-          >
-            PE-TTM
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("pb")}
-            className={`flex-1 py-3 text-sm font-semibold transition-colors ${
-              tab === "pb"
-                ? "text-purple-600 bg-purple-50/50 border-b-2 border-purple-500"
-                : "text-zinc-500 hover:text-zinc-700"
-            }`}
-          >
-            PB
-          </button>
-        </div>
-      ) : (
-        <div className="px-5 pt-4 pb-1">
-          <h3 className="text-base font-bold" style={{ color: accentColor }}>
-            PE-TTM
-          </h3>
-        </div>
-      )}
+      <div className="px-5 pt-4 pb-1 flex items-center justify-between">
+        <h3 className="text-base font-bold" style={{ color: accentColor }}>
+          PE-TTM
+        </h3>
+        {typeof onBandsChange === "function" && (
+          <label className="flex items-center gap-2 text-sm text-zinc-600 cursor-pointer select-none">
+            <span>估值带</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={showBands}
+              onClick={() => onBandsChange(!showBands)}
+              className={`relative inline-flex h-6 w-10 shrink-0 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-400 ${
+                showBands ? "bg-[#243B53] border-[#243B53]" : "bg-slate-200 border-slate-300"
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition-transform ${
+                  showBands ? "translate-x-4" : "translate-x-0.5"
+                }`}
+              />
+            </button>
+          </label>
+        )}
+      </div>
 
       <div className="px-5 py-4 space-y-4">
         <div className="flex items-end justify-between">
           <div>
             <div className="text-[11px] text-zinc-400">当前{labelPrefix}</div>
             <div className="text-2xl font-bold tabular-nums" style={{ color: accentColor }}>
-              {active.currentValue.toFixed(2)}
+              {currentValue.toFixed(2)}
             </div>
           </div>
           <div className="text-right">
             <div className="text-[11px] text-zinc-400">平均值</div>
             <div className="text-sm font-semibold tabular-nums text-zinc-600">
-              {active.average.toFixed(2)}
+              {average.toFixed(2)}
             </div>
           </div>
         </div>
 
         <PercentileGauge
-          percentile={active.currentPercentile}
+          percentile={currentPercentile}
           label={labelPrefix}
           accentColor={accentColor}
         />
@@ -220,12 +191,12 @@ export function ValuationPePanel({
         <div className="pt-2 border-t border-slate-100">
           <StatGrid
             items={[
-              { label: "80% 分位", value: active.percentile80.toFixed(2), color: "text-orange-600" },
-              { label: "50% 分位", value: active.percentile50.toFixed(2) },
-              { label: "20% 分位", value: active.percentile20.toFixed(2), color: "text-emerald-600" },
-              { label: `最高${labelPrefix}`, value: active.max.toFixed(2), color: "text-red-500" },
-              { label: `最低${labelPrefix}`, value: active.min.toFixed(2), color: "text-emerald-600" },
-              { label: "平均值", value: active.average.toFixed(2) },
+              { label: "80% 分位", value: percentile80.toFixed(2), color: "text-orange-600" },
+              { label: "50% 分位", value: percentile50.toFixed(2) },
+              { label: "20% 分位", value: percentile20.toFixed(2), color: "text-emerald-600" },
+              { label: "最高PE", value: max.toFixed(2), color: "text-red-500" },
+              { label: "最低PE", value: min.toFixed(2), color: "text-emerald-600" },
+              { label: "平均值", value: average.toFixed(2) },
             ]}
           />
         </div>

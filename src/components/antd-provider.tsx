@@ -12,7 +12,7 @@ export function AntdProvider({ children }: AntdProviderProps) {
       theme={{
         token: {
           borderRadius: 12,
-          colorPrimary: "#6366f1",
+          colorPrimary: "#243B53",
           fontFamily:
             '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif',
         },

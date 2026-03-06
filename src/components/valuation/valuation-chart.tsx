@@ -37,6 +37,8 @@ interface ValuationChartProps {
   data: ValuationPoint[];
   theme?: "light" | "dark";
   showDropZones?: boolean;
+  /** 是否显示估值带（由父组件如 PE 模块内开关控制） */
+  showBands?: boolean;
   hideStatsBar?: boolean;
   chartHeaderRight?: React.ReactNode;
 }
@@ -108,6 +110,7 @@ export function ValuationChart({
   data,
   theme = "light",
   showDropZones = false,
+  showBands = false,
   hideStatsBar = false,
   chartHeaderRight,
 }: ValuationChartProps) {
@@ -226,7 +229,7 @@ export function ValuationChart({
           lineStyle: { width: 3 },
           itemStyle: { borderColor: "#fff", borderWidth: 2, color: "#243B53" },
         },
-        markArea: { silent: true, data: bandMarkArea as never },
+        ...(showBands ? { markArea: { silent: true, data: bandMarkArea as never } } : {}),
         markLine: {
           silent: true,
           symbol: "none",
@@ -292,7 +295,7 @@ export function ValuationChart({
       grid: {
         top: 40,
         right: hasClose ? 80 : 40,
-        bottom: 80,
+        bottom: 40,
         left: 60,
         containLabel: false,
       },
@@ -343,31 +346,12 @@ export function ValuationChart({
           moveOnMouseMove: true,
           moveOnMouseWheel: false,
         },
-        {
-          type: "slider",
-          xAxisIndex: 0,
-          filterMode: "none",
-          height: 24,
-          bottom: 8,
-          borderColor: "#e2e8f0",
-          fillerColor: "rgba(36,59,83,0.08)",
-          handleStyle: { color: "#243B53", borderColor: "#243B53" },
-          textStyle: { color: textColor, fontSize: 11 },
-          dataBackground: {
-            lineStyle: { color: "#94a3b8" },
-            areaStyle: { color: "rgba(148,163,184,0.15)" },
-          },
-          selectedDataBackground: {
-            lineStyle: { color: "#243B53" },
-            areaStyle: { color: "rgba(36,59,83,0.12)" },
-          },
-        },
       ],
       legend: { show: false },
       animation: true,
       animationDuration: 600,
     };
-  }, [data, bands, stats, theme, hasClose, closeRange, showDropZones, dateIndex, timestamps]);
+  }, [data, bands, stats, theme, hasClose, closeRange, showDropZones, showBands, dateIndex, timestamps]);
 
   if (!data.length || !bands || !stats) return null;
 
@@ -410,7 +394,7 @@ export function ValuationChart({
           </div>
         )}
         {chartHeaderRight && (
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-4 shrink-0">
             {chartHeaderRight}
           </div>
         )}

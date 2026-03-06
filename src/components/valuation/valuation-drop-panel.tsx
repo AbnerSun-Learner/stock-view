@@ -3,6 +3,10 @@
 interface ValuationDropPanelProps {
   currentClose: number
   highestClose: number
+  /** 历史最低收盘（用于计算历史最大跌幅） */
+  minClose?: number
+  showDropZones?: boolean
+  onDropZonesChange?: (show: boolean) => void
 }
 
 function WaterLevel({
@@ -58,16 +62,51 @@ function WaterLevel({
 export function ValuationDropPanel({
   currentClose,
   highestClose,
+  minClose,
+  showDropZones = false,
+  onDropZonesChange,
 }: ValuationDropPanelProps) {
   const drop70 = highestClose * 0.3
   const drop80 = highestClose * 0.2
   const currentDropPercent = ((highestClose - currentClose) / highestClose) * 100
+  const maxDropPercent =
+    minClose != null && minClose < highestClose
+      ? ((highestClose - minClose) / highestClose) * 100
+      : null
 
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-white/95 px-5 py-5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)]">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-zinc-800">极限跌幅</h3>
-        <span className="text-[11px] text-zinc-400">从历史最高点计算</span>
+        <div className="flex items-center gap-3">
+          {maxDropPercent != null && (
+            <span className="text-[11px] text-zinc-500">
+              历史最大跌幅 -{maxDropPercent.toFixed(1)}%
+            </span>
+          )}
+          {typeof onDropZonesChange === "function" && (
+            <label className="flex items-center gap-2 text-sm text-zinc-600 cursor-pointer select-none">
+              <span>70/80 下跌区域</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={showDropZones}
+                onClick={() => onDropZonesChange(!showDropZones)}
+                className={`relative inline-flex h-6 w-10 shrink-0 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-zinc-400 ${
+                  showDropZones
+                    ? "bg-[#243B53] border-[#243B53]"
+                    : "bg-slate-200 border-slate-300"
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition-transform ${
+                    showDropZones ? "translate-x-4" : "translate-x-0.5"
+                  }`}
+                />
+              </button>
+            </label>
+          )}
+        </div>
       </div>
 
       <div className="mb-4 p-3 rounded-xl bg-slate-50/80">
@@ -85,7 +124,7 @@ export function ValuationDropPanel({
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
         <WaterLevel
           label="70 水位"
           level={70}

@@ -24,22 +24,6 @@ export function GridNavbar() {
           </Link>
         </div>
 
-        {/* 中间：网格交易 / 指数估值 */}
-        <div className="hidden md:flex items-center space-x-10">
-          <Link
-            href="/grid"
-            className="text-sm font-medium uppercase tracking-widest opacity-100 transition-opacity"
-          >
-            网格交易
-          </Link>
-          <Link
-            href="/valuation"
-            className="text-sm font-medium uppercase tracking-widest opacity-70 hover:opacity-100 transition-opacity"
-          >
-            指数估值
-          </Link>
-        </div>
-
         {/* 右侧：关于我们 */}
         <div className="flex items-center space-x-4">
           <Link

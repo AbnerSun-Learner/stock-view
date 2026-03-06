@@ -151,44 +151,38 @@ export function ValuationWeightChart({ holdings }: ValuationWeightChartProps) {
   const totalWeight = holdingData.reduce((s, d) => s + d.value, 0)
 
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white/95 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
-      <div className="border-b border-slate-100 px-5 py-3">
-        <h3 className="text-sm font-semibold text-zinc-800">指数权重</h3>
+    <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="rounded-2xl border border-slate-200/80 bg-white/95 p-5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)]">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-semibold text-zinc-800">成分股权重</h3>
+          <span className="text-[11px] text-zinc-400">
+            Top {holdingData.length} 合计 {totalWeight.toFixed(1)}%
+          </span>
+        </div>
+        <ReactEChartsCore
+          echarts={echarts}
+          option={holdingOption}
+          style={{ height: 220, width: "100%" }}
+          notMerge
+          lazyUpdate
+        />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-medium text-zinc-600">成分股权重</span>
-            <span className="text-[11px] text-zinc-400">
-              Top {holdingData.length} 合计 {totalWeight.toFixed(1)}%
-            </span>
-          </div>
-          <ReactEChartsCore
-            echarts={echarts}
-            option={holdingOption}
-            style={{ height: 220, width: "100%" }}
-            notMerge
-            lazyUpdate
-          />
+      <div className="rounded-2xl border border-slate-200/80 bg-white/95 p-5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)]">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-semibold text-zinc-800">行业分布</h3>
+          <span className="text-[11px] text-zinc-400">
+            {industryData.length} 个行业
+          </span>
         </div>
-
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-medium text-zinc-600">行业分布</span>
-            <span className="text-[11px] text-zinc-400">
-              {industryData.length} 个行业
-            </span>
-          </div>
-          <ReactEChartsCore
-            echarts={echarts}
-            option={industryOption}
-            style={{ height: 220, width: "100%" }}
-            notMerge
-            lazyUpdate
-          />
-        </div>
+        <ReactEChartsCore
+          echarts={echarts}
+          option={industryOption}
+          style={{ height: 220, width: "100%" }}
+          notMerge
+          lazyUpdate
+        />
       </div>
-    </div>
+    </section>
   )
 }
