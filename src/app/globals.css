@@ -2,52 +2,48 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* 金融应用专业配色方案 */
+/* 极简主义配色方案 */
 :root {
-  /* 页面/基础背景 */
-  --page-bg: #f0f4f8;
+  /* 页面背景 */
+  --page-bg: #ffffff;
   --background: var(--page-bg);
-  --foreground: #243b53;
-  --muted-foreground: #52606d;
-  
-  /* 主色调 - 深蓝色系（专业、信任） */
-  --primary: #0066cc;
-  --primary-dark: #004c99;
-  --primary-light: #3385d6;
-  --brand: #243b53;
-  --brand-text: #243b53;
-  
-  /* 强调色 - 橙金色（行动） */
-  --accent: #ff6b35;
-  --accent-light: #ff8c61;
-  --warning: #f59e0b;
-  
-  /* 数据可视化色 */
-  --profit: #10b981; /* 绿色 - 盈利 */
-  --loss: #ef4444;   /* 红色 - 亏损 */
-  --neutral: #6b7280; /* 灰色 - 中性 */
-  --chart-secondary: #7c3aed;
-  
-  /* 网格类型背景色 */
+  --foreground: #000000;
+  --muted-foreground: #666666;
+
+  /* 主色 */
+  --primary: #000000;
+  --brand: #000000;
+  --brand-text: #000000;
+
+  /* 强调色（极少使用） */
+  --accent: #000000;
+  --warning: #999999;
+
+  /* 数据可视化色（保留功能性颜色） */
+  --profit: #059669;
+  --loss: #dc2626;
+  --neutral: #666666;
+
+  /* 网格类型背景色（极简化） */
   --grid-small: transparent;
-  --grid-medium: #dbeafe;  /* 淡蓝色 */
-  --grid-large: #e9d5ff;   /* 淡紫色 */
-  
+  --grid-medium: #f5f5f5;
+  --grid-large: #f0f0f0;
+
   /* 卡片和边框 */
   --card-bg: #ffffff;
-  --card-bg-elevated: rgba(255, 255, 255, 0.92);
-  --border-color: #e2e8f0;
-  --hover-bg: rgba(15, 23, 42, 0.04);
-  --ring: rgba(36, 59, 83, 0.35);
+  --card-bg-elevated: #ffffff;
+  --border-color: #e5e5e5;
+  --hover-bg: rgba(0, 0, 0, 0.03);
+  --ring: rgba(0, 0, 0, 0.2);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter), "Inter", "Helvetica Neue", Helvetica, Arial,
+    sans-serif;
   --font-mono: var(--font-geist-mono);
-  
-  /* 自定义颜色 */
+
   --color-primary: var(--primary);
   --color-brand: var(--brand);
   --color-accent: var(--accent);
@@ -57,43 +53,40 @@
   --color-muted: var(--muted-foreground);
 }
 
+/* 暗色模式 */
 .dark {
-  --page-bg: #0f172a;
+  --page-bg: #0a0a0a;
   --background: var(--page-bg);
-  --foreground: #e5e7eb;
-  --muted-foreground: #9ca3af;
-  --primary: #3b82f6;
-  --primary-dark: #2563eb;
-  --primary-light: #60a5fa;
-  --brand: #243b53;
-  --brand-text: #e5e7eb;
-  --accent: #fb923c;
-  --accent-light: #fdba74;
-  --warning: #fbbf24;
-  --profit: #22c55e;
+  --foreground: #f5f5f5;
+  --muted-foreground: #999999;
+  --primary: #ffffff;
+  --brand: #ffffff;
+  --brand-text: #f5f5f5;
+  --accent: #ffffff;
+  --warning: #808080;
+  --profit: #10b981;
   --loss: #f87171;
-  --neutral: #9ca3af;
-  --chart-secondary: #a855f7;
+  --neutral: #808080;
   --grid-small: transparent;
-  --grid-medium: rgba(59, 130, 246, 0.15);
-  --grid-large: rgba(168, 85, 247, 0.15);
-  --card-bg: #111827;
-  --card-bg-elevated: rgba(17, 24, 39, 0.84);
-  --border-color: #334155;
-  --hover-bg: rgba(226, 232, 240, 0.06);
-  --ring: rgba(226, 232, 240, 0.24);
+  --grid-medium: rgba(255, 255, 255, 0.04);
+  --grid-large: rgba(255, 255, 255, 0.06);
+  --card-bg: #111111;
+  --card-bg-elevated: #111111;
+  --border-color: #2d2d2d;
+  --hover-bg: rgba(255, 255, 255, 0.04);
+  --ring: rgba(255, 255, 255, 0.2);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  font-family: "Inter", "Helvetica Neue", Helvetica, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-.font-serif {
-  font-family: var(--font-brand-serif), ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+  font-size: 16px;
+  line-height: 1.8;
+  letter-spacing: 0.01em;
 }
 
 /* 数字字体优化 */
@@ -127,20 +120,21 @@ html {
   }
 }
 
-/* 估值页导航栏 .valuation 链接固定颜色 */
+/* 估值页导航栏链接 */
 a.valuation-nav-link {
-  color: #52606d !important;
+  color: #666666 !important;
 }
 
-/* 估值列表页：搜索框无白底、与页面背景融合 */
+/* 估值列表页：搜索框与页面背景融合 */
 .valuation-search-input.ant-input,
 .valuation-search-input.ant-input:hover,
 .valuation-search-input.ant-input:focus {
   background-color: transparent !important;
   border-color: var(--border-color);
+  border-radius: 0 !important;
 }
 
-/* 估值列表表格：不出现纵向滚动条，全部行展示 */
+/* 估值列表表格：不出现纵向滚动条 */
 .valuation-table-wrap .ant-table-body,
 .valuation-table-wrap .ant-table-content,
 .valuation-table-wrap .ant-table-container,
@@ -152,17 +146,142 @@ a.valuation-nav-link {
   max-height: none !important;
 }
 
-/* 估值详情页 Segmented 与页面风格一致 */
+/* 估值详情页 Segmented */
 .valuation-segmented.ant-segmented {
-  background: var(--hover-bg) !important;
+  background: #f5f5f5 !important;
+  border-radius: 0 !important;
+}
+.dark .valuation-segmented.ant-segmented {
+  background: #1a1a1a !important;
 }
 .valuation-segmented .ant-segmented-item-selected {
-  background: var(--card-bg-elevated) !important;
-  color: var(--foreground) !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-radius: 0 !important;
+}
+.dark .valuation-segmented .ant-segmented-item-selected {
+  background: #2d2d2d !important;
+  color: #f5f5f5 !important;
 }
 .valuation-segmented .ant-segmented-item {
-  color: var(--muted-foreground);
+  color: #666666;
+  border-radius: 0 !important;
 }
 .valuation-segmented .ant-segmented-item:hover {
-  color: var(--foreground);
+  color: #000000;
+}
+
+/* 数据表格悬停效果 */
+.ant-table-tbody > tr:hover > td {
+  background-color: var(--hover-bg) !important;
+}
+
+/* Ant Design 表格极简化 */
+.ant-table {
+  border-radius: 0 !important;
+}
+.ant-table-container {
+  border-radius: 0 !important;
+}
+.ant-table-thead > tr > th {
+  background: #f5f5f5 !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: var(--muted-foreground) !important;
+}
+.dark .ant-table-thead > tr > th {
+  background: #1a1a1a !important;
+}
+.ant-table-tbody > tr > td {
+  border-bottom: 1px solid var(--border-color) !important;
+  color: var(--foreground) !important;
+}
+.ant-table-wrapper {
+  border-radius: 0 !important;
+}
+
+/* 滚动条样式（极简） */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cccccc;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #999999;
+}
+
+/* 数据颜色 */
+.data-positive {
+  color: var(--profit);
+}
+
+.data-negative {
+  color: var(--loss);
+}
+
+.data-neutral {
+  color: var(--neutral);
+}
+
+/* 估值标签样式（极简版） */
+.valuation-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  border: 1px solid currentColor;
+}
+
+.valuation-tag.undervalued {
+  color: #059669;
+  background: transparent;
+  border-color: rgba(5, 150, 105, 0.3);
+}
+
+.valuation-tag.overvalued {
+  color: #dc2626;
+  background: transparent;
+  border-color: rgba(220, 38, 38, 0.3);
+}
+
+.valuation-tag.fair {
+  color: #b45309;
+  background: transparent;
+  border-color: rgba(180, 83, 9, 0.3);
+}
+
+.dark .valuation-tag.undervalued {
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.dark .valuation-tag.overvalued {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.dark .valuation-tag.fair {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+/* 减少动画（无障碍） */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }

@@ -38,7 +38,6 @@ function computePercentile(values: number[], current: number): number | null {
   return Math.round((rank / values.length) * 10000) / 100;
 }
 
-/** 年化波动率：基于日收益率标准差 * sqrt(252) */
 function computeAnnualVolatility(closes: number[]): number | null {
   if (closes.length < 20) return null;
   const recent = closes.slice(-252);
@@ -76,6 +75,15 @@ function computeAllPercentiles(
 }
 
 const PERCENTILE_PERIOD: PercentilePeriod = "10y";
+
+function getValuationStatus(
+  percentile: number | null
+): { label: string; color: string } | null {
+  if (percentile === null) return null;
+  if (percentile < 30) return { label: "低估", color: "#059669" };
+  if (percentile > 70) return { label: "高估", color: "#dc2626" };
+  return { label: "合理", color: "#b45309" };
+}
 
 export default function ValuationPage() {
   const [rows, setRows] = useState<ValuationRow[]>([]);
@@ -243,12 +251,12 @@ export default function ValuationPage() {
         key: "name",
         render: (_: string, r: ValuationRow) => (
           <div>
-            <span className="font-medium text-[var(--foreground)]">
+            <span className="font-medium text-[var(--foreground)] text-sm">
               {r.name}
             </span>
             {r.updateDate && (
               <span className="block text-xs text-[var(--muted-foreground)] mt-0.5">
-                数据更新：{r.updateDate}
+                {r.updateDate}
               </span>
             )}
           </div>
@@ -258,27 +266,27 @@ export default function ValuationPage() {
         title: "代码",
         dataIndex: "symbol",
         key: "symbol",
-        className: "font-mono text-[var(--foreground)]",
+        className: "font-mono text-sm text-[var(--muted-foreground)]",
       },
       {
         title: "收盘点位",
         key: "close",
         align: "right",
-        className: "font-mono text-[var(--foreground)]",
+        className: "font-mono text-sm text-[var(--foreground)]",
         render: (_: unknown, r: ValuationRow) =>
           r.loading
             ? "…"
             : r.error
-              ? "—"
-              : r.close != null
-                ? r.close.toFixed(2)
-                : "—",
+            ? "—"
+            : r.close != null
+            ? r.close.toFixed(2)
+            : "—",
       },
       {
         title: "市盈率",
         key: "pe",
         align: "right",
-        className: "font-mono text-[var(--foreground)]",
+        className: "font-mono text-sm text-[var(--foreground)]",
         render: (_: unknown, r: ValuationRow) =>
           r.loading
             ? "…"
@@ -291,7 +299,7 @@ export default function ValuationPage() {
       {
         title: (
           <span className="inline-flex items-center gap-1">
-            市盈率分位
+            PE 分位
             <Tooltip title="当前百分位使用的时间期限是十年">
               <QuestionCircleOutlined className="text-[var(--muted-foreground)] text-xs cursor-help" />
             </Tooltip>
@@ -299,21 +307,52 @@ export default function ValuationPage() {
         ),
         key: "pePercentile",
         align: "right",
-        className: "font-mono text-[var(--foreground)]",
-        render: (_: unknown, r: ValuationRow) =>
-          r.loading
-            ? "…"
-            : r.error
-            ? "—"
-            : r.pePercentiles[PERCENTILE_PERIOD] != null
-            ? `${r.pePercentiles[PERCENTILE_PERIOD]}%`
-            : "—",
+        className: "font-mono",
+        render: (_: unknown, r: ValuationRow) => {
+          const percentile = r.pePercentiles[PERCENTILE_PERIOD];
+          const status = getValuationStatus(percentile);
+
+          if (r.loading)
+            return (
+              <span className="text-[var(--muted-foreground)] text-sm">…</span>
+            );
+          if (r.error)
+            return (
+              <span className="text-[var(--muted-foreground)] text-sm">—</span>
+            );
+          if (percentile == null)
+            return (
+              <span className="text-[var(--muted-foreground)] text-sm">—</span>
+            );
+
+          return (
+            <div className="flex items-center justify-end gap-2">
+              <span
+                className="text-sm font-medium"
+                style={{ color: status?.color || "var(--foreground)" }}
+              >
+                {percentile.toFixed(1)}%
+              </span>
+              {status && (
+                <span
+                  className="text-xs border px-1.5 py-0.5"
+                  style={{
+                    color: status.color,
+                    borderColor: status.color + "4d",
+                  }}
+                >
+                  {status.label}
+                </span>
+              )}
+            </div>
+          );
+        },
       },
       {
         title: "市净率",
         key: "pb",
         align: "right",
-        className: "font-mono text-[var(--foreground)]",
+        className: "font-mono text-sm text-[var(--foreground)]",
         render: (_: unknown, r: ValuationRow) =>
           r.loading
             ? "…"
@@ -326,7 +365,7 @@ export default function ValuationPage() {
       {
         title: (
           <span className="inline-flex items-center gap-1">
-            市净率分位
+            PB 分位
             <Tooltip title="当前百分位使用的时间期限是十年">
               <QuestionCircleOutlined className="text-[var(--muted-foreground)] text-xs cursor-help" />
             </Tooltip>
@@ -334,15 +373,46 @@ export default function ValuationPage() {
         ),
         key: "pbPercentile",
         align: "right",
-        className: "font-mono text-[var(--foreground)]",
-        render: (_: unknown, r: ValuationRow) =>
-          r.loading
-            ? "…"
-            : r.error
-            ? "—"
-            : r.pbPercentiles[PERCENTILE_PERIOD] != null
-            ? `${r.pbPercentiles[PERCENTILE_PERIOD]}%`
-            : "—",
+        className: "font-mono",
+        render: (_: unknown, r: ValuationRow) => {
+          const percentile = r.pbPercentiles[PERCENTILE_PERIOD];
+          const status = getValuationStatus(percentile);
+
+          if (r.loading)
+            return (
+              <span className="text-[var(--muted-foreground)] text-sm">…</span>
+            );
+          if (r.error)
+            return (
+              <span className="text-[var(--muted-foreground)] text-sm">—</span>
+            );
+          if (percentile == null)
+            return (
+              <span className="text-[var(--muted-foreground)] text-sm">—</span>
+            );
+
+          return (
+            <div className="flex items-center justify-end gap-2">
+              <span
+                className="text-sm font-medium"
+                style={{ color: status?.color || "var(--foreground)" }}
+              >
+                {percentile.toFixed(1)}%
+              </span>
+              {status && (
+                <span
+                  className="text-xs border px-1.5 py-0.5"
+                  style={{
+                    color: status.color,
+                    borderColor: status.color + "4d",
+                  }}
+                >
+                  {status.label}
+                </span>
+              )}
+            </div>
+          );
+        },
       },
       {
         title: "详细分析",
@@ -351,7 +421,8 @@ export default function ValuationPage() {
         render: (_: unknown, r: ValuationRow) => (
           <Link
             href={`/valuation/${r.symbol}`}
-            className="text-[var(--brand)] underline hover:opacity-80 cursor-pointer font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--page-bg)] rounded-sm"
+            className="text-xs text-[var(--foreground)] underline underline-offset-2 hover:opacity-60 transition-opacity duration-300"
+            style={{ letterSpacing: "0.03em" }}
           >
             估值分析
           </Link>
@@ -364,43 +435,49 @@ export default function ValuationPage() {
   return (
     <AntdProvider>
       <div className="min-h-screen bg-[var(--page-bg)] text-[var(--foreground)]">
-        <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-slate-200/10 dark:bg-slate-800/10 rounded-full blur-[100px]" />
-        </div>
-
         <ValuationNavbar />
 
-        <div className="pt-[4.5rem]">
-          <div className="max-w-7xl mx-auto px-4 md:px-6 py-10">
-            <div className="text-center mb-8">
-              <h1 className="text-4xl md:text-5xl font-semibold leading-tight tracking-tight text-[var(--foreground)] mb-3">
+        <div className="pt-20">
+          <div className="max-w-7xl mx-auto px-8 md:px-16 py-16">
+            {/* 页头 */}
+            <div className="mb-12">
+              <p className="text-xs font-medium tracking-[0.2em] uppercase text-[var(--muted-foreground)] mb-4">
+                Index Valuation
+              </p>
+              <h1 className="text-4xl md:text-5xl font-light tracking-[-0.02em] text-[var(--foreground)] mb-4">
                 指数估值
               </h1>
-              <p className="text-lg text-[var(--muted-foreground)] leading-relaxed font-light max-w-2xl mx-auto">
+              <p
+                className="text-base text-[var(--muted-foreground)] leading-[1.8] max-w-xl"
+                style={{ letterSpacing: "0.02em" }}
+              >
                 以十年中值为锚，历史高低为界。分位为 10 年历史 PE/PB 的百分位。
               </p>
             </div>
 
-            <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+            {/* 搜索栏 */}
+            <div className="mb-6 flex items-center justify-end gap-3">
               <Input
                 placeholder="搜索指数名称或代码"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onPressEnter={() => setAppliedKeyword(searchInput)}
                 allowClear
-                className="max-w-[260px] valuation-search-input"
-                style={{ borderRadius: 4 }}
+                className="max-w-[240px] valuation-search-input"
+                style={{ borderRadius: 0 }}
               />
               <button
                 type="button"
                 onClick={() => setAppliedKeyword(searchInput)}
-                className="min-w-[72px] h-8 px-4 rounded-[4px] bg-[var(--brand)] text-white text-sm font-medium hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2"
+                className="h-8 px-4 text-xs font-medium tracking-wide bg-[var(--foreground)] text-[var(--page-bg)] hover:opacity-70 transition-opacity duration-300"
+                style={{ letterSpacing: "0.05em" }}
               >
                 搜索
               </button>
             </div>
 
-            <div className="rounded-xl border border-[color:var(--border-color)] bg-[var(--card-bg-elevated)] overflow-hidden">
+            {/* 数据表格 */}
+            <div className="border border-[color:var(--border-color)] overflow-hidden">
               <div className="valuation-table-wrap overflow-x-auto overflow-y-hidden">
                 <Table<ValuationRow>
                   rowKey="symbol"

@@ -1,7 +1,7 @@
 "use client";
 
-import { HelpCircle } from "lucide-react";
 import type { StressTest } from "@/types/grid";
+import { HelpCircle } from "lucide-react";
 
 interface StatsCardsProps {
   stressTest: StressTest;
@@ -9,83 +9,85 @@ interface StatsCardsProps {
 
 export function StatsCards({ stressTest }: StatsCardsProps) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-      <div className="p-5 bg-blue-50/50 dark:bg-blue-900/20 rounded-2xl border border-blue-100/50 dark:border-white/5 shadow-lg shadow-blue-900/5 hover:shadow-xl transition-all duration-300">
-        <div className="text-[10px] font-bold text-blue-700 dark:text-blue-300 mb-2 uppercase tracking-widest opacity-70">
-          总买入金额
-        </div>
-        <div className="text-2xl font-bold text-[var(--foreground)]">
-          {stressTest.totalBuyAmount.toLocaleString()}
-        </div>
-      </div>
-      <div className="p-5 bg-purple-50/50 dark:bg-purple-900/20 rounded-2xl border border-purple-100/50 dark:border-white/5 shadow-lg shadow-purple-900/5 hover:shadow-xl transition-all duration-300">
-        <div className="text-[10px] font-bold text-purple-700 dark:text-purple-300 mb-2 uppercase tracking-widest opacity-70">
-          总卖出金额
-        </div>
-        <div className="text-2xl font-bold text-[var(--foreground)]">
-          {stressTest.totalSellAmount.toLocaleString()}
-        </div>
-      </div>
-      <div className="p-5 bg-indigo-50/50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100/50 dark:border-white/5 shadow-lg shadow-indigo-900/5 hover:shadow-xl transition-all duration-300">
-        <div className="flex items-center gap-1 text-[10px] font-bold text-indigo-700 dark:text-indigo-300 mb-2 uppercase tracking-widest opacity-70">
-          <span>剩余股数</span>
-          <div className="group relative">
-            <HelpCircle className="w-3 h-3 cursor-help text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-200 transition-colors" />
-            <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-[99999] w-48 p-2 text-xs rounded-lg bg-slate-900 text-slate-100 shadow-lg whitespace-normal pointer-events-none">
-              剩余股数 = 总买入股数 - 总卖出股数
-            </div>
-          </div>
-        </div>
-        <div className="text-2xl font-bold text-[var(--foreground)]">
-          {stressTest.remainingShares.toLocaleString()}
-        </div>
-      </div>
-      <div className="p-5 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100/50 dark:border-white/5 shadow-lg shadow-emerald-900/5 hover:shadow-xl transition-all duration-300">
-        <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 mb-2 uppercase tracking-widest opacity-70">
-          <span>预期利润</span>
-          <div className="group relative">
-            <HelpCircle className="w-3 h-3 cursor-help text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-200 transition-colors" />
-            <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-[99999] w-56 p-2 text-xs rounded-lg bg-slate-900 text-slate-100 shadow-lg whitespace-normal pointer-events-none">
-              利润 = 卖出金额 - 买入金额 + 剩余股数 × 基准价
-            </div>
-          </div>
-        </div>
-        <div
-          className={`text-2xl font-bold ${
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-0 border border-[color:var(--border-color)] mb-8">
+      {[
+        {
+          label: "总买入金额",
+          value: stressTest.totalBuyAmount.toLocaleString(),
+          color: null,
+          tooltip: null,
+        },
+        {
+          label: "总卖出金额",
+          value: stressTest.totalSellAmount.toLocaleString(),
+          color: null,
+          tooltip: null,
+        },
+        {
+          label: "剩余股数",
+          value: stressTest.remainingShares.toLocaleString(),
+          color: null,
+          tooltip: "剩余股数 = 总买入股数 - 总卖出股数",
+        },
+        {
+          label: "预期利润",
+          value:
+            (stressTest.profit > 0 ? "+" : "") +
+            stressTest.profit.toLocaleString(),
+          color:
             stressTest.profit > 0
-              ? "text-emerald-600 dark:text-emerald-400"
+              ? "var(--profit)"
               : stressTest.profit < 0
-              ? "text-red-600 dark:text-red-400"
-              : "text-[var(--foreground)]"
-          }`}
+              ? "var(--loss)"
+              : null,
+          tooltip: "利润 = 卖出金额 - 买入金额 + 剩余股数 × 基准价",
+        },
+        {
+          label: "收益率",
+          value:
+            (stressTest.profitRate > 0 ? "+" : "") +
+            stressTest.profitRate +
+            "%",
+          color:
+            stressTest.profitRate > 0
+              ? "var(--profit)"
+              : stressTest.profitRate < 0
+              ? "var(--loss)"
+              : null,
+          tooltip: "利润 / 买入金额 × 100",
+        },
+      ].map((item, i) => (
+        <div
+          key={i}
+          className="p-5 border-r border-b md:border-b-0 border-[color:var(--border-color)] last:border-r-0"
         >
-          {stressTest.profit > 0 ? "+" : ""}
-          {stressTest.profit.toLocaleString()}
-        </div>
-      </div>
-      <div className="p-5 bg-amber-50/50 dark:bg-amber-900/20 rounded-2xl border border-amber-100/50 dark:border-white/5 shadow-lg shadow-amber-900/5 hover:shadow-xl transition-all duration-300">
-        <div className="flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-300 mb-2 uppercase tracking-widest opacity-70">
-          <span>收益率</span>
-          <div className="group relative">
-            <HelpCircle className="w-3 h-3 cursor-help text-amber-400 hover:text-amber-600 dark:hover:text-amber-200 transition-colors" />
-            <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-[99999] w-48 p-2 text-xs rounded-lg bg-slate-900 text-slate-100 shadow-lg whitespace-normal pointer-events-none">
-              利润 / 买入金额 × 100
-            </div>
+          <div className="flex items-center gap-1 mb-3">
+            <span className="text-[10px] uppercase tracking-[0.1em] text-[var(--muted-foreground)]">
+              {item.label}
+            </span>
+            {item.tooltip && (
+              <div className="group relative">
+                <HelpCircle
+                  className="w-3 h-3 cursor-help text-[var(--muted-foreground)] opacity-50"
+                  strokeWidth={1.5}
+                />
+                <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-[99999] w-48 p-2 text-xs bg-[var(--foreground)] text-[var(--page-bg)] whitespace-normal pointer-events-none">
+                  {item.tooltip}
+                </div>
+              </div>
+            )}
+          </div>
+          <div
+            className="text-xl font-light"
+            style={{
+              color: item.color ?? "var(--foreground)",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            {item.value}
           </div>
         </div>
-        <div
-          className={`text-2xl font-bold ${
-            stressTest.profitRate > 0
-              ? "text-emerald-600 dark:text-emerald-400"
-              : stressTest.profitRate < 0
-              ? "text-red-600 dark:text-red-400"
-              : "text-[var(--foreground)]"
-          }`}
-        >
-          {stressTest.profitRate > 0 ? "+" : ""}
-          {stressTest.profitRate}%
-        </div>
-      </div>
+      ))}
     </div>
   );
 }

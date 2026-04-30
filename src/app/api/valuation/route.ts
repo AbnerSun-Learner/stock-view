@@ -79,8 +79,9 @@ async function getLeguAuth(): Promise<{ csrf: string; cookie: string }> {
   const csrf = html.match(/<meta\s+name="_csrf"\s+content="([^"]+)"/)?.[1] ?? "";
 
   let cookies: string[] = [];
-  if (typeof (res.headers as Record<string, unknown>).getSetCookie === "function") {
-    cookies = (res.headers as unknown as { getSetCookie(): string[] }).getSetCookie();
+  const headers = res.headers as unknown;
+  if (typeof (headers as { getSetCookie?: () => string[] }).getSetCookie === "function") {
+    cookies = (headers as { getSetCookie(): string[] }).getSetCookie();
   } else {
     const raw = res.headers.get("set-cookie");
     if (raw) cookies = [raw];
