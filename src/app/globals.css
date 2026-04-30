@@ -40,9 +40,17 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter), "Inter", "Helvetica Neue", Helvetica, Arial,
-    sans-serif;
-  --font-mono: var(--font-geist-mono);
+  /**
+   * 字体栈优先级：
+   * 1. Inter         — 英文 / Latin 字符
+   * 2. Noto Sans SC  — 中文 CJK 字符（思源黑体，跨平台一致）
+   * 3. PingFang SC   — macOS/iOS 系统中文兜底
+   * 4. Microsoft YaHei — Windows 系统中文兜底
+   */
+  --font-sans: var(--font-inter), var(--font-noto-sans-sc), "PingFang SC",
+    "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), "Cascadia Code", "Fira Code", "Menlo",
+    monospace;
 
   --color-primary: var(--primary);
   --color-brand: var(--brand);
@@ -80,24 +88,81 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: "Inter", "Helvetica Neue", Helvetica, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  /**
+   * 字体栈：Inter 优先处理英文字符，
+   * Noto Sans SC 自动接管 CJK 字符，两者无缝拼接。
+   * 系统字体作为最终兜底。
+   */
+  font-family: var(--font-inter), var(--font-noto-sans-sc), "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-size: 16px;
-  line-height: 1.8;
+  font-size: 15px; /* 中英混排 15px：中文阅读舒适，英文 UI 精致 */
+  line-height: 1.8; /* 中文正文行高 1.8，避免行间拥挤 */
   letter-spacing: 0.01em;
 }
 
-/* 数字字体优化 */
-.font-numeric {
+/* 标题：中英文大标题统一字距收紧，行高紧凑 */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  line-height: 1.2;
+  letter-spacing: -0.01em; /* 英文大字号自然收紧；中文 CJK 字符不受影响 */
+  font-family: var(--font-inter), var(--font-noto-sans-sc), "PingFang SC",
+    "Microsoft YaHei", sans-serif;
+}
+
+/**
+ * Core minimalism 全页预览里的 pf-hero-title：
+ * 对齐风格卡「主标题 48–72px、字重 300、字距约 -0.02em、Inter / Helvetica Neue」，
+ * 并采用常见 portfolio 预览档中略紧行高与略强负字距的观感。
+ */
+.pf-hero-title {
+  font-family: var(--font-inter), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: clamp(2.875rem, 6vw, 4.5rem);
+  font-weight: 300;
+  letter-spacing: -0.032em;
+  line-height: 1.06;
+  color: var(--foreground);
+  text-wrap: balance;
+}
+
+.pf-hero-title em {
+  font-style: normal;
+  font-weight: 300;
+  color: var(--muted-foreground);
+}
+
+/* 中文段落：末行左对齐，避免最后一行被撑开 */
+p,
+li {
+  text-align-last: left;
+}
+
+/* 数字字体优化：等宽对齐，用于价格/分位数/表格 */
+.font-numeric,
+table td,
+table th {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
 }
 
-/* 专业数据表格样式 */
+/* 数据表格：仅启用等宽数字对齐，字体族保持 sans */
 table {
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* 等宽字体类：仅在代码/数字场景手动添加 .font-mono */
+.font-mono {
+  font-family: var(--font-geist-mono), "Cascadia Code", "Menlo", "Courier New",
+    monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 
 /* 平滑滚动 */

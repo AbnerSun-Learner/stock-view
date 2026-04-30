@@ -69,7 +69,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-[#f5f5f5] text-neutral-900 font-sans">
       {/* ── Navigation ─────────────────────────────────────── */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#f5f5f5] border-b border-neutral-200">
-        <div className="flex items-center justify-between mx-auto max-w-6xl px-6 lg:px-10 h-12">
+        <div className="flex items-center justify-between mx-auto max-w-6xl px-6 lg:px-10 h-[72px]">
           <Link
             href="/"
             className="text-xs font-semibold tracking-[0.18em] uppercase text-neutral-900 hover:opacity-60 transition-opacity duration-150"
@@ -101,10 +101,9 @@ export default function LandingPage() {
 
       <main>
         {/* ── Hero ──────────────────────────────────────────── */}
-        <section className="pt-36 pb-16 mx-auto max-w-6xl px-6 lg:px-10">
-          <h1 className="text-[clamp(2.6rem,5.5vw,4.2rem)] font-light leading-[1.1] tracking-[-0.025em] text-neutral-900 mb-5 max-w-3xl">
-            Still in <em className="not-italic text-neutral-400">Volatility</em>
-            ,
+        <section className="pt-40 pb-16 mx-auto max-w-6xl px-6 lg:px-10">
+          <h1 className="pf-hero-title mb-5 max-w-3xl">
+            Still in <em>Volatility</em>,
             <br />
             Rich in Time.
           </h1>
@@ -139,10 +138,10 @@ export default function LandingPage() {
                   <div className="p-5 flex flex-col gap-3">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <h3 className="text-sm font-semibold text-neutral-900 leading-snug">
+                        <h3 className="text-sm font-medium text-neutral-900 leading-snug">
                           {tool.title}
                         </h3>
-                        <p className="text-[10px] text-neutral-400 mt-0.5 font-mono uppercase tracking-[0.06em]">
+                        <p className="text-[10px] font-medium text-neutral-400 mt-0.5 font-mono uppercase tracking-[0.06em]">
                           {tool.sub}
                         </p>
                       </div>
