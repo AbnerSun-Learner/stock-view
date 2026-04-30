@@ -15,7 +15,6 @@ interface GridStepConfigProps {
   onDynamicEnabledChange: (enabled: boolean) => void;
   mode: "stable" | "aggressive";
   onModeChange: (mode: "stable" | "aggressive") => void;
-  theme?: "light" | "dark";
 }
 
 export function GridStepConfig({
@@ -29,10 +28,11 @@ export function GridStepConfig({
   onDynamicEnabledChange,
   mode,
   onModeChange,
-  theme = "light",
 }: GridStepConfigProps) {
   const [inputValue, setInputValue] = useState(baseStep.toString());
-  const [mediumInputValue, setMediumInputValue] = useState(mediumStep.toString());
+  const [mediumInputValue, setMediumInputValue] = useState(
+    mediumStep.toString()
+  );
   const [largeInputValue, setLargeInputValue] = useState(largeStep.toString());
 
   // 同步外部值变化

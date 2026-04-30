@@ -8,6 +8,7 @@ import { ValuationNavbar } from "@/components/valuation/valuation-navbar";
 import { ValuationPePanel } from "@/components/valuation/valuation-pe-panel";
 import { ValuationWeightChart } from "@/components/valuation/valuation-weight-chart";
 import { INDEX_LIST, computePeStats } from "@/lib/valuation";
+import type { HoldingItem } from "@/types/valuation";
 import { Segmented } from "antd";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -19,14 +20,6 @@ function getPeriodCutoff(period: ChartPeriod): string | null {
   const d = new Date();
   d.setFullYear(d.getFullYear() - (period === "10y" ? 10 : 5));
   return d.toISOString().slice(0, 10);
-}
-
-interface HoldingItem {
-  rank: number;
-  name: string;
-  code: string;
-  weight: number;
-  industry: string;
 }
 
 export default function ValuationDetailPage() {

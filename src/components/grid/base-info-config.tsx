@@ -13,7 +13,6 @@ interface BaseInfoConfigProps {
   onBasePriceChange: (value: number | null) => void;
   minPrice: number;
   onMinPriceChange: (value: number | null) => void;
-  theme?: "light" | "dark";
 }
 
 export function BaseInfoConfig({
@@ -25,7 +24,6 @@ export function BaseInfoConfig({
   onBasePriceChange,
   minPrice,
   onMinPriceChange,
-  theme = "light",
 }: BaseInfoConfigProps) {
   // 计算价格精度对应的小数位数
   const priceDecimals = useMemo(() => {

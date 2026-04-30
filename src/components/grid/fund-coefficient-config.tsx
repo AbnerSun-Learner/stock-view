@@ -10,7 +10,6 @@ interface FundCoefficientConfigProps {
   onAmountMultiplierChange: (value: number | null) => void;
   profitReserveMultiplier: number;
   onProfitReserveMultiplierChange: (value: number | null) => void;
-  theme?: "light" | "dark";
 }
 
 export function FundCoefficientConfig({
@@ -20,7 +19,6 @@ export function FundCoefficientConfig({
   onAmountMultiplierChange,
   profitReserveMultiplier,
   onProfitReserveMultiplierChange,
-  theme = "light",
 }: FundCoefficientConfigProps) {
   const fields = [
     {

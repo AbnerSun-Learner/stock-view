@@ -18,7 +18,6 @@ import { useState } from "react";
 export default function GridPage() {
   const [gridData, setGridData] = useState<GridRow[]>([]);
   const [stressTest, setStressTest] = useState<StressTest | null>(null);
-  const theme = "light" as const;
 
   const [dynamicGridEnabled, setDynamicGridEnabled] = useState(false);
   const [dynamicGridMode, setDynamicGridMode] = useState<
@@ -109,7 +108,6 @@ export default function GridPage() {
                       onMinPriceChange={(value) =>
                         updateParam("minPrice", value)
                       }
-                      theme={theme}
                     />
                   </div>
 
@@ -128,7 +126,6 @@ export default function GridPage() {
                       onProfitReserveMultiplierChange={(value) =>
                         updateParam("profitReserveMultiplier", value)
                       }
-                      theme={theme}
                     />
                   </div>
 
@@ -151,7 +148,6 @@ export default function GridPage() {
                       onDynamicEnabledChange={setDynamicGridEnabled}
                       mode={dynamicGridMode}
                       onModeChange={setDynamicGridMode}
-                      theme={theme}
                     />
                   </div>
 
@@ -193,7 +189,7 @@ export default function GridPage() {
                         gridData={gridData}
                         basePrice={params.basePrice}
                         priceDecimals={priceDecimals}
-                        theme={theme}
+                        theme="light"
                       />
                     </div>
 

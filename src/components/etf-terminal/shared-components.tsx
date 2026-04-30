@@ -1,19 +1,5 @@
 "use client";
 
-/**
- * ETF Terminal 共享组件
- * 完全按照 demo.jsx 的实现
- */
-
-import {
-  ArrowRightLeft,
-  Calculator,
-  ChevronRight,
-  Info,
-  Save,
-  Trash2,
-} from "lucide-react";
-
 export function StatCard({
   title,
   value,
@@ -74,4 +60,3 @@ export function InputGroup({
     </div>
   );
 }
-

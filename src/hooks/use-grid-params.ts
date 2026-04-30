@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from "react";
 import type { GridParams } from "@/types/grid";
+import { useCallback, useMemo, useState } from "react";
 
 interface UseGridParamsReturn {
   params: GridParams;
@@ -9,9 +9,7 @@ interface UseGridParamsReturn {
   priceDecimals: number;
 }
 
-export function useGridParams(
-  initialParams: GridParams
-): UseGridParamsReturn {
+export function useGridParams(initialParams: GridParams): UseGridParamsReturn {
   const [params, setParams] = useState<GridParams>(initialParams);
 
   // 参数验证
@@ -79,9 +77,9 @@ export function useGridParams(
   const updateParam = useCallback(
     (key: keyof GridParams, value: number | null) => {
       if (value === null) return;
-      setParams({ ...params, [key]: value });
+      setParams((prev) => ({ ...prev, [key]: value }));
     },
-    [params]
+    []
   );
 
   return {

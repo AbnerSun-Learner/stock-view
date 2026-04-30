@@ -8,6 +8,17 @@ interface GridTableProps {
   priceDecimals: number;
 }
 
+function getGridRowKey(row: GridRow): string {
+  return [
+    row.gridType,
+    row.position,
+    row.buyPrice,
+    row.sellPrice,
+    row.buyShares,
+    row.sellShares,
+  ].join("-");
+}
+
 export function GridTable({ gridData, priceDecimals }: GridTableProps) {
   const sortedData = [...gridData].sort((a, b) => b.position - a.position);
   const firstPositionByType = new Map<string, number>();
@@ -68,7 +79,7 @@ export function GridTable({ gridData, priceDecimals }: GridTableProps) {
           </tr>
         </thead>
         <tbody>
-          {sortedData.map((row, index) => {
+          {sortedData.map((row) => {
             const isFirstPosition =
               (row.gridType === "中网" || row.gridType === "大网") &&
               firstPositionByType.get(row.gridType) === row.position;
@@ -85,7 +96,7 @@ export function GridTable({ gridData, priceDecimals }: GridTableProps) {
 
             return (
               <tr
-                key={index}
+                key={getGridRowKey(row)}
                 className="border-b border-[color:var(--border-color)] hover:bg-[var(--hover-bg)] transition-colors duration-200"
               >
                 <td className="p-4">
