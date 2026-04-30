@@ -35,6 +35,10 @@
   --border-color: #e5e5e5;
   --hover-bg: rgba(0, 0, 0, 0.03);
   --ring: rgba(0, 0, 0, 0.2);
+
+  /* 指数估值双轴折线图（仅图表曲线语义色，不与 UI 品牌色混用） */
+  --valuation-chart-metric-line: #3b82f6;
+  --valuation-chart-close-line: #333333;
 }
 
 @theme inline {
@@ -83,6 +87,9 @@
   --border-color: #2d2d2d;
   --hover-bg: rgba(255, 255, 255, 0.04);
   --ring: rgba(255, 255, 255, 0.2);
+
+  --valuation-chart-metric-line: #60a5fa;
+  --valuation-chart-close-line: #a3a3a3;
 }
 
 body {

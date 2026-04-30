@@ -1,19 +1,19 @@
 "use client";
 
+import type { EChartsOption } from "echarts";
 import ReactEChartsCore from "echarts-for-react/lib/core";
-import * as echarts from "echarts/core";
 import { LineChart as ELineChart } from "echarts/charts";
 import {
-  GridComponent,
-  TooltipComponent,
-  LegendComponent,
   DataZoomComponent,
+  GridComponent,
+  LegendComponent,
   MarkAreaComponent,
   MarkLineComponent,
+  TooltipComponent,
 } from "echarts/components";
+import * as echarts from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { useMemo } from "react";
-import type { EChartsOption } from "echarts";
 
 echarts.use([
   ELineChart,
@@ -83,8 +83,7 @@ function computeBands(data: ValuationPoint[]) {
   const max = Math.max(...values);
   const tenYearsCount = Math.min(120, data.length);
   const recentValues = values.slice(-tenYearsCount);
-  const median =
-    recentValues.reduce((a, b) => a + b, 0) / recentValues.length;
+  const median = recentValues.reduce((a, b) => a + b, 0) / recentValues.length;
 
   const rangeBelow = median - min;
   const rangeAbove = max - median;
@@ -127,13 +126,13 @@ function findClosestIndex(
 ): number {
   const exact = dateIndex.get(ts);
   if (exact !== undefined) return exact;
-  let best = 0
-  let bestDiff = Infinity
+  let best = 0;
+  let bestDiff = Infinity;
   for (const t of timestamps) {
-    const diff = Math.abs(t - ts)
+    const diff = Math.abs(t - ts);
     if (diff < bestDiff) {
-      bestDiff = diff
-      best = dateIndex.get(t) ?? 0
+      bestDiff = diff;
+      best = dateIndex.get(t) ?? 0;
     }
   }
   return best;
@@ -202,9 +201,12 @@ export function ValuationChart({
     const textColor = resolveCssColor("var(--foreground)");
     const mutedColor = resolveCssColor("var(--muted-foreground)");
     const gridColor = resolveCssColor("var(--border-color)");
-    const brandColor = resolveCssColor("var(--brand)");
     const primaryColor = resolveCssColor("var(--primary)");
-    const secondaryColor = resolveCssColor("var(--chart-secondary)");
+    /** 估值页折线专用色（见 globals.css --valuation-chart-*） */
+    const metricLineColor = resolveCssColor(
+      "var(--valuation-chart-metric-line)"
+    );
+    const closeLineColor = resolveCssColor("var(--valuation-chart-close-line)");
     const lossColor = resolveCssColor("var(--loss)");
     const profitColor = resolveCssColor("var(--profit)");
     const warningColor = resolveCssColor("var(--warning)");
@@ -220,7 +222,10 @@ export function ValuationChart({
       hexToRgba(accentColor, 0.28),
       hexToRgba(accentColor, 0.38),
     ];
-    const tooltipBg = hexToRgba(resolveCssColor("var(--card-bg)"), isDark ? 0.94 : 0.96);
+    const tooltipBg = hexToRgba(
+      resolveCssColor("var(--card-bg)"),
+      isDark ? 0.94 : 0.96
+    );
 
     const bandMarkArea = bands.bands.map((b, idx) => [
       { yAxis: b.y1, itemStyle: { color: bandColors[idx] ?? b.color } },
@@ -230,18 +235,43 @@ export function ValuationChart({
     const peMarkLines: Record<string, unknown>[] = [
       {
         yAxis: bands.max,
-        label: { formatter: bands.max.toFixed(2), position: "end", fontSize: 11, color: textColor },
-        lineStyle: { color: textColor, type: "dashed" as const, width: 1, opacity: 0.5 },
+        label: {
+          formatter: bands.max.toFixed(2),
+          position: "end",
+          fontSize: 11,
+          color: textColor,
+        },
+        lineStyle: {
+          color: textColor,
+          type: "dashed" as const,
+          width: 1,
+          opacity: 0.5,
+        },
       },
       {
         yAxis: bands.median,
-        label: { formatter: bands.median.toFixed(2), position: "start", fontSize: 12, color: primaryColor },
+        label: {
+          formatter: bands.median.toFixed(2),
+          position: "start",
+          fontSize: 12,
+          color: primaryColor,
+        },
         lineStyle: { color: primaryColor, type: "dashed" as const, width: 2 },
       },
       {
         yAxis: bands.min,
-        label: { formatter: bands.min.toFixed(2), position: "end", fontSize: 11, color: textColor },
-        lineStyle: { color: textColor, type: "dashed" as const, width: 1, opacity: 0.5 },
+        label: {
+          formatter: bands.min.toFixed(2),
+          position: "end",
+          fontSize: 11,
+          color: textColor,
+        },
+        lineStyle: {
+          color: textColor,
+          type: "dashed" as const,
+          width: 1,
+          opacity: 0.5,
+        },
       },
     ];
 
@@ -254,7 +284,13 @@ export function ValuationChart({
         max: Math.ceil(bands.max + 1),
         axisLabel: { color: textColor, fontSize: 11 },
         axisLine: { lineStyle: { color: textColor } },
-        splitLine: { lineStyle: { color: gridColor, opacity: 0.4, type: "dashed" as const } },
+        splitLine: {
+          lineStyle: {
+            color: gridColor,
+            opacity: 0.45,
+            type: "solid" as const,
+          },
+        },
       },
     ];
 
@@ -262,11 +298,11 @@ export function ValuationChart({
       yAxes.push({
         type: "value",
         name: "收盘点位",
-        nameTextStyle: { color: secondaryColor, fontSize: 12 },
+        nameTextStyle: { color: closeLineColor, fontSize: 12 },
         min: Math.floor(closeRange.low * 0.9),
         max: Math.ceil(closeRange.high * 1.05),
-        axisLabel: { color: secondaryColor, fontSize: 11 },
-        axisLine: { lineStyle: { color: secondaryColor } },
+        axisLabel: { color: closeLineColor, fontSize: 11 },
+        axisLine: { lineStyle: { color: closeLineColor } },
         splitLine: { show: false },
       });
     }
@@ -278,13 +314,27 @@ export function ValuationChart({
         yAxisIndex: 0,
         data: peTimeData,
         symbol: "none",
-        lineStyle: { color: brandColor, width: 1.5, opacity: 0.95 },
-        itemStyle: { color: brandColor },
-        emphasis: {
-          lineStyle: { width: 3 },
-          itemStyle: { borderColor: "#fff", borderWidth: 2, color: brandColor },
+        smooth: false,
+        /** 折线段直连、无样条平滑；线宽与参考金融折线图一致（主线略粗） */
+        lineStyle: {
+          color: metricLineColor,
+          width: 2,
+          opacity: 1,
+          cap: "butt",
+          join: "miter",
         },
-        ...(showBands ? { markArea: { silent: true, data: bandMarkArea as never } } : {}),
+        itemStyle: { color: metricLineColor },
+        emphasis: {
+          lineStyle: { width: 2.5, cap: "butt", join: "miter" },
+          itemStyle: {
+            borderColor: "#fff",
+            borderWidth: 2,
+            color: metricLineColor,
+          },
+        },
+        ...(showBands
+          ? { markArea: { silent: true, data: bandMarkArea as never } }
+          : {}),
         markLine: {
           silent: true,
           symbol: "none",
@@ -301,11 +351,22 @@ export function ValuationChart({
         yAxisIndex: 1,
         data: closeTimeData,
         symbol: "none",
-        lineStyle: { color: secondaryColor, width: 1.5, opacity: 0.9 },
-        itemStyle: { color: secondaryColor },
+        smooth: false,
+        lineStyle: {
+          color: closeLineColor,
+          width: 1,
+          opacity: 1,
+          cap: "butt",
+          join: "miter",
+        },
+        itemStyle: { color: closeLineColor },
         emphasis: {
-          lineStyle: { width: 2.5 },
-          itemStyle: { borderColor: "#fff", borderWidth: 1, color: secondaryColor },
+          lineStyle: { width: 1.5, cap: "butt", join: "miter" },
+          itemStyle: {
+            borderColor: "#fff",
+            borderWidth: 1,
+            color: closeLineColor,
+          },
         },
         z: 9,
       };
@@ -315,7 +376,10 @@ export function ValuationChart({
           silent: true,
           data: [
             [
-              { yAxis: closeRange.drop80, itemStyle: { color: hexToRgba(lossColor, 0.12) } },
+              {
+                yAxis: closeRange.drop80,
+                itemStyle: { color: hexToRgba(lossColor, 0.12) },
+              },
               { yAxis: closeRange.drop70 },
             ],
           ],
@@ -326,12 +390,22 @@ export function ValuationChart({
           data: [
             {
               yAxis: closeRange.drop70,
-              label: { formatter: `跌 70% (${closeRange.drop70.toFixed(0)})`, position: "end", fontSize: 10, color: warningColor },
+              label: {
+                formatter: `跌 70% (${closeRange.drop70.toFixed(0)})`,
+                position: "end",
+                fontSize: 10,
+                color: warningColor,
+              },
               lineStyle: { color: warningColor, type: "dashed", width: 1 },
             },
             {
               yAxis: closeRange.drop80,
-              label: { formatter: `跌 80% (${closeRange.drop80.toFixed(0)})`, position: "end", fontSize: 10, color: lossColor },
+              label: {
+                formatter: `跌 80% (${closeRange.drop80.toFixed(0)})`,
+                position: "end",
+                fontSize: 10,
+                color: lossColor,
+              },
               lineStyle: { color: lossColor, type: "dashed", width: 1 },
             },
           ],
@@ -382,11 +456,17 @@ export function ValuationChart({
           if (!point) return "";
           const suggestion = getBandLabel(point.value);
           const d = new Date(point.date);
-          const dateLabel = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
+          const dateLabel = `${d.getFullYear()}/${String(
+            d.getMonth() + 1
+          ).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
           let html = `<div style="font-size:12px;color:${mutedColor};margin-bottom:4px">${dateLabel}</div>`;
-          html += `<div style="font-weight:600;color:${textColor}">PE：${point.value.toFixed(2)}</div>`;
+          html += `<div style="font-weight:600;color:${textColor}">PE：${point.value.toFixed(
+            2
+          )}</div>`;
           if (typeof point.close === "number") {
-            html += `<div style="font-size:13px;color:${mutedColor};margin-top:4px">收盘：${point.close.toFixed(2)}</div>`;
+            html += `<div style="font-size:13px;color:${mutedColor};margin-top:4px">收盘：${point.close.toFixed(
+              2
+            )}</div>`;
           }
           if (showBands) {
             html += `<div style="margin-top:6px;font-size:13px;font-weight:500;color:${textColor}">操作建议：${suggestion}</div>`;
@@ -408,7 +488,18 @@ export function ValuationChart({
       animation: !reducedMotion,
       animationDuration: reducedMotion ? 0 : 600,
     };
-  }, [data, bands, stats, theme, hasClose, closeRange, showDropZones, showBands, dateIndex, timestamps]);
+  }, [
+    data,
+    bands,
+    stats,
+    theme,
+    hasClose,
+    closeRange,
+    showDropZones,
+    showBands,
+    dateIndex,
+    timestamps,
+  ]);
 
   if (!data.length || !bands || !stats) return null;
 
@@ -418,7 +509,9 @@ export function ValuationChart({
         {!hideStatsBar && (
           <div className="flex flex-wrap items-center gap-x-6 gap-y-1 rounded-lg bg-slate-50/80 dark:bg-white/5 py-2.5 px-4 text-sm">
             <span className="flex items-center gap-2">
-              <span className="text-[var(--muted-foreground)]">历史估值最高</span>
+              <span className="text-[var(--muted-foreground)]">
+                历史估值最高
+              </span>
               <span className="font-semibold tabular-nums text-[var(--foreground)]">
                 {stats.high.toFixed(2)}
               </span>
@@ -430,7 +523,9 @@ export function ValuationChart({
               </span>
             </span>
             <span className="flex items-center gap-2">
-              <span className="text-[var(--muted-foreground)]">历史估值最低</span>
+              <span className="text-[var(--muted-foreground)]">
+                历史估值最低
+              </span>
               <span className="font-semibold tabular-nums text-[var(--foreground)]">
                 {stats.low.toFixed(2)}
               </span>
@@ -469,30 +564,39 @@ export function ValuationChart({
         {showBands && (
           <>
             <span className="flex items-center gap-1">
-              <span className="inline-block h-3 w-4 rounded bg-[color:var(--profit)] opacity-30" /> 大买
+              <span className="inline-block h-3 w-4 rounded bg-[color:var(--profit)] opacity-30" />{" "}
+              大买
             </span>
             <span className="flex items-center gap-1">
-              <span className="inline-block h-3 w-4 rounded bg-[color:var(--profit)] opacity-55" /> 小买
+              <span className="inline-block h-3 w-4 rounded bg-[color:var(--profit)] opacity-55" />{" "}
+              小买
             </span>
             <span className="flex items-center gap-1">
-              <span className="inline-block h-3 w-4 rounded bg-[color:var(--warning)] opacity-30" /> 不买不卖
+              <span className="inline-block h-3 w-4 rounded bg-[color:var(--warning)] opacity-30" />{" "}
+              不买不卖
             </span>
             <span className="flex items-center gap-1">
-              <span className="inline-block h-3 w-4 rounded bg-[color:var(--accent)] opacity-30" /> 小卖
+              <span className="inline-block h-3 w-4 rounded bg-[color:var(--accent)] opacity-30" />{" "}
+              小卖
             </span>
             <span className="flex items-center gap-1">
-              <span className="inline-block h-3 w-4 rounded bg-[color:var(--accent)] opacity-60" /> 大卖
+              <span className="inline-block h-3 w-4 rounded bg-[color:var(--accent)] opacity-60" />{" "}
+              大卖
             </span>
           </>
         )}
         {hasClose && (
           <>
-            {showBands && <span className="border-l border-[color:var(--border-color)] pl-3" />}
+            {showBands && (
+              <span className="border-l border-[color:var(--border-color)] pl-3" />
+            )}
             <span className="flex items-center gap-1">
-              <span className="inline-block h-0.5 w-4 bg-[color:var(--brand)]" /> PE
+              <span className="inline-block h-0.5 w-4 bg-[color:var(--valuation-chart-metric-line)]" />{" "}
+              PE
             </span>
             <span className="flex items-center gap-1">
-              <span className="inline-block h-0.5 w-4 bg-[color:var(--chart-secondary)]" /> 收盘点位
+              <span className="inline-block h-0.5 w-4 bg-[color:var(--valuation-chart-close-line)]" />{" "}
+              收盘点位
             </span>
           </>
         )}

@@ -391,10 +391,10 @@ export function StrategyComparisonChart({
 
             {/* 一次全仓死拿线 */}
             <Line
-              type="monotone"
+              type="linear"
               dataKey="lumpSumFloatingLossRate"
               stroke={colors.lumpSum}
-              strokeWidth={3}
+              strokeWidth={1}
               strokeDasharray="8 4"
               dot={false}
               name="一次全仓死拿"
@@ -403,10 +403,10 @@ export function StrategyComparisonChart({
 
             {/* 本策略线 - 所有点都是买入点 */}
             <Line
-              type="monotone"
+              type="linear"
               dataKey="gridFloatingLossRate"
               stroke={colors.grid}
-              strokeWidth={3}
+              strokeWidth={2}
               name="本策略"
               dot={(props: {
                 cx?: number;
