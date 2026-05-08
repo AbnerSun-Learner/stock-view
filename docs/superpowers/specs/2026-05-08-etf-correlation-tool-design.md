@@ -43,7 +43,7 @@
 综合相关风险默认使用等权加权，并且只在 A 和 B 都可用时生成：
 
 ```ts
-finalScore = returnCorrelationScore * 0.5 + holdingOverlapScore * 0.5
+finalScore = returnCorrelationScore * 0.5 + holdingOverlapScore * 0.5;
 ```
 
 如果只有 A 或 B 可用，不生成 `finalScore`，而是返回 `partialScore`、`availableSignals` 和 `confidence = "low"`。部分评分不能进入完整建议区间，只能展示为“基于走势数据的部分判断”或“基于成分数据的部分判断”，避免因为缺失项被错误低估。
@@ -55,10 +55,12 @@ finalScore = returnCorrelationScore * 0.5 + holdingOverlapScore * 0.5
 日收益率使用收盘价计算：
 
 ```ts
-dailyReturn = closeToday / closePreviousTradingDay - 1
+dailyReturn = closeToday / closePreviousTradingDay - 1;
 ```
 
-第一版优先使用 AKShare 可稳定获得的 ETF 日线收盘价。两个 ETF 的收益率序列按共同交易日做内连接，只保留两边都有有效收盘价的日期。停牌、无成交、缺失价格或非正价格的数据点需要剔除。
+第一版优先使用 AKShare 可稳定获得的 ETF 日线收盘价。若可获得复权价格，优先使用前复权收盘价计算收益率；若只能获得不复权收盘价，需要在结果中标注“基于不复权价格计算，可能受分红除权影响”。
+
+两个 ETF 的收益率序列按共同交易日做内连接，只保留两边都有有效收盘价的日期。停牌、无成交、缺失价格或非正价格的数据点需要剔除。
 
 最少样本数：
 
@@ -70,7 +72,7 @@ dailyReturn = closeToday / closePreviousTradingDay - 1
 原始 Pearson 相关系数范围是 `-1` 到 `1`。对持仓分散风险来说，负相关不应被视为重复风险，因此转换规则为：
 
 ```ts
-returnCorrelationScore = Math.max(0, pearsonCorrelation)
+returnCorrelationScore = Math.max(0, pearsonCorrelation);
 ```
 
 含义：
@@ -94,6 +96,13 @@ returnCorrelationScore = Math.max(0, pearsonCorrelation)
 holdingOverlapScore = sum(min(weightInEtfA, weightInEtfB) for sharedHolding)
 ```
 
+`sharedHolding` 的判等需要做标准化，避免同一证券因字段格式差异被误判为不同成分。建议规则：
+
+- 优先使用证券代码（含市场）作为唯一键，如 `600519.SH`、`00700.HK`。
+- 若原始数据不带市场后缀，先按数据源字段补全，再统一为大写和标准后缀格式。
+- 若代码缺失但有稳定唯一标识（如 ISIN），可用唯一标识兜底。
+- 禁止仅按证券名称判等；名称只用于展示，不用于重叠计算。
+
 权重需要统一转换为 `0-1`。如果 AKShare 返回百分比，需要先除以 `100`。这里的“转换”只做单位转换，不把可见成分重新缩放到总和 `1`。例如前十大成分股合计权重为 `42%` 时，应保留为 `0.42` 的可见组合权重，不能重新归一化为 `1`，否则会系统性放大 B 分数。如果权重字段缺失或无法解析，该 ETF 的 B 分数不可用。
 
 完整成分股和前十大成分股需要区分处理：
@@ -103,6 +112,18 @@ holdingOverlapScore = sum(min(weightInEtfA, weightInEtfB) for sharedHolding)
 - 如果一只 ETF 是完整成分股，另一只是前十大成分股，则该 pair 的 B 可信度取较低等级。
 
 完整成分股权重合计可能因四舍五入略偏离 `1`，实现时只做容差校验和可信度标注，不主动重算每个成分权重。
+
+数据源对**非股票成分 ETF**（黄金、商品、债券、外汇等）通常没有股票持仓快照。这类 ETF 的 B 分数应直接标记为不可用，原因记为"非股票成分 ETF"。当 pair 中至少有一只是非股票成分 ETF 时，pair status 为 `partial`，仅展示 A 分数和"基于走势数据的部分判断"，不进入完整建议区间。
+
+阶段 2 拉取持仓时，必须按下列约束实施（已在阶段 0 探测中确认 AKShare 默认行为不满足）：
+
+- 取**最新披露季度**的快照，而不是直接 `head(N)` 截取多季度叠加结果。
+- 在最新季度内按**权重降序**排序后再取 top10。
+- 如果最新季度数据为空，可回溯至前一季度并在响应中标注披露时间。
+
+该约束目的是保证"前十大"的语义稳定，避免不同 ETF 间因披露季度错位产生不可比的 B 分数。
+
+时间口径说明：A 分数基于所选窗口（近 1 年/近 3 年）的历史收益率，B 分数基于最新可得的成分披露快照。两者口径不同，综合分应解释为“历史同向性 + 当前底层重复度”的联合参考，而非严格同窗的历史成分重叠。
 
 含义：
 
@@ -132,21 +153,25 @@ holdingOverlapScore = sum(min(weightInEtfA, weightInEtfB) for sharedHolding)
 页面主要区域：
 
 1. 输入区
+
    - ETF 代码输入框，支持逗号、空格或换行分隔。
    - 时间窗口切换：近 1 年、近 3 年。
    - 分析按钮。
 
 2. 综合结论区
+
    - 展示基于两两分析摘要的整体分散度判断。
    - 提示最高风险的 ETF 组合。
    - 标注数据完整性和可信度。
 
 3. 两两矩阵
+
    - 行列均为 ETF 代码或名称。
    - 单元格展示综合相关风险。
    - 颜色随分数从低到高变化。
 
 4. 明细表
+
    - ETF A
    - ETF B
    - A 走势相关风险
@@ -164,6 +189,13 @@ holdingOverlapScore = sum(min(weightInEtfA, weightInEtfB) for sharedHolding)
 - 平均综合风险分。
 - 高风险 pair 数量。
 - 数据不足 pair 数量。
+- 完整结果覆盖率（`completePairs / totalPairs`）。
+
+聚合口径约束：
+
+- `最高综合风险分`、`平均综合风险分`、`高风险 pair 数量` 仅基于 `status = complete` 的 pair 计算。
+- `partial` 和 `unavailable` 只计入覆盖率与数据不足统计，不进入综合建议区间统计。
+- 当 `completePairs = 0` 时，不输出整体风险等级，只输出“数据不足，无法形成完整结论”。
 
 该结论应表述为“这组 ETF 的两两重复度参考”，不能表述为完整的组合风险评估。
 
@@ -171,14 +203,14 @@ holdingOverlapScore = sum(min(weightInEtfA, weightInEtfB) for sharedHolding)
 
 第一版支持用户输入 6 位国内 ETF 代码，并做标准化处理：
 
-- `510300`、`510300.SH`、`159915`、`159915.SZ` 均可识别。
-- 输入会去除空格，并统一为内部标准代码。
+- 接受形如 `510300`、`510300.SH`、`159915`、`159915.SZ` 的输入。
+- 输入会去除空格，剥离已有的 `.SH` / `.SZ` 后缀，统一为 6 位数字。
 - 逗号、空格、中文逗号和换行都可以作为分隔符。
 - 重复代码会自动去重。
 - 至少需要 2 个有效 ETF，最多支持 10 个 ETF，避免接口调用和 pair 数量失控。
-- 非 6 位数字或无法识别市场的代码返回明确错误提示。
+- 非 6 位数字格式的输入返回明确错误提示。
 
-如果用户只输入 6 位代码，系统根据常见交易所规则补全后缀：`5` 开头通常归为上交所，`1` 开头通常归为深交所。无法判断时提示用户补充市场后缀。
+阶段 0 探测已确认 AKShare 的 `fund_etf_hist_em` 直接接受纯 6 位代码（跨上交所、深交所），无需补全市场后缀。第一版因此不做"市场后缀启发式补全"，避免误判后缀导致的错误请求；如未来切换到需要后缀的数据源再加。
 
 ## 输出模型
 
@@ -192,6 +224,15 @@ holdingOverlapScore = sum(min(weightInEtfA, weightInEtfB) for sharedHolding)
 - `confidence`：`high`、`medium`、`low`。
 - `missingReason`：说明缺失行情、缺失成分、样本不足等原因。
 - `advice`：完整建议或部分判断文案。
+
+可信度建议使用可复现的合成规则：
+
+- A 可信度：收益率样本满足阈值且数据完整时为 `high`；样本接近阈值下限或有少量缺失时为 `medium`；仅满足最低可算条件或波动异常时为 `low`。
+- B 可信度：完整成分股为 `high`；仅前十大成分股为 `medium`；字段缺失较多或仅可做弱估算为 `low`。
+- pair 级可信度：
+  - `status = complete`：`confidence = min(confA, confB)`。
+  - `status = partial`：`confidence = low`（即使单项信号本身较强，也统一按降级结果处理）。
+  - `status = unavailable`：`confidence = low`，并必须给出 `missingReason`。
 
 矩阵中：
 
@@ -225,6 +266,7 @@ AKShare 数据不稳定时，不应让整个页面直接失败。
 
 - 行情数据失败：相关 ETF 无法参与 A 分数计算，对应 pair 标记“走势数据不足”。
 - 成分股数据失败：相关 ETF 无法参与 B 分数计算，对应 pair 标记“成分数据不足”。
+- 非股票成分 ETF（黄金、商品、债券等）：B 分数直接不可用，标记为“非股票成分 ETF”，pair 仅返回 A 分数。
 - 只有 A 或只有 B 可用：返回部分评分，不生成综合分，不进入完整建议区间，并标注“可信度较低”。
 - 全部数据失败：展示错误状态，不生成持仓建议。
 - ETF 代码非法：前端或 API 返回明确校验提示。
@@ -300,7 +342,7 @@ AKShare 数据不稳定时，不应让整个页面直接失败。
 
 ## 开放问题
 
-- AKShare 对国内 ETF 历史行情和成分股数据的稳定性需要在实现前做一次接口探测。
-- 如果只能稳定拿到前十大成分股，B 分数应始终标注为估算。
+- ~~AKShare 对国内 ETF 历史行情和成分股数据的稳定性需要在实现前做一次接口探测。~~ 已在阶段 0 完成，结果记录于 `docs/superpowers/notes/akshare-etf-probe.md`。
+- ~~国内 ETF 的市场后缀补全规则需要通过真实样本验证，避免错误请求数据源。~~ 已确认 `fund_etf_hist_em` 接受纯 6 位代码，无需后缀补全。
+- 如果只能稳定拿到前十大成分股，B 分数应始终标注为估算。宽基 ETF 的 top10 在全持仓中占比可能极低（探测样本中最低为 6.02%），需要在解释文案中区分"底层不重叠"与"前十大估算覆盖率低"。
 - 首页和导航是否需要统一抽象工具导航组件，可在实现计划阶段结合现有代码再判断。
-- 国内 ETF 的市场后缀补全规则需要通过真实样本验证，避免错误请求数据源。
