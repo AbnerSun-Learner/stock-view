@@ -19,6 +19,23 @@ function getGridRowKey(row: GridRow): string {
   ].join("-");
 }
 
+const GRID_TYPE_META = {
+  小网: {
+    borderLeftColor: "transparent",
+  },
+  中网: {
+    borderLeftColor: "var(--muted-foreground)",
+  },
+  大网: {
+    borderLeftColor: "var(--foreground)",
+  },
+} satisfies Record<
+  GridRow["gridType"],
+  {
+    borderLeftColor: string;
+  }
+>;
+
 export function GridTable({ gridData, priceDecimals }: GridTableProps) {
   const sortedData = [...gridData].sort((a, b) => b.position - a.position);
   const firstPositionByType = new Map<string, number>();
@@ -27,12 +44,6 @@ export function GridTable({ gridData, priceDecimals }: GridTableProps) {
       firstPositionByType.set(row.gridType, row.position);
     }
   });
-
-  const gridTypeStyle = {
-    小网: { color: "#000000", bg: "transparent" },
-    中网: { color: "#666666", bg: "transparent" },
-    大网: { color: "#999999", bg: "transparent" },
-  } as Record<string, { color: string; bg: string }>;
 
   return (
     <div className="overflow-x-auto border border-[color:var(--border-color)]">
@@ -89,20 +100,18 @@ export function GridTable({ gridData, priceDecimals }: GridTableProps) {
                 ? -row.priceDropRate
                 : row.priceDropRate;
 
-            const typeStyle = gridTypeStyle[row.gridType] ?? {
-              color: "var(--foreground)",
-              bg: "transparent",
-            };
+            const typeMeta = GRID_TYPE_META[row.gridType];
 
             return (
               <tr
                 key={getGridRowKey(row)}
-                className="border-b border-[color:var(--border-color)] hover:bg-[var(--hover-bg)] transition-colors duration-200"
+                className="border-b border-l-4 border-[color:var(--border-color)] hover:bg-[var(--hover-bg)] transition-colors duration-200"
+                style={{ borderLeftColor: typeMeta.borderLeftColor }}
               >
                 <td className="p-4">
                   <span
-                    className="text-xs font-medium"
-                    style={{ color: typeStyle.color, letterSpacing: "0.03em" }}
+                    className="text-xs font-medium text-[var(--foreground)]"
+                    style={{ letterSpacing: "0.03em" }}
                   >
                     {row.gridType}
                   </span>

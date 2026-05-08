@@ -130,7 +130,7 @@ export default function GridPage() {
                   </div>
 
                   {/* 网格步长 */}
-                  <div className="border-b border-[color:var(--border-color)] p-6">
+                  <div className="border-b border-[color:var(--border-color)]">
                     <GridStepConfig
                       baseStep={params.smallGridStep}
                       onBaseStepChange={(value) =>
