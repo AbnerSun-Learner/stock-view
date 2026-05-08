@@ -47,11 +47,11 @@ const TOOLS = [
   },
   {
     num: "06",
-    title: "持仓分析",
-    sub: "Holdings",
-    desc: "指数前十大成分股权重与申万一级行业分布，快速了解指数真实暴露",
-    tags: ["成分股", "行业分布"],
-    href: "/valuation",
+    title: "ETF 相关性",
+    sub: "ETF Correlation",
+    desc: "走势同向性 + 底层成分重叠双信号，量化你的 ETF 持仓是否存在被忽略的重复风险",
+    tags: ["分散度", "持仓体检"],
+    href: "/correlation",
   },
 ];
 
@@ -89,6 +89,12 @@ export default function LandingPage() {
             >
               指数估值
             </Link>
+            <Link
+              href="/correlation"
+              className="text-sm text-neutral-500 hover:text-neutral-900 transition-colors duration-150"
+            >
+              相关性
+            </Link>
             <a
               href="#about"
               className="text-sm text-neutral-500 hover:text-neutral-900 transition-colors duration-150"
@@ -101,14 +107,25 @@ export default function LandingPage() {
 
       <main>
         {/* ── Hero ──────────────────────────────────────────── */}
-        <section className="pt-40 pb-16 mx-auto max-w-6xl px-6 lg:px-10">
-          <h1 className="pf-hero-title mb-5 max-w-3xl">
-            Still in <em>Volatility</em>,
+        <section className="pt-40 pb-12 mx-auto max-w-6xl px-6 lg:px-10">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-neutral-400 mb-4">
+            Stillwell · ETF Research
+          </p>
+          <h1 className="pf-hero-title landing-hero-title mb-6 max-w-4xl">
+            专注 <em>ETF 与指数基金</em>
             <br />
-            Rich in Time.
+            的投研与工具
           </h1>
-          <p className="text-base text-neutral-500 leading-[1.7] max-w-[50ch]">
-            以十年中值为锚，历史高低为界。网格策略计算与估值分位参考，帮你在市场噪音中保持清醒。
+          <p className="landing-hero-title text-xl sm:text-2xl font-light text-neutral-800 tracking-[0.02em] max-w-[52ch] mb-5 leading-snug">
+            涨跌有常，策略在心
+          </p>
+          <p className="text-base text-neutral-500 leading-[1.7] max-w-[52ch] mb-3">
+            以指数为锚、以数据为界：用可验证的估值、持仓与策略计算，帮你在噪声里把
+            ETF
+            投资看得更清楚。投研相关能力将持续迭代，当前可先使用下方基础工具。
+          </p>
+          <p className="text-[10px] text-neutral-400 leading-relaxed max-w-[52ch] font-light uppercase tracking-[0.12em]">
+            Still in volatility, rich in time.
           </p>
         </section>
 
@@ -117,10 +134,13 @@ export default function LandingPage() {
           <div className="h-px bg-neutral-200" />
         </div>
 
-        {/* ── Selected Work（核心工具） ──────────────────────── */}
+        {/* ── Selected Work（基础工具） ──────────────────────── */}
         <section className="py-16 mx-auto max-w-6xl px-6 lg:px-10">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-neutral-400 mb-8">
-            Core Tools
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-neutral-400 mb-3">
+            Tools · 基础工具
+          </p>
+          <p className="text-xs text-neutral-500 leading-[1.7] max-w-[60ch] mb-8">
+            已上线的本地计算与指数数据能力，可与后续投研模块搭配使用。
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -179,7 +199,10 @@ export default function LandingPage() {
         </div>
 
         {/* ── About ─────────────────────────────────────────── */}
-        <section id="about" className="py-16 mx-auto max-w-6xl px-6 lg:px-10">
+        <section
+          id="about"
+          className="scroll-mt-24 py-16 mx-auto max-w-6xl px-6 lg:px-10"
+        >
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-20">
             {/* 左：介绍文字 */}
             <div className="lg:col-span-7">
@@ -188,16 +211,20 @@ export default function LandingPage() {
               </p>
               <div className="space-y-4 text-sm text-neutral-600 leading-[1.75] max-w-[52ch]">
                 <p>
-                  Stillwell 是一款面向 A
-                  股指数投资者的量化工具。我们相信，好的决策来自清晰的数据，而不是模糊的感觉。
+                  Stillwell 面向国内个人投资者，聚焦 ETF
+                  与指数基金的投研与交易辅助。我们相信好的决策来自可追溯的数据与逻辑，而不是模糊的感觉。
                 </p>
                 <p>
-                  无论是网格买卖点的精确计算，还是 PE/PB
-                  历史分位数的估值参考，Stillwell
-                  只提供数字与逻辑，决策权始终属于你自己。
+                  名称里的 still
+                  well，想表达的是：行情再大起大落，只要目标和策略清楚，心里就有底。用投研把
+                  ETF 与指数看清楚，就是为了在波动里仍能坚持自己的节奏。
+                </p>
+                <p>
+                  主打 ETF
+                  投研模块将随功能迭代陆续开放；当前你可使用网格参数计算、指数估值分位、持仓与行业分布等基础能力。我们只呈现模型与事实，投资决策始终由你自己做出。
                 </p>
                 <p className="text-neutral-900 font-medium">
-                  慢即是快，稳即是远。
+                  涨跌有常，策略在心。
                 </p>
               </div>
             </div>
@@ -236,10 +263,10 @@ export default function LandingPage() {
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-neutral-400 mb-6">
             Start Now
           </p>
-          <h2 className="text-2xl md:text-3xl font-light tracking-[-0.02em] text-neutral-900 mb-8 max-w-lg leading-snug">
-            立即开始，无需注册，
+          <h2 className="text-2xl md:text-3xl font-light tracking-[-0.02em] text-neutral-900 mb-8 max-w-xl leading-snug">
+            立即开始：无需注册，
             <br />
-            数据本地计算。
+            核心数据与计算在本地完成。
           </h2>
           <div className="flex flex-wrap items-center gap-4">
             <Link href="/grid">
@@ -275,6 +302,12 @@ export default function LandingPage() {
               className="text-xs text-neutral-400 hover:text-neutral-900 transition-colors duration-150"
             >
               指数估值
+            </Link>
+            <Link
+              href="/correlation"
+              className="text-xs text-neutral-400 hover:text-neutral-900 transition-colors duration-150"
+            >
+              ETF 相关性
             </Link>
             <a
               href="#about"
