@@ -3,7 +3,10 @@
  */
 
 import type {
+  CorrelationApiResponse,
   CorrelationPeriod,
+  CorrelationSummary,
+  MissingDataItem,
   PairResult,
   PairStatus,
 } from "@/types/correlation";
@@ -12,37 +15,9 @@ import { computePairScore } from "./score";
 import { computeReturnCorrelation } from "./return-correlation";
 import type { FetchedEtfData } from "./fetch-data";
 
-export interface CorrelationSummary {
-  total: number;
-  completePairs: number;
-  partialPairs: number;
-  unavailablePairs: number;
-  /** 仅基于 status === "complete" 的 pair 计算 */
-  maxFinalScore: number | null;
-  averageFinalScore: number | null;
-  highRiskPairs: number;
-  /** 最高综合分对应的 ETF 代码组 */
-  topRiskPair: [string, string] | null;
-  /** 简明结论文案 */
-  headline: string;
-}
-
-export interface MissingDataItem {
-  code: string;
-  reason: string;
-}
-
-export interface CorrelationResponse {
-  period: CorrelationPeriod;
-  codes: string[];
-  pairs: PairResult[];
-  summary: CorrelationSummary;
-  missing: {
-    kline: MissingDataItem[];
-    holdings: MissingDataItem[];
-  };
-  generatedAt: string;
-}
+export type { CorrelationApiResponse, CorrelationSummary, MissingDataItem };
+/** @deprecated 改用 CorrelationApiResponse */
+export type CorrelationResponse = CorrelationApiResponse;
 
 const HIGH_RISK_THRESHOLD = 0.6;
 
@@ -153,7 +128,7 @@ export function buildCorrelationResponse(
   codes: string[],
   fetched: FetchedEtfData[],
   period: CorrelationPeriod
-): CorrelationResponse {
+): CorrelationApiResponse {
   const fetchMap = new Map(fetched.map((f) => [f.code, f]));
   const pairs = buildPairs(codes, fetchMap, period);
   return {

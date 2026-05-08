@@ -1,19 +1,15 @@
-import {
-  buildCorrelationResponse,
-  type CorrelationResponse,
-} from "@/lib/correlation/build-response";
+import { buildCorrelationResponse } from "@/lib/correlation/build-response";
 import { dedupeNormalizedCodes } from "@/lib/correlation/etf-code";
 import { fetchAllEtfData } from "@/lib/correlation/fetch-data";
-import type { CorrelationPeriod } from "@/types/correlation";
+import type {
+  CorrelationApiError,
+  CorrelationApiResponse,
+  CorrelationPeriod,
+} from "@/types/correlation";
 import { NextRequest, NextResponse } from "next/server";
 
 const MAX_CODES = 10;
 const ALLOWED_PERIODS: CorrelationPeriod[] = ["1y", "3y"];
-
-interface ErrorResponse {
-  error: string;
-  invalid?: string[];
-}
 
 function parsePeriod(raw: string | null): CorrelationPeriod {
   if (raw && (ALLOWED_PERIODS as string[]).includes(raw)) {
@@ -24,7 +20,7 @@ function parsePeriod(raw: string | null): CorrelationPeriod {
 
 export async function GET(
   request: NextRequest
-): Promise<NextResponse<CorrelationResponse | ErrorResponse>> {
+): Promise<NextResponse<CorrelationApiResponse | CorrelationApiError>> {
   const { searchParams } = new URL(request.url);
   const codesParam = searchParams.get("codes") ?? "";
   const period = parsePeriod(searchParams.get("period"));

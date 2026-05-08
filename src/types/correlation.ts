@@ -99,3 +99,40 @@ export interface PairResult {
     holding: HoldingOverlapResult;
   };
 }
+
+export interface CorrelationSummary {
+  total: number;
+  completePairs: number;
+  partialPairs: number;
+  unavailablePairs: number;
+  /** 仅基于 status === "complete" 的 pair 计算 */
+  maxFinalScore: number | null;
+  averageFinalScore: number | null;
+  highRiskPairs: number;
+  /** 最高综合分对应的 ETF 代码组 */
+  topRiskPair: [string, string] | null;
+  /** 简明结论文案 */
+  headline: string;
+}
+
+export interface MissingDataItem {
+  code: string;
+  reason: string;
+}
+
+export interface CorrelationApiResponse {
+  period: CorrelationPeriod;
+  codes: string[];
+  pairs: PairResult[];
+  summary: CorrelationSummary;
+  missing: {
+    kline: MissingDataItem[];
+    holdings: MissingDataItem[];
+  };
+  generatedAt: string;
+}
+
+export interface CorrelationApiError {
+  error: string;
+  invalid?: string[];
+}

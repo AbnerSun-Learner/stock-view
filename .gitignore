@@ -43,6 +43,10 @@ next-env.d.ts
 # spec-kit
 .specify
 
+# 调试与会话临时产物（不入库）
+.playwright-mcp/
+.superpowers/
+
 # python
 __pycache__/
 *.py[cod]
