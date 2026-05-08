@@ -24,7 +24,7 @@
   nvm use 20
   ```
 
-- npm：建议使用随 Node 20 一起安装的版本。
+- pnpm：项目通过 `packageManager` 固定为 `pnpm@10.23.0`，建议使用 Corepack 启用。
 
 ---
 
@@ -33,13 +33,14 @@
 1. **安装依赖**
 
    ```bash
-   npm install
+   corepack enable
+   pnpm install
    ```
 
 2. **启动开发服务**
 
    ```bash
-   npm run dev
+   pnpm run dev
    ```
 
 3. 在浏览器打开 `http://localhost:3000` 即可访问。

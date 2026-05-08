@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { formatShanghaiDate, isAfterMarketClose } from "@/lib/market-calendar";
 import { createHash } from "crypto";
+import { NextRequest, NextResponse } from "next/server";
 
 export interface ValuationPoint {
   date: string;
@@ -48,27 +49,16 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 const CACHE_TTL_AFTER_CLOSE_MS = 60 * 1000;
 const cache = new Map<string, { data: ValuationResponse; ts: number }>();
 
-function shanghaiDateStr(): string {
-  return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" });
-}
-
-/** 是否已过 A 股收盘时间（15:00 上海） */
-function isAfterMarketClose(): boolean {
-  const t = new Date().toLocaleTimeString("en-GB", { timeZone: "Asia/Shanghai", hour: "2-digit", minute: "2-digit", hour12: false });
-  const [h, m] = t.split(":").map(Number);
-  return h > 15 || (h === 15 && m >= 0);
-}
-
 function getCacheTtl(): number {
   return isAfterMarketClose() ? CACHE_TTL_AFTER_CLOSE_MS : CACHE_TTL_MS;
 }
 
 function generateToken(): string {
-  return createHash("md5").update(shanghaiDateStr()).digest("hex");
+  return createHash("md5").update(formatShanghaiDate()).digest("hex");
 }
 
 function msToDateStr(ms: number): string {
-  return new Date(ms).toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" });
+  return formatShanghaiDate(new Date(ms));
 }
 
 async function getLeguAuth(): Promise<{ csrf: string; cookie: string }> {
@@ -76,11 +66,15 @@ async function getLeguAuth(): Promise<{ csrf: string; cookie: string }> {
     headers: { "User-Agent": UA },
   });
   const html = await res.text();
-  const csrf = html.match(/<meta\s+name="_csrf"\s+content="([^"]+)"/)?.[1] ?? "";
+  const csrf =
+    html.match(/<meta\s+name="_csrf"\s+content="([^"]+)"/)?.[1] ?? "";
 
   let cookies: string[] = [];
   const headers = res.headers as unknown;
-  if (typeof (headers as { getSetCookie?: () => string[] }).getSetCookie === "function") {
+  if (
+    typeof (headers as { getSetCookie?: () => string[] }).getSetCookie ===
+    "function"
+  ) {
     cookies = (headers as { getSetCookie(): string[] }).getSetCookie();
   } else {
     const raw = res.headers.get("set-cookie");
@@ -101,7 +95,9 @@ interface LeguPbItem {
   addPb: number;
 }
 
-async function fetchLeguData(symbol: string): Promise<ValuationResponse | null> {
+async function fetchLeguData(
+  symbol: string
+): Promise<ValuationResponse | null> {
   const indexCode = SYMBOL_TO_INDEX_CODE[symbol];
   if (!indexCode) return null;
 
@@ -178,10 +174,7 @@ export async function GET(request: NextRequest) {
   try {
     const result = await fetchLeguData(symbol);
     if (!result?.data?.length) {
-      return NextResponse.json(
-        { error: "估值数据暂不可用" },
-        { status: 503 }
-      );
+      return NextResponse.json({ error: "估值数据暂不可用" }, { status: 503 });
     }
 
     const rawData = result.data;
@@ -237,9 +230,6 @@ export async function GET(request: NextRequest) {
     } satisfies ValuationResponse);
   } catch (e) {
     console.error("valuation api error", e);
-    return NextResponse.json(
-      { error: "获取估值数据失败" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "获取估值数据失败" }, { status: 500 });
   }
 }

@@ -3,6 +3,13 @@
  */
 
 import type { HistoryItem } from "@/types/stock";
+export {
+  getShanghaiDate,
+  getTargetTradeDate,
+  isAfterMarketClose,
+  isToday,
+  isTradingHours,
+} from "@/lib/market-calendar";
 
 /**
  * 格式化ETF标签
@@ -53,113 +60,4 @@ export function normalizeHistoryEntry(entry: unknown): HistoryItem | null {
   }
 
   return null;
-}
-
-
-/**
- * 获取北京时间
- */
-function getBeijingTime(): Date {
-  const now = new Date();
-  return new Date(now.toLocaleString("en-US", { timeZone: "Asia/Shanghai" }));
-}
-
-/**
- * 判断是否在交易时间内
- * A股交易时间：9:30-11:30, 13:00-15:00（北京时间）
- */
-export function isTradingHours(): boolean {
-  const beijingTime = getBeijingTime();
-  const day = beijingTime.getDay(); // 0=周日, 6=周六
-  const hour = beijingTime.getHours();
-  const minute = beijingTime.getMinutes();
-  const timeInMinutes = hour * 60 + minute;
-
-  // 周末不交易
-  if (day === 0 || day === 6) {
-    return false;
-  }
-
-  // 上午：9:30-11:30
-  const morningStart = 9 * 60 + 30; // 9:30
-  const morningEnd = 11 * 60 + 30; // 11:30
-  // 下午：13:00-15:00
-  const afternoonStart = 13 * 60; // 13:00
-  const afternoonEnd = 15 * 60; // 15:00
-
-  return (
-    (timeInMinutes >= morningStart && timeInMinutes <= morningEnd) ||
-    (timeInMinutes >= afternoonStart && timeInMinutes <= afternoonEnd)
-  );
-}
-
-/**
- * 判断是否在收盘之后（15:00之后）
- */
-export function isAfterMarketClose(): boolean {
-  const beijingTime = getBeijingTime();
-  const day = beijingTime.getDay();
-  const hour = beijingTime.getHours();
-  const minute = beijingTime.getMinutes();
-  const timeInMinutes = hour * 60 + minute;
-
-  // 周末不算收盘后
-  if (day === 0 || day === 6) {
-    return false;
-  }
-
-  // 15:00之后算收盘后
-  return timeInMinutes >= 15 * 60;
-}
-
-/**
- * 获取应该使用的交易日日期字符串（YYYY-MM-DD格式）
- * - 如果在交易时间内，返回上一个交易日
- * - 如果在收盘后，返回当天交易日
- * - 如果是周末，返回上一个交易日
- */
-export function getTargetTradeDate(): string {
-  const beijingTime = getBeijingTime();
-  const hour = beijingTime.getHours();
-  const minute = beijingTime.getMinutes();
-  const timeInMinutes = hour * 60 + minute;
-
-  const targetDate = new Date(beijingTime);
-
-  // 如果在交易时间内（9:30-11:30 或 13:00-15:00），使用上一个交易日
-  const morningStart = 9 * 60 + 30;
-  const morningEnd = 11 * 60 + 30;
-  const afternoonStart = 13 * 60;
-  const afternoonEnd = 15 * 60;
-
-  const inTradingHours =
-    (timeInMinutes >= morningStart && timeInMinutes <= morningEnd) ||
-    (timeInMinutes >= afternoonStart && timeInMinutes <= afternoonEnd);
-
-  if (inTradingHours) {
-    // 在交易时间内，往前推一天
-    targetDate.setDate(targetDate.getDate() - 1);
-  }
-
-  // 如果是周末，往前推到周五
-  while (targetDate.getDay() === 0 || targetDate.getDay() === 6) {
-    targetDate.setDate(targetDate.getDate() - 1);
-  }
-
-  const year = targetDate.getFullYear();
-  const month = String(targetDate.getMonth() + 1).padStart(2, "0");
-  const dayOfMonth = String(targetDate.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${dayOfMonth}`;
-}
-
-/**
- * 判断日期字符串是否为今天（北京时间）
- */
-export function isToday(dateStr: string): boolean {
-  const beijingTime = getBeijingTime();
-  const today = `${beijingTime.getFullYear()}-${String(
-    beijingTime.getMonth() + 1
-  ).padStart(2, "0")}-${String(beijingTime.getDate()).padStart(2, "0")}`;
-  return dateStr === today;
 }

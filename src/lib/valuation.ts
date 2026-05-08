@@ -2,6 +2,8 @@
  * 指数估值相关常量与工具
  */
 
+import { getTargetTradeDate } from "@/lib/market-calendar";
+
 export interface IndexItem {
   symbol: string;
   name: string;
@@ -13,7 +15,7 @@ export interface IndexItem {
 
 export const INDEX_LIST: IndexItem[] = [
   { symbol: "000300", name: "沪深300指数", source: "lg", lgName: "沪深300" },
-]
+];
 
 /** 乐咕乐股接口使用的名称 */
 export const SYMBOL_TO_LG_NAME: Record<string, string> = {
@@ -24,19 +26,11 @@ export const SYMBOL_TO_LG_NAME: Record<string, string> = {
   "000852": "中证1000",
   "000100": "中证100",
   "000906": "中证800",
-}
+};
 
 export function formatDataUpdateLabel(lastDataDate: string | null): string {
-  if (lastDataDate) return lastDataDate
-  const now = new Date()
-  const hour = now.getHours()
-  const minute = now.getMinutes()
-  const closeTime = 15 * 60 + 0
-  const currentMinutes = hour * 60 + minute
-  const isAfterClose = currentMinutes >= closeTime
-  const d = new Date(now)
-  if (!isAfterClose) d.setDate(d.getDate() - 1)
-  return d.toISOString().slice(0, 10)
+  if (lastDataDate) return lastDataDate;
+  return getTargetTradeDate();
 }
 
 export function computePeStats(values: number[]) {
@@ -50,12 +44,13 @@ export function computePeStats(values: number[]) {
       max: 0,
       min: 0,
       average: 0,
-    }
-  const sorted = [...values].sort((a, b) => a - b)
-  const current = values[values.length - 1]
-  const rank = sorted.filter((v) => v <= current).length
-  const currentPercentile = Math.round((rank / values.length) * 10000) / 100
-  const idx = (p: number) => Math.min(Math.floor(p * (sorted.length - 1)), sorted.length - 1)
+    };
+  const sorted = [...values].sort((a, b) => a - b);
+  const current = values[values.length - 1];
+  const rank = sorted.filter((v) => v <= current).length;
+  const currentPercentile = Math.round((rank / values.length) * 10000) / 100;
+  const idx = (p: number) =>
+    Math.min(Math.floor(p * (sorted.length - 1)), sorted.length - 1);
   return {
     current,
     currentPercentile,
@@ -65,7 +60,7 @@ export function computePeStats(values: number[]) {
     max: sorted[sorted.length - 1],
     min: sorted[0],
     average: values.reduce((a, b) => a + b, 0) / values.length,
-  }
+  };
 }
 
 export function matchIndexFuzzy(
@@ -73,7 +68,7 @@ export function matchIndexFuzzy(
   name: string,
   symbol: string
 ): boolean {
-  if (!keyword.trim()) return true
-  const k = keyword.trim().toLowerCase()
-  return name.toLowerCase().includes(k) || symbol.toLowerCase().includes(k)
+  if (!keyword.trim()) return true;
+  const k = keyword.trim().toLowerCase();
+  return name.toLowerCase().includes(k) || symbol.toLowerCase().includes(k);
 }
