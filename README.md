@@ -34,10 +34,11 @@
 | `doc/superpowers/notes/` | 探测与验证笔记                                                                                               |
 | `.github/workflows/`     | CI/CD                                                                                                        |
 | `.cursor/`、`.agents/`   | 编辑器与 Agent 配套（本仓库**不再**提交 `.claude/skills/`）；不参与线上构建；OpenSkills 通用技能请在本机安装 |
+| `artifacts/`             | **P2 本地产物根目录**（截图、Playwright 输出、对齐临时图等）；详见 [`artifacts/README.md`](artifacts/README.md)，默认不入库 |
 
 更完整的目录语义与分批精简策略见 `doc/superpowers/specs/2026-05-09-repository-slim-design.md`。
 
-本地调试截图、Playwright 导出等 **P2 产物** 请落在 `playwright-artifacts/` 或 `artifacts/`（已在 `.gitignore`，勿提交到仓库）。
+请将调试截图、Playwright 导出、临时对齐图等统一写入 `artifacts/` 下推荐子目录（见 `artifacts/README.md`）；勿堆在仓库根目录。
 
 ---
 

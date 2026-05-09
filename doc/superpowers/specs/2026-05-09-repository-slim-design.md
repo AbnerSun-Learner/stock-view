@@ -34,7 +34,7 @@
 | `.github/`             | CI/CD                                                                                           | 发版/排障时      |
 | `.cursor/`、`.agents/` | 编辑器 / Agent 配套；**不再**内嵌 `.claude/skills/`（已移除以减小克隆体积）；不参与 Vercel 构建 | 可整体视为工具箱 |
 
-**本地产物**：测试截图、Playwright 输出、临时对齐图等，统一进入约定目录（如 `playwright-artifacts/` 或 `artifacts/`），并列入 `.gitignore`，避免散落在仓库根目录。
+**本地产物**：测试截图、Playwright 输出、临时对齐图等，统一进入仓库根目录 **`artifacts/`**（子目录约定见 `artifacts/README.md`）；除说明文件外整体列入 `.gitignore`。历史路径 `playwright-artifacts/` 仍可忽略以防误提交旧产物。
 
 ---
 

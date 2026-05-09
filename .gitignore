@@ -48,7 +48,9 @@ next-env.d.ts
 .playwright-mcp/
 .superpowers/
 playwright-artifacts/
-artifacts/
+# artifacts：集中本地产物；仅 README 入库，其余忽略
+/artifacts/*
+!/artifacts/README.md
 /correlation-v2-light.png
 
 # python 工具输出图（不入库）
