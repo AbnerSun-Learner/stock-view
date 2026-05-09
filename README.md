@@ -24,16 +24,16 @@
 
 ## 仓库地图
 
-| 路径                     | 用途                                                                                                         |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| `src/`                   | Next.js 应用（页面、组件、API Route）                                                                        |
-| `scripts/`               | 数据拉取与离线探测等 Python 脚本（如 ETF 相关）                                                              |
-| `python-utils/`          | 独立小工具（如 `stillwell-tracker`），**非** Web 运行时依赖；详见各子目录 README                             |
-| `doc/`                   | **全仓库说明类文档根目录**（评审、规格、`superpowers` 笔记等）                                               |
-| `doc/superpowers/specs/` | 功能规格与实施计划                                                                                           |
-| `doc/superpowers/notes/` | 探测与验证笔记                                                                                               |
-| `.github/workflows/`     | CI/CD                                                                                                        |
-| `.cursor/`、`.agents/`   | 编辑器与 Agent 配套（本仓库**不再**提交 `.claude/skills/`）；不参与线上构建；OpenSkills 通用技能请在本机安装 |
+| 路径                     | 用途                                                                                                                        |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `src/`                   | Next.js 应用（页面、组件、API Route）                                                                                       |
+| `scripts/`               | 数据拉取与离线探测等 Python 脚本（如 ETF 相关）                                                                             |
+| `python-utils/`          | 独立小工具（如 `stillwell-tracker`），**非** Web 运行时依赖；详见各子目录 README                                            |
+| `doc/`                   | **全仓库说明类文档根目录**（评审、规格、`superpowers` 笔记等）                                                              |
+| `doc/superpowers/specs/` | 功能规格与实施计划                                                                                                          |
+| `doc/superpowers/notes/` | 探测与验证笔记                                                                                                              |
+| `.github/workflows/`     | CI/CD                                                                                                                       |
+| `.cursor/`、`.agents/`   | 编辑器与 Agent 配套（本仓库**不再**提交 `.claude/skills/`）；不参与线上构建；OpenSkills 通用技能请在本机安装                |
 | `artifacts/`             | **P2 本地产物根目录**（截图、Playwright 输出、对齐临时图等）；详见 [`artifacts/README.md`](artifacts/README.md)，默认不入库 |
 
 更完整的目录语义与分批精简策略见 `doc/superpowers/specs/2026-05-09-repository-slim-design.md`。
@@ -161,7 +161,7 @@
 - **语言**：TypeScript
 - **样式**：Tailwind CSS
 - **UI 组件**：Ant Design v6
-- **图表**：@ant-design/charts, lightweight-charts, recharts
+- **图表**：recharts
 
 ---
 

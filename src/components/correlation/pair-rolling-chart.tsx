@@ -26,12 +26,13 @@ interface ChartRow {
 
 interface RollingTooltipProps {
   active?: boolean;
-  payload?: readonly { payload: ChartRow }[];
+  payload?: ReadonlyArray<{ payload?: ChartRow }>;
 }
 
 function RollingTooltip({ active, payload }: RollingTooltipProps) {
   if (!active || !payload?.length) return null;
-  const row = payload[0].payload;
+  const row = payload[0]?.payload;
+  if (!row) return null;
   return (
     <div className="border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] px-3 py-2 text-xs">
       <p className="text-[var(--muted-foreground)] mb-1">{row.date}</p>

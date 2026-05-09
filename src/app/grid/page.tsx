@@ -7,8 +7,8 @@ import { FundCoefficientConfig } from "@/components/grid/fund-coefficient-config
 import { GridNavbar } from "@/components/grid/grid-navbar";
 import { GridStepConfig } from "@/components/grid/grid-step-config";
 import { GridTable } from "@/components/grid/grid-table";
+import { LazyStrategyComparisonChart } from "@/components/grid/lazy-strategy-comparison-chart";
 import { StatsCards } from "@/components/grid/stats-cards";
-import { StrategyComparisonChart } from "@/components/grid/strategy-comparison-chart";
 import { useGridCalculator } from "@/hooks/use-grid-calculator";
 import { useGridParams } from "@/hooks/use-grid-params";
 import type { GridRow, StressTest } from "@/types/grid";
@@ -185,7 +185,7 @@ export default function GridPage() {
                   <>
                     {/* 策略对比图 */}
                     <div className="border border-[color:var(--border-color)] p-6">
-                      <StrategyComparisonChart
+                      <LazyStrategyComparisonChart
                         gridData={gridData}
                         basePrice={params.basePrice}
                         priceDecimals={priceDecimals}

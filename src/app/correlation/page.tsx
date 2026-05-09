@@ -2,11 +2,13 @@
 
 import { AntdProvider } from "@/components/antd-provider";
 import { CorrelationNavbar } from "@/components/correlation/correlation-navbar";
+import {
+  LazyPairPerformanceChart,
+  LazyPairRollingChart,
+} from "@/components/correlation/lazy-pair-charts";
 import { PairCompareTable } from "@/components/correlation/pair-compare-table";
 import { PairInputCard } from "@/components/correlation/pair-input-card";
-import { PairPerformanceChart } from "@/components/correlation/pair-performance-chart";
 import { PairResultCard } from "@/components/correlation/pair-result-card";
-import { PairRollingChart } from "@/components/correlation/pair-rolling-chart";
 import {
   SkeletonChart,
   SkeletonResultCard,
@@ -16,7 +18,13 @@ import type { PairCorrelationData } from "@/lib/correlation/pair-correlation-typ
 import { getPeriodLabel } from "@/lib/correlation/pair-correlation-types";
 import type { CorrelationPeriod } from "@/types/correlation";
 import { Alert, App, Segmented } from "antd";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+function isAbortError(e: unknown): boolean {
+  if (e instanceof DOMException && e.name === "AbortError") return true;
+  if (e instanceof Error && e.name === "AbortError") return true;
+  return false;
+}
 
 const PERIOD_OPTIONS: { label: string; value: CorrelationPeriod }[] = [
   { label: "1Y", value: "1y" },
@@ -27,7 +35,15 @@ const PERIOD_OPTIONS: { label: string; value: CorrelationPeriod }[] = [
 ];
 
 function CorrelationPageBody() {
-  const { message } = App.useApp();
+  const { message: messageApi } = App.useApp();
+  const messageRef = useRef(messageApi);
+  useEffect(() => {
+    messageRef.current = messageApi;
+  }, [messageApi]);
+
+  const pairFetchInflightRef = useRef(0);
+  const pairFetchAbortRef = useRef<AbortController | null>(null);
+
   const [codeA, setCodeA] = useState("");
   const [codeB, setCodeB] = useState("");
   const [period, setPeriod] = useState<CorrelationPeriod>("1y");
@@ -38,6 +54,13 @@ function CorrelationPageBody() {
     a: string;
     b: string;
   } | null>(null);
+
+  useEffect(() => {
+    return () => {
+      pairFetchInflightRef.current += 1;
+      pairFetchAbortRef.current?.abort();
+    };
+  }, []);
 
   const fetchPairData = useCallback(
     async ({
@@ -51,41 +74,57 @@ function CorrelationPageBody() {
       p: CorrelationPeriod;
       preserveOnError?: boolean;
     }) => {
+      const requestId = ++pairFetchInflightRef.current;
+      pairFetchAbortRef.current?.abort();
+      const ac = new AbortController();
+      pairFetchAbortRef.current = ac;
+
       setLoading(true);
       setError(null);
       try {
         const params = new URLSearchParams({ a, b, period: p });
-        const res = await fetch(`/api/correlation/pair?${params.toString()}`);
+        const res = await fetch(`/api/correlation/pair?${params.toString()}`, {
+          signal: ac.signal,
+        });
+        if (requestId !== pairFetchInflightRef.current) return;
+
         if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(body.error || `请求失败 (${res.status})`);
         }
         const json = (await res.json()) as PairCorrelationData;
+        if (requestId !== pairFetchInflightRef.current) return;
         setData(json);
       } catch (e) {
+        if (requestId !== pairFetchInflightRef.current) return;
+        if (isAbortError(e)) return;
         const msg = e instanceof Error ? e.message : "未知错误";
         setError(msg);
-        message.error(msg);
+        messageRef.current.error(msg);
         if (!preserveOnError) setData(null);
       } finally {
-        setLoading(false);
+        if (requestId === pairFetchInflightRef.current) {
+          setLoading(false);
+        }
       }
     },
-    [message]
+    []
   );
 
   const handleSubmit = useCallback(
     (nextA: string, nextB: string) => {
       if (!nextA || !nextB) {
-        message.warning("请输入两只 ETF 代码");
+        messageRef.current.warning("请输入两只 ETF 代码");
         return;
       }
       if (nextA === nextB) {
-        message.warning("两只 ETF 不能相同");
+        messageRef.current.warning("两只 ETF 不能相同");
         return;
       }
       if (!/^\d{6}$/.test(nextA) || !/^\d{6}$/.test(nextB)) {
-        message.warning("ETF 代码需为 6 位数字");
+        messageRef.current.warning("ETF 代码需为 6 位数字");
         return;
       }
       setCodeA(nextA);
@@ -94,7 +133,7 @@ function CorrelationPageBody() {
       setData(null);
       fetchPairData({ a: nextA, b: nextB, p: period, preserveOnError: false });
     },
-    [period, fetchPairData, message]
+    [period, fetchPairData]
   );
 
   const handlePeriodChange = useCallback(
@@ -200,8 +239,11 @@ function CorrelationPageBody() {
                 </>
               ) : showCharts ? (
                 <>
-                  <PairPerformanceChart data={data} periodLabel={periodLabel} />
-                  <PairRollingChart data={data} />
+                  <LazyPairPerformanceChart
+                    data={data}
+                    periodLabel={periodLabel}
+                  />
+                  <LazyPairRollingChart data={data} />
                   <PairCompareTable data={data} />
                 </>
               ) : null}

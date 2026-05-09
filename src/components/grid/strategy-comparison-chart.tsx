@@ -58,9 +58,7 @@ interface ChartDataPoint {
 
 interface CustomTooltipProps {
   active?: boolean;
-  payload?: readonly {
-    payload: ChartDataPoint;
-  }[];
+  payload?: ReadonlyArray<{ payload?: ChartDataPoint }>;
   colors: {
     tooltipBg: string;
     tooltipBorder: string;
@@ -78,7 +76,8 @@ function CustomTooltip({
 }: CustomTooltipProps) {
   if (!active || !payload || !payload.length) return null;
 
-  const data: ChartDataPoint = payload[0].payload;
+  const data: ChartDataPoint | undefined = payload[0]?.payload;
+  if (!data) return null;
 
   // 一次全仓死拿的跌幅 = (基准价 - 当前买入价) / 基准价
   const lumpSumDropRate =

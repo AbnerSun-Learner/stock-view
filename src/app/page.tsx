@@ -1,5 +1,3 @@
-"use client";
-
 import { StillwellMark } from "@/components/stillwell-mark";
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
