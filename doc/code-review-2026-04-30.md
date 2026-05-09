@@ -347,6 +347,8 @@ src/
 
 ### 6. 设计文档目录定位不清
 
+> **2026-05-09**：根目录 `design-system/` 已按精简计划删除；原文件可从 Git 历史恢复。UI 规范请优先参考 `.cursor/skills/stillwell-ui/SKILL.md`。
+
 相关路径：
 
 - `design-system/PAGE_AUDIT.md`

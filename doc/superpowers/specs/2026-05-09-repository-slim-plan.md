@@ -53,7 +53,7 @@
 
 **验收**：PR 描述含「归类 + 检索说明 + 验证结果」。
 
-**进度（2026-05-09）**：3.1–3.2 **盘点已完成**，结论写入 [../notes/2026-05-09-repository-slim-phase3-inventory.md](../notes/2026-05-09-repository-slim-phase3-inventory.md)；**尚未执行任何目录删除**。
+**进度（2026-05-09）**：3.1–3.2 **盘点已完成**，结论写入 [../notes/2026-05-09-repository-slim-phase3-inventory.md](../notes/2026-05-09-repository-slim-phase3-inventory.md)；**`design-system/` 已按确认删除**；其它目录删除仍待确认。
 
 ---
 
