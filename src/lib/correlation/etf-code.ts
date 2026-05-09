@@ -1,8 +1,7 @@
 /**
  * ETF 代码标准化。
  *
- * 阶段 0 探测确认 AKShare 的 fund_etf_hist_em 直接接受纯 6 位代码，
- * 因此第一版去除可能存在的 .SH / .SZ 后缀，只保留 6 位数字。
+ * 对用户输入只做 6 位数字校验；服务端 Python 再根据代码段将 TuShare `ts_code` 猜成 `.SH`/`.SZ`。
  */
 
 const SEPARATOR_REGEX = /[\s,，;；\n\r]+/;

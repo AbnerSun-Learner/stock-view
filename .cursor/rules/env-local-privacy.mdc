@@ -1,0 +1,29 @@
+---
+description: 对话中禁止出现 .env.local 等密钥内容，仅能引用环境变量 key 名称
+alwaysApply: true
+---
+
+# 环境与密钥：`/.env*` 不得在对话中出现「值」
+
+## 硬性要求
+
+- **禁止**在回复、摘录、复述、比对、纠错中写入 `.env.local`、`.env`、`.env.*` 内的**实际取值**（含脱敏预览、首尾几位、哈希暗示等仍可能泄密的方式）。
+- **允许且应使用**的只是 **变量 key 的名字**（例如 `DATABASE_URL`、`PYTHON_BIN`、`CORRELATION_SCRIPT_RETRY`），用于说明依赖哪些配置。
+- 若必须指导用户自检：要求其 **在本地编辑器中自行核对**，或由助手仅说明「请确认某 key 已设置」，而不要要求用户把值贴进对话。
+
+## 代码与工具
+
+- 读取或修改 `.env.local` 时：**不在对话中回显文件内容**；diff/引用代码块中若会包含密钥，应改为「已更新某 key」或只展示 key 行而不含 `=` 右侧。
+- 日志、错误信息、终端输出里若含疑似密钥，**不要原样转发**到对话；可概括现象并指向 key 名排查。
+
+## 示例
+
+```text
+❌ BAD：你的 .env.local 里 NEXTAUTH_SECRET=abc123...
+✅ GOOD：请确认已配置 `NEXTAUTH_SECRET`（勿在聊天中粘贴具体值）
+```
+
+```text
+❌ BAD：把连接串 postgresql://user:pass@...
+✅ GOOD：检查 `DATABASE_URL` 是否在本地环境就绪
+```

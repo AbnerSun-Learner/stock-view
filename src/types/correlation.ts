@@ -5,7 +5,7 @@
  * 阶段 1 关注计算核心。所有外部交互（API、UI）都基于这里的类型展开。
  */
 
-export type CorrelationPeriod = "1y" | "3y";
+export type CorrelationPeriod = "1y" | "3y" | "5y" | "10y" | "max";
 
 export type ConfidenceLevel = "high" | "medium" | "low";
 
@@ -56,6 +56,13 @@ export interface EtfHoldings {
   /** 是否为完整成分；前十大估算时为 false */
   source: HoldingSource;
   items: HoldingItem[];
+  /** 脚本按 stock_basic.industry 汇总的近似行业占比（0–1，基于披露 Top10） */
+  sectors?: HoldingSectorShare[];
+}
+
+export interface HoldingSectorShare {
+  name: string;
+  weight: number;
 }
 
 export interface ReturnCorrelationResult {

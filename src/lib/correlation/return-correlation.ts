@@ -22,16 +22,23 @@ import type {
 const MIN_SAMPLES_BY_PERIOD: Record<CorrelationPeriod, number> = {
   "1y": 120,
   "3y": 360,
+  "5y": 600,
+  "10y": 1200,
+  max: 1200,
 };
 
 const TRADING_DAYS_BY_PERIOD: Record<CorrelationPeriod, number> = {
   "1y": 252,
   "3y": 756,
+  "5y": 1260,
+  "10y": 2520,
+  max: Infinity,
 };
 
 interface AlignedReturns {
   ra: number[];
   rb: number[];
+  dates: string[];
 }
 
 function isValidClose(close: number): boolean {
@@ -54,7 +61,7 @@ function indexByDate(points: PricePoint[]): Map<string, number> {
  */
 function takeRecent(points: PricePoint[], maxDays: number): PricePoint[] {
   const filtered = points.filter((p) => isValidClose(p.close));
-  if (filtered.length <= maxDays) return filtered;
+  if (maxDays === Infinity || filtered.length <= maxDays) return filtered;
   return filtered.slice(filtered.length - maxDays);
 }
 
@@ -75,10 +82,11 @@ export function alignReturns(
   }
   sharedDates.sort();
 
-  if (sharedDates.length < 2) return { ra: [], rb: [] };
+  if (sharedDates.length < 2) return { ra: [], rb: [], dates: [] };
 
   const ra: number[] = [];
   const rb: number[] = [];
+  const dates: string[] = [];
   for (let i = 1; i < sharedDates.length; i++) {
     const prev = sharedDates[i - 1];
     const curr = sharedDates[i];
@@ -92,19 +100,25 @@ export function alignReturns(
     if (!Number.isFinite(retA) || !Number.isFinite(retB)) continue;
     ra.push(retA);
     rb.push(retB);
+    dates.push(curr);
   }
 
-  return { ra, rb };
+  return { ra, rb, dates };
 }
 
-export function pearson(xs: number[], ys: number[]): number | null {
+export function pearson(
+  xs: number[],
+  ys: number[],
+  start = 0,
+  end = xs.length
+): number | null {
   if (xs.length !== ys.length) return null;
-  const n = xs.length;
+  const n = end - start;
   if (n < 2) return null;
 
   let meanX = 0;
   let meanY = 0;
-  for (let i = 0; i < n; i++) {
+  for (let i = start; i < end; i++) {
     meanX += xs[i];
     meanY += ys[i];
   }
@@ -114,7 +128,7 @@ export function pearson(xs: number[], ys: number[]): number | null {
   let cov = 0;
   let varX = 0;
   let varY = 0;
-  for (let i = 0; i < n; i++) {
+  for (let i = start; i < end; i++) {
     const dx = xs[i] - meanX;
     const dy = ys[i] - meanY;
     cov += dx * dy;

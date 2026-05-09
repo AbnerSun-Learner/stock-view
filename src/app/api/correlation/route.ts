@@ -9,7 +9,7 @@ import type {
 import { NextRequest, NextResponse } from "next/server";
 
 const MAX_CODES = 10;
-const ALLOWED_PERIODS: CorrelationPeriod[] = ["1y", "3y"];
+const ALLOWED_PERIODS: CorrelationPeriod[] = ["1y", "3y", "5y", "10y", "max"];
 
 function parsePeriod(raw: string | null): CorrelationPeriod {
   if (raw && (ALLOWED_PERIODS as string[]).includes(raw)) {
