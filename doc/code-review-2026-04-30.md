@@ -182,8 +182,8 @@ src/
 - `__pycache__/api_server.cpython-313.pyc`
 - `tmp/*.png`
 - `tmp/h5_doc_vs_html_diff.txt`
-- `python-utils/m1-kline-compare/m1_kline_compare.png`
-- `python-utils/stillwell-tracker/tracker_config_chart.png`
+- `artifacts/python-utils/m1-kline-compare/m1_kline_compare.png`（脚本默认输出；目录已由 `.gitignore` 忽略）
+- `artifacts/python-utils/stillwell-tracker/tracker_config_chart.png`（同上）
 
 问题：
 

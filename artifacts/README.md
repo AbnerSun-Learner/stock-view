@@ -9,15 +9,18 @@
 在本地按需创建（无需提交空文件夹）。可一次性执行：
 
 ```bash
-mkdir -p artifacts/playwright artifacts/screenshots artifacts/alignment artifacts/tmp
+mkdir -p artifacts/playwright artifacts/playwright/mcp artifacts/screenshots artifacts/alignment artifacts/tmp \
+  artifacts/python-utils/m1-kline-compare artifacts/python-utils/stillwell-tracker
 ```
 
 | 子目录 | 用途 |
 |--------|------|
-| `playwright/` | Playwright 测试输出：`test-results`、`trace`、`report`、截图等（可将 `outputDir`、`screenshot` 路径指向此处） |
+| `playwright/` | Playwright 测试输出：`test-results`、`trace`、`report`、截图等（可将 `outputDir`、`screenshot` 路径指向此处）；由 Cursor **Playwright MCP** 写入的日志与快照可整理到 `playwright/mcp/` |
 | `screenshots/` | 手工或脚本保存的页面截图、对比图 |
 | `alignment/` | UI 对齐、视觉回归用的临时对照图（例如与设计稿叠图） |
 | `tmp/` | 其它一次性导出（日志打包、抓包片段等） |
+| `python-utils/m1-kline-compare/` | `m1_kline_compare.py` 默认导出（可用 `-o` 覆盖） |
+| `python-utils/stillwell-tracker/` | `stillwell_tracker.py` 默认导出：`{配置基名}_chart.png` |
 
 ## Playwright
 

@@ -361,7 +361,7 @@ def main():
     parser.add_argument('-o', '--output', 
                        type=str, 
                        default=None,
-                       help='输出图片路径（默认：当前目录下的 m1_kline_compare.png）')
+                       help='输出图片路径（默认：仓库根 artifacts/python-utils/m1-kline-compare/m1_kline_compare.png）')
     
     args = parser.parse_args()
     
@@ -369,8 +369,10 @@ def main():
     if args.output:
         output_path = args.output
     else:
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        output_path = os.path.join(current_dir, 'm1_kline_compare.png')
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        out_dir = os.path.join(repo_root, 'artifacts', 'python-utils', 'm1-kline-compare')
+        os.makedirs(out_dir, exist_ok=True)
+        output_path = os.path.join(out_dir, 'm1_kline_compare.png')
     
     try:
         # 获取M1数据

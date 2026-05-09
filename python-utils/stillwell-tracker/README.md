@@ -102,8 +102,8 @@ python index_tracker.py -o output/chart.png
 
 ## 输出说明
 
-- 默认情况下，图表会保存在与 JSON 配置文件相同的目录下
-- 文件名格式：`{配置文件名}_chart.png`（如果使用默认配置，则为 `tracker_config_chart.png`）
+- 默认情况下，图表保存在仓库根 **`artifacts/python-utils/stillwell-tracker/`** 下（会自动创建目录）
+- 文件名格式：`{配置文件名}_chart.png`（如果使用默认配置 `tracker_config.json`，则为 `tracker_config_chart.png`）
 - 图片分辨率：300 DPI，适合打印和展示
 - 图表样式参考 Ant Design Charts，包含：
   - 蓝色折线图

@@ -1064,7 +1064,7 @@ def main():
     parser.add_argument('-o', '--output', 
                        type=str, 
                        default=None,
-                       help='输出图片路径（默认：与JSON同目录，文件名相同）')
+                       help='输出图片路径（默认：仓库根 artifacts/python-utils/stillwell-tracker/{配置基名}_chart.png）')
     
     args = parser.parse_args()
     
@@ -1102,8 +1102,10 @@ def main():
         output_path = args.output
     else:
         base_name = os.path.splitext(os.path.basename(config_path))[0]
-        output_dir = os.path.dirname(config_path)
-        output_path = os.path.join(output_dir, f"{base_name}_chart.png")
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        out_dir = os.path.join(repo_root, 'artifacts', 'python-utils', 'stillwell-tracker')
+        os.makedirs(out_dir, exist_ok=True)
+        output_path = os.path.join(out_dir, f"{base_name}_chart.png")
     
     # 获取指数中文名称
     print("正在获取指数中文名称...")
