@@ -3,14 +3,15 @@
 评审日期：2026-04-30  
 评审范围：整个 `stock-view` 项目代码、目录结构、工程配置与基础验证流程
 
+> **2026-05-08 修订**：已从本文移除已下架的估值模块（`valuation` 相关 API、页面与 `src/lib/valuation.ts` 等）对应条目；其余条目仍按评审日结论保留，请在引用时结合实际目录核对。
+
 ## 评审摘要
 
-项目整体能通过 TypeScript 类型检查，核心业务集中在 `src/app`、`src/components/grid`、`src/components/valuation`，主流程较清晰。但当前存在几类需要优先处理的问题：
+项目整体能通过 TypeScript 类型检查，核心业务集中在 `src/app`、`src/components/grid` 以及后续新增的 `correlation` 等路由与组件，主流程较清晰。但当前存在几类需要优先处理的问题：
 
 - API 层安全边界不足，尤其是持仓接口通过字符串拼接执行 Python 脚本。
-- 估值指数配置在前后端重复维护且数据不一致。
 - 测试脚本已配置，但项目没有任何测试用例，`pnpm test` 会失败。
-- 存在疑似遗留组件、未使用依赖和过大的页面/图表文件。
+- 存在疑似遗留组件、未使用依赖和偏大的页面/图表文件。
 - 全项目结构中存在工具文件、临时产物、Python 工具链与 Next.js 主应用混杂的问题，需要单独清理。
 
 ## 高优先级问题
@@ -43,12 +44,12 @@ const out = execSync(`python3 "${scriptPath}" "${mode}" "${symbol}"`, {
 
 ### 2. 持仓 API 同步执行 Python，可能阻塞服务
 
-文件：`src/app/api/holdings/route.ts`、`scripts/fetch_holdings.py`
+文件：`src/app/api/holdings/route.ts`、仓库 `scripts/` 下由该 API 调用的 Python 脚本（需与 `scriptPath` 实际指向的文件一致，例如 `fetch_etf_holdings.py`）
 
 问题：
 
 - `execSync` 最长超时时间为 120 秒，会阻塞 Node.js worker。
-- `fetch_holdings.py` 会调用 AKShare，并构建申万行业映射，单次请求成本较高。
+- 持仓类脚本通常会访问外部数据源，单次请求成本较高。
 - 当前接口没有缓存，同一 symbol 重复请求会重复拉取远端数据。
 - 当前 Next.js Route Handler 直接调用 `python3`，部署到 Node.js 运行时后不一定具备 Python 运行环境。
 
@@ -56,51 +57,10 @@ const out = execSync(`python3 "${scriptPath}" "${mode}" "${symbol}"`, {
 
 - 改为异步 `execFile`。
 - 为持仓结果增加内存缓存或持久化缓存。
-- 将行业映射预生成或单独缓存。
 - 明确 Python 脚本是离线数据任务、独立 Python 服务，还是可部署的 serverless function，不要让 Node API 隐式依赖本机 Python。
 - 对接口增加更明确的超时、错误日志和降级策略。
 
-### 3. 估值指数配置重复且不一致
-
-相关文件：
-
-- `src/app/api/valuation/route.ts`
-- `src/lib/valuation.ts`
-
-问题：
-
-- API 中 `SYMBOL_TO_INDEX_CODE` 和 `SYMBOL_TO_NAME` 支持多个指数。
-- `src/lib/valuation.ts` 中 `INDEX_LIST` 只有沪深 300。
-- 列表页使用 `INDEX_LIST` 拉取数据，因此实际只展示一个指数。
-
-建议：
-
-- 新建统一配置文件，例如 `src/constants/indices.ts`。
-- 将指数 symbol、展示名称、外部接口 code、数据来源统一维护。
-- API、估值列表页、估值详情页统一从该配置导入。
-
-### 4. 估值 API 缓存缺少容量控制
-
-文件：`src/app/api/valuation/route.ts`
-
-当前实现使用模块级 `Map` 缓存：
-
-```ts
-const cache = new Map<string, { data: ValuationResponse; ts: number }>();
-```
-
-问题：
-
-- 当前 API 未在入口处对白名单 symbol 做强校验。
-- 若后续支持更多 key 或查询维度，模块级 Map 可能持续增长。
-
-建议：
-
-- 在 API 入口先校验 symbol，只允许已配置指数。
-- 给缓存增加最大容量或使用成熟缓存方案。
-- 当前阶段可先用固定指数白名单解决主要风险。
-
-### 5. 测试脚本存在但没有测试用例
+### 3. 测试脚本存在但没有测试用例
 
 文件：`package.json`
 
@@ -119,10 +79,8 @@ const cache = new Map<string, { data: ValuationResponse; ts: number }>();
 
 建议优先补充：
 
-- `src/lib/valuation.ts` 中 `computePeStats` 的单元测试。
 - 网格计算核心逻辑的单元测试。
 - API symbol 校验和非法输入测试。
-- 估值 percentile / 波动率计算测试。
 
 ## 中优先级问题
 
@@ -141,24 +99,6 @@ const cache = new Map<string, { data: ValuationResponse; ts: number }>();
 - 在根布局中注入早期主题初始化脚本。
 - 或使用 cookie/server hint 让服务端初始 HTML 与客户端主题一致。
 
-### 2. 估值页面和图表文件偏大
-
-相关文件：
-
-- `src/app/valuation/page.tsx`
-- `src/components/valuation/valuation-chart.tsx`
-
-问题：
-
-- 页面中混合了数据获取、统计计算、表格列定义和渲染逻辑。
-- 图表组件中混合了 ECharts 注册、颜色解析、区间计算、option 构建和 React 外壳。
-
-建议：
-
-- 将百分位、波动率、估值状态计算抽到 `src/features/valuation/lib`。
-- 将表格列定义拆到独立文件或子组件。
-- 将 ECharts option 构建拆成 `buildValuationChartOption`。
-
 ## 低优先级与工程卫生
 
 ### 1. 疑似遗留代码
@@ -168,8 +108,6 @@ const cache = new Map<string, { data: ValuationResponse; ts: number }>();
 - `src/components/etf-terminal/*`
 - `src/components/stock/Navigation.tsx`
 - `src/components/shared/page-header.tsx`
-- `src/components/valuation/valuation-distribution.tsx`
-- `src/components/valuation/valuation-sidebar.tsx`
 - `src/types/stock.ts`
 - `src/constants/stock.ts`
 - `src/lib/utils.ts` 中部分历史记录相关工具
@@ -205,14 +143,14 @@ src/
   app/
     api/
     grid/
-    valuation/
+    correlation/
   features/
     grid/
       components/
       hooks/
       lib/
       types.ts
-    valuation/
+    correlation/
       components/
       lib/
       types.ts
@@ -220,7 +158,6 @@ src/
     components/
     lib/
   constants/
-    indices.ts
 ```
 
 短期建议：
@@ -228,13 +165,11 @@ src/
 - 保留 `app` 作为路由层，只做页面组合和 API 入口。
 - 将业务计算迁移到 `features/*/lib`。
 - 将类型定义放到 feature 内部或 `src/types`。
-- 将全局常量如指数配置放到 `src/constants`。
 
 中期建议：
 
-- `valuation-chart.tsx` 拆为图表外壳、option 构建、统计计算三个模块。
-- `valuation/page.tsx` 拆为列表页面、表格组件、搜索组件、数据转换逻辑。
 - `grid` 的计算逻辑可从 hook 中抽为纯函数，方便单元测试。
+- 体量较大的 correlation 图表页可按「外壳 / option 构建 / 数据转换」拆分。
 
 ## 全项目文件结构 CR
 
@@ -292,15 +227,14 @@ src/
 
 - `requirements.txt`
 - `runtime.txt`
-- `scripts/fetch_holdings.py`
-- `scripts/fetch_valuation.py`
+- `scripts/`（例如 `fetch_etf_holdings.py`、`fetch_etf_kline.py`、`probe_etf_correlation.py` 等）
 - `python-utils/`
 - `src/app/api/holdings/route.ts`
 
 问题：
 
 - 根目录同时存在 Next.js 应用配置和 Python 依赖配置。
-- `src/app/api/holdings/route.ts` 会在运行时调用 `scripts/fetch_holdings.py`，这意味着 Python 不是纯离线工具，而是线上 API 的潜在运行时依赖。
+- `src/app/api/holdings/route.ts` 若在运行时调用 `scripts/` 下脚本，则 Python 不是纯离线工具，而是线上 API 的潜在运行时依赖；**Route 中的脚本路径必须与仓库内真实文件名保持一致**。
 - `python-utils/` 下又有独立工具和 README，形成 `scripts/` 与 `python-utils/` 两套 Python 入口。
 - `requirements.txt` 包含 Flask、Gunicorn、flask-caching 等依赖，但当前 Next.js 主应用未体现 Flask 服务边界，疑似历史残留。
 - `runtime.txt` 不会让 Next.js Node Route Handler 自动拥有 Python 运行时。
@@ -333,8 +267,8 @@ src/
 
 问题：
 
-- README 说明项目为“纯前端应用，无需配置数据库或外部服务”。
-- 实际项目存在 `src/app/api/valuation/route.ts`、`src/app/api/holdings/route.ts`，并会请求外部行情/估值数据。
+- README 说明项目为「纯前端应用，无需配置数据库或外部服务」。
+- 实际项目存在 `src/app/api/holdings/route.ts` 及可能的其他 API，并会请求外部数据。
 - `package.json` 仍包含 `@supabase/supabase-js`、`@vercel/kv` 等疑似历史依赖。
 - `package.json` 中版本为 `0.2.0`，README 写的是 `v0.4.x`。
 
@@ -372,14 +306,12 @@ src/
 - `src/components/stock/Navigation.tsx`
 - `src/components/etf-terminal/*`
 - `src/components/shared/page-header.tsx`
-- `src/components/valuation/valuation-distribution.tsx`
-- `src/components/valuation/valuation-sidebar.tsx`
 - `src/lib/utils.ts`
 
 问题：
 
 - `src/components/stock/Navigation.tsx` 未见引用，且文件名使用 PascalCase，与项目多数 kebab-case 组件文件不一致。
-- `etf-terminal`、`page-header`、历史记录工具、部分 valuation 组件可能是早期功能遗留，需要确认是否仍有产品入口。
+- `etf-terminal`、`page-header`、历史记录工具可能是早期功能遗留，需要确认是否仍有产品入口。
 
 建议：
 
@@ -426,8 +358,7 @@ pnpm test -- --runInBand
 
 ## 建议处理顺序
 
-1. 修复 `holdings` API 命令注入和同步阻塞问题。
-2. 统一指数配置，修正估值列表只展示一个指数的问题。
-3. 抽离网格计算和估值统计纯函数，并补充基础单元测试。
-4. 清理未使用组件、未使用依赖和运行时/CI 中的 Python 边界问题。
-5. 拆分估值大文件，逐步演进到 feature 分层。
+1. 修复 `holdings` API 命令注入和同步阻塞问题，并校准 Route 与实际 Python 脚本路径。
+2. 抽离网格（及 correlation）中的纯计算逻辑，补充基础单元测试。
+3. 清理未使用组件、未使用依赖和运行时/CI 中的 Python 边界问题。
+4. 按需拆分偏大页面/图表，逐步演进到 feature 分层。

@@ -1,5 +1,6 @@
 requests>=2.31.0
-akshare>=1.12.0
+# ETF 相关性：scripts/fetch_etf_*（TuShare，`TUSHARE_TOKEN` / `DATA_API`）
+tushare>=1.2.89
 flask>=3.0.0
 flask-cors>=4.0.0
 pandas>=2.0.0

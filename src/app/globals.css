@@ -39,6 +39,24 @@
   --hover-bg: rgba(0, 0, 0, 0.03);
   --ring: rgba(0, 0, 0, 0.2);
 
+  /* 相关性 pair：四色体系（不计中性黑白灰）
+   * 1 深蓝灰 #243b53 — 品牌与结构线（项目规范主色）
+   * 2 信号蓝 #2563eb — 走势主序列 / 强调数值
+   * 3 青绿 #0e7490 — 散点与对照维度（克制，偏机构仪表盘）
+   * 4 琥珀 #b45309 — 段落分隔与次要节奏（勿大块铺色）
+   */
+  --correlation-brand: #243b53;
+  --correlation-brand-soft: rgba(36, 59, 83, 0.14);
+  --correlation-chart-line: #2563eb;
+  --correlation-chart-scatter: #0e7490;
+  --correlation-chart-fit: #243b53;
+  --correlation-accent-warm: #b45309;
+  --correlation-on-brand: #ffffff;
+  --correlation-page-tint: #f8fafc;
+  --correlation-card-surface: #ffffff;
+  --correlation-card-tint: #eef3f9;
+  --correlation-stat-surface: rgba(37, 99, 235, 0.07);
+
   /* 指数估值双轴折线图（仅图表曲线语义色，不与 UI 品牌色混用） */
   --valuation-chart-metric-line: #3b82f6;
   --valuation-chart-close-line: #333333;
@@ -92,6 +110,18 @@
   --border-color: #2d2d2d;
   --hover-bg: rgba(255, 255, 255, 0.04);
   --ring: rgba(255, 255, 255, 0.2);
+
+  --correlation-brand: #93c5fd;
+  --correlation-brand-soft: rgba(147, 197, 253, 0.2);
+  --correlation-chart-line: #60a5fa;
+  --correlation-chart-scatter: #14b8a6;
+  --correlation-chart-fit: #bae6fd;
+  --correlation-accent-warm: #fb923c;
+  --correlation-on-brand: #0c1628;
+  --correlation-page-tint: #0c1018;
+  --correlation-card-surface: #121820;
+  --correlation-card-tint: #1a2434;
+  --correlation-stat-surface: rgba(96, 165, 250, 0.12);
 
   --valuation-chart-metric-line: #60a5fa;
   --valuation-chart-close-line: #a3a3a3;
@@ -217,15 +247,20 @@ a.valuation-nav-link {
   border-radius: 0 !important;
 }
 
-/* 相关性页：textarea 与页面背景融合 */
+/* 相关性页：textarea / input 与页面背景融合 */
 .correlation-textarea.ant-input,
 .correlation-textarea.ant-input:hover,
 .correlation-textarea.ant-input:focus {
   background-color: transparent !important;
   border-color: var(--border-color);
   border-radius: 0 !important;
+  color: var(--foreground) !important;
   font-family: var(--font-geist-mono), "Cascadia Code", "Menlo", monospace;
   font-variant-numeric: tabular-nums;
+}
+.correlation-textarea.ant-input::placeholder {
+  color: var(--muted-foreground) !important;
+  opacity: 0.6;
 }
 
 /* 相关性矩阵 */
@@ -282,6 +317,68 @@ a.valuation-nav-link {
 }
 .correlation-matrix-cell.status-unavailable {
   color: var(--muted-foreground);
+}
+
+/* 相关性 pair 页布局（四色仅作用于本页变量） */
+.correlation-page {
+  background-color: var(--correlation-page-tint);
+}
+.correlation-results-rule {
+  border-bottom-width: 2px;
+  border-bottom-style: solid;
+  border-bottom-color: color-mix(
+    in srgb,
+    var(--correlation-accent-warm) 55%,
+    transparent
+  );
+}
+.correlation-card {
+  background-color: var(--correlation-card-surface);
+  border: 1px solid var(--border-color);
+}
+.correlation-card--tint {
+  background-color: var(--correlation-card-tint);
+}
+.correlation-eyebrow {
+  color: var(--correlation-brand);
+}
+.correlation-period-toolbar {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.correlation-segmented.ant-segmented {
+  background: var(--correlation-card-tint) !important;
+  border-radius: 0 !important;
+  flex-wrap: nowrap !important;
+  max-width: none;
+}
+.correlation-segmented .ant-segmented-group {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  width: auto !important;
+}
+.dark .correlation-segmented.ant-segmented {
+  background: var(--correlation-card-tint) !important;
+}
+.correlation-segmented .ant-segmented-item-selected {
+  background: var(--correlation-brand) !important;
+  color: var(--correlation-on-brand) !important;
+  border-radius: 0 !important;
+}
+.correlation-segmented .ant-segmented-item {
+  color: var(--muted-foreground);
+  border-radius: 0 !important;
+}
+.correlation-segmented .ant-segmented-item-label {
+  font-weight: 500;
+}
+.correlation-segmented .ant-segmented-item:hover {
+  color: var(--correlation-chart-line);
+}
+.correlation-table-head-code {
+  background-color: var(--correlation-card-tint);
+  color: var(--correlation-brand);
 }
 
 /* 估值列表表格：不出现纵向滚动条 */

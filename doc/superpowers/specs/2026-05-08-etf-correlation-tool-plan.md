@@ -11,10 +11,9 @@
 
 可以直接复用：
 
-- `scripts/fetch_holdings.py` 已能用 AKShare 拉 ETF 前十大持仓，并附带申万一级行业。
-- `scripts/fetch_valuation.py` 中的 `fetch_etf` 已能拉 ETF 历史日线收盘价。
-- `src/app/api/holdings/route.ts` 已展示 Next.js 调用 Python 脚本的模式（同时存在 code-review 指出的命令注入风险，新接口需要规避）。
-- `src/app/api/valuation/route.ts` 展示了内存缓存、错误降级和分级响应的模式，可以借鉴。
+- `scripts/fetch_etf_kline.py` / `fetch_etf_holdings.py` / `fetch_etf_spot.py`：TuShare Pro（`TUSHARE_TOKEN`、可选 `DATA_API`），由 `scripts/tushare_client.py` 统一初始化客户端。
+- `src/app/api/holdings/route.ts`（若仍存在）展示的 Next.js 调用 Python 子进程模式可作参考；新接口须用参数数组规避命令注入。
+- 其它 API 若曾展示内存缓存、错误降级，可沿用其思路到 `/api/correlation*`。
 
 需要新建：
 
@@ -26,18 +25,16 @@
 
 ## 阶段拆解
 
-### 阶段 0 · AKShare 接口探测
+### 阶段 0 · TuShare 接口探测
 
 目标：在动手实现前，确认对一组样本 ETF 能稳定拿到行情和成分。
 
-- 编写 `scripts/probe_etf_correlation.py`，对样本 ETF（510300、510500、512880、513100、518880、159915）逐个调用：
-  - 收盘价历史接口
-  - 前十大持仓接口
-- 输出：每个 ETF 是否成功、数据起始日期、可用记录条数、成分股数量。
-- 用探测结果回填 spec 中的“开放问题”：市场后缀补全规则、前十大权重总和分布。
-- 探测脚本不进入运行时调用链，仅作为离线工具，可放在 `scripts/` 下并加到 README 工具说明。
+- 维护 `scripts/probe_etf_correlation.py`，对样本 ETF 逐个复用与生产相同的 `fetch_etf_kline` / `fetch_etf_holdings` 逻辑（底层为 `pro_bar`、`fund_portfolio`）。
+- 输出：每个 ETF 是否成功、数据起止与条数、Top10 权重分布等。
+- 用探测结果回填 spec 中的开放问题：`.SH`/`.SZ` 候选顺序、前十大权重总和分布、非股票成分 ETF 行为。
+- 探测脚本不进入主站运行时关键路径，仅作离线工具；运行需有效 `TUSHARE_TOKEN`（及按需的 `DATA_API`）。
 
-验收标准：探测脚本能在 60 秒内跑完，输出 JSON 结果，并写一份简短的探测笔记到 `doc/superpowers/notes/akshare-etf-probe.md`。
+验收标准：探测脚本能在 60 秒内跑完（视积分与网络），输出 JSON 结果；探测笔记维护于 `doc/superpowers/notes/tushare-etf-probe.md`。
 
 ### 阶段 1 · 计算核心（纯函数 + Jest）
 
@@ -77,11 +74,13 @@
 
 目标：为相关性工具提供一份明确的 Python 入口，避开命令注入。
 
-- 新增 `scripts/fetch_etf_kline.py`：参数为单个 6 位 ETF 代码，输出 JSON `{date, close}`。可以直接复用 `fetch_valuation.py` 的 `fetch_etf` 逻辑。
-- 复用 `scripts/fetch_holdings.py` 的 `etf` 模式，不另写。如果探测发现申万行业映射构建过慢，再考虑分离脚本，但第一版接受现状。
-- 所有脚本都打印 stderr 的错误堆栈，stdout 只输出干净 JSON。
+- `scripts/fetch_etf_kline.py`：6 位代码 → TuShare `pro_bar`（`asset='E', adj='qfq'`）。
+- `scripts/fetch_etf_holdings.py`：`fund_portfolio`，按最新 `end_date` 与 `stk_mkv_ratio` 取 Top10。
+- `scripts/fetch_etf_spot.py`：`stock_basic` / `fund_basic` + `daily_basic`（市值万元 → 元）。
+- 所有脚本 stdout 输出干净 JSON；异常信息走 stderr。
+- TuShare 经 `DATA_API` 走 HTTPS 网关时，以环境变量为准，不在脚本内清空系统代理变量。
 
-验收标准：手工命令行调用脚本能稳定拿到结果。脚本不依赖网络代理，且对非法代码返回非零退出码。
+验收标准：配置好 token 后，命令行单次调用能对主流宽基 ETF 返回非空 JSON；非法代码返回非零退出码。
 
 ### 阶段 3 · API 路由 `/api/correlation`
 
@@ -123,7 +122,7 @@
 
 - `src/app/page.tsx` 工具卡片增加“ETF 相关性”，序号、文案、链接补齐；对应位置可以替换原本意义重复的 `06 持仓分析` 卡片，或单独追加一项，按当前总数据决定。
 - 如果有共享导航/页脚链接，同步更新。
-- README 增加 `/correlation` 工具说明，与现有 `/grid`、`/valuation` 段落保持格式一致。
+- README 增加 `/correlation` 工具说明，与现有 `/grid` 段落保持格式一致。
 
 验收标准：从首页点击新工具能进入 `/correlation`；从 `/correlation` 能返回首页；移动端宽度下页面不破版。
 
@@ -142,7 +141,7 @@
 
 ## 风险与缓解
 
-- AKShare 接口偶发不稳定：通过缓存、并发限制、部分失败模型缓解。
+- TuShare 接口受积分、权限与网关稳定性影响：通过缓存、并发限制、超时与降级/错误提示缓解。
 - Python 子进程冷启动慢：第一阶段接受 1-3 秒延迟，必要时把行业映射缓存固化为 JSON。
 - 前十大成分容易高估 B 风险：spec 中已禁止重新缩放权重，实现时严格按这个口径写。
 - 用户输入大量 ETF 导致 pair 数量爆炸：前端校验最多 10 个，API 也做硬限制。

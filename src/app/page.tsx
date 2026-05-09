@@ -1,5 +1,6 @@
 "use client";
 
+import { StillwellMark } from "@/components/stillwell-mark";
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
@@ -15,30 +16,6 @@ const TOOLS = [
   },
   {
     num: "02",
-    title: "指数估值",
-    sub: "Index Valuation",
-    desc: "覆盖 20+ 宽基指数，PE/PB 双维度历史百分位，绿低估黄合理红高估",
-    tags: ["估值分析", "A 股指数"],
-    href: "/valuation",
-  },
-  {
-    num: "03",
-    title: "PE 分位数",
-    sub: "PE Percentile",
-    desc: "基于十年历史市盈率序列，自动计算当前 PE 在历史区间中的精确排名",
-    tags: ["市盈率", "10 年历史"],
-    href: "/valuation",
-  },
-  {
-    num: "04",
-    title: "PB 分位数",
-    sub: "PB Percentile",
-    desc: "市净率历史分位数，配合 PE 形成双维度估值判断，降低单指标误判风险",
-    tags: ["市净率", "全区间"],
-    href: "/valuation",
-  },
-  {
-    num: "05",
     title: "压力测试",
     sub: "Stress Test",
     desc: "模拟标的从基准价下跌至最低价，全档位触发时的资金占用与综合收益率",
@@ -46,7 +23,7 @@ const TOOLS = [
     href: "/grid",
   },
   {
-    num: "06",
+    num: "03",
     title: "ETF 相关性",
     sub: "ETF Correlation",
     desc: "走势同向性 + 底层成分重叠双信号，量化你的 ETF 持仓是否存在被忽略的重复风险",
@@ -58,7 +35,7 @@ const TOOLS = [
 // ── About 右侧 Key Facts
 const FACTS = [
   { label: "数据区间", value: "2014 年至今" },
-  { label: "覆盖指数", value: "20+ 宽基 / 行业指数" },
+  { label: "工具类型", value: "网格策略 · ETF 相关性" },
   { label: "更新频率", value: "交易日自动更新" },
   { label: "账户要求", value: "无需注册，完全免费" },
   { label: "计算方式", value: "100% 本地，无服务依赖" },
@@ -72,8 +49,9 @@ export default function LandingPage() {
         <div className="flex items-center justify-between mx-auto max-w-6xl px-6 lg:px-10 h-[72px]">
           <Link
             href="/"
-            className="text-xs font-semibold tracking-[0.18em] uppercase text-neutral-900 hover:opacity-60 transition-opacity duration-150"
+            className="inline-flex items-center gap-2.5 text-xs font-semibold tracking-[0.18em] uppercase text-[#1B365D] hover:opacity-70 transition-opacity duration-150"
           >
+            <StillwellMark size={26} />
             Stillwell
           </Link>
           <nav className="flex items-center gap-8">
@@ -82,12 +60,6 @@ export default function LandingPage() {
               className="text-sm text-neutral-500 hover:text-neutral-900 transition-colors duration-150"
             >
               网格交易
-            </Link>
-            <Link
-              href="/valuation"
-              className="text-sm text-neutral-500 hover:text-neutral-900 transition-colors duration-150"
-            >
-              指数估值
             </Link>
             <Link
               href="/correlation"
@@ -120,7 +92,7 @@ export default function LandingPage() {
             涨跌有常，策略在心
           </p>
           <p className="text-base text-neutral-500 leading-[1.7] max-w-[52ch] mb-3">
-            以指数为锚、以数据为界：用可验证的估值、持仓与策略计算，帮你在噪声里把
+            以指数为锚、以数据为界：用可验证的持仓结构与策略计算，帮你在噪声里把
             ETF
             投资看得更清楚。投研相关能力将持续迭代，当前可先使用下方基础工具。
           </p>
@@ -221,7 +193,8 @@ export default function LandingPage() {
                 </p>
                 <p>
                   主打 ETF
-                  投研模块将随功能迭代陆续开放；当前你可使用网格参数计算、指数估值分位、持仓与行业分布等基础能力。我们只呈现模型与事实，投资决策始终由你自己做出。
+                  投研模块将随功能迭代陆续开放；当前你可使用网格参数计算与 ETF
+                  相关性分析等基础能力。我们只呈现模型与事实，投资决策始终由你自己做出。
                 </p>
                 <p className="text-neutral-900 font-medium">
                   涨跌有常，策略在心。
@@ -275,9 +248,9 @@ export default function LandingPage() {
                 <ArrowUpRight className="w-3.5 h-3.5" strokeWidth={1.5} />
               </button>
             </Link>
-            <Link href="/valuation">
+            <Link href="/correlation">
               <button className="inline-flex items-center gap-2 border border-neutral-300 text-neutral-600 bg-transparent px-5 py-2.5 text-sm font-medium hover:border-neutral-900 hover:text-neutral-900 transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-400">
-                查看指数估值
+                ETF 相关性分析
               </button>
             </Link>
           </div>
@@ -296,12 +269,6 @@ export default function LandingPage() {
               className="text-xs text-neutral-400 hover:text-neutral-900 transition-colors duration-150"
             >
               网格交易
-            </Link>
-            <Link
-              href="/valuation"
-              className="text-xs text-neutral-400 hover:text-neutral-900 transition-colors duration-150"
-            >
-              指数估值
             </Link>
             <Link
               href="/correlation"
