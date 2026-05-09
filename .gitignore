@@ -49,6 +49,9 @@ next-env.d.ts
 playwright-artifacts/
 /correlation-v2-light.png
 
+# python 工具输出图（不入库）
+python-utils/**/*.png
+
 # python
 __pycache__/
 *.py[cod]
