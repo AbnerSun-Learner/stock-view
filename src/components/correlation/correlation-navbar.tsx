@@ -10,20 +10,13 @@ export function CorrelationNavbar() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-[var(--page-bg)] border-b border-[color:var(--border-color)]">
       <div className="flex justify-between items-center px-8 md:px-16 py-5 max-w-7xl mx-auto">
-        <div className="flex items-center gap-1">
-          <Link
-            href="/"
-            className="text-sm font-medium text-[var(--foreground)] hover:opacity-70 transition-opacity duration-300 tracking-wide"
-          >
-            Stillwell
-          </Link>
-          <Link
-            href="/correlation"
-            className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors duration-300 tracking-wide valuation-nav-link"
-          >
-            .correlation
-          </Link>
-        </div>
+        <Link
+          href="/"
+          className="text-sm text-[var(--foreground)] hover:opacity-70 transition-opacity duration-300 tracking-wide"
+        >
+          <span className="font-medium">Stillwell</span>
+          <span className="text-[var(--muted-foreground)]">.correlation</span>
+        </Link>
 
         <button
           type="button"
