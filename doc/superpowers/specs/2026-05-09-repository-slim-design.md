@@ -100,4 +100,4 @@
 
 1. 用户审阅本规格定稿。
 2. 使用 **writing-plans** 技能输出实现计划（`doc/superpowers/specs/` 或 `doc/superpowers/` 下对应 plan 文件，与项目约定一致）。
-3. 按计划实施：文档迁移与引用替换 → ignore 与地图 → 可选 P1 精简。
+3. 按计划实施：文档迁移与引用替换 → ignore 与地图 → P1 精简（**批 C 已移除 `.claude/skills/`**，`python-utils/` 保留；详见 [repository-slim-plan](./2026-05-09-repository-slim-plan.md)）。

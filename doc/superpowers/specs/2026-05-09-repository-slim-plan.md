@@ -77,3 +77,11 @@
 - [x] README「仓库地图」已就位。
 - [x] P2 目录或通配已在 `.gitignore`（含 `playwright-artifacts/`、`artifacts/`）。
 - [x] 大块删除均有 P0/P1/P2 说明与构建/工作流自检（批 C：`.claude/skills/`，P1；`python-utils/` 保留）。
+
+---
+
+## 6. 完结说明（2026-05-09）
+
+- **批 A–C**：已落地；`python-utils/` 按决策保留；`.claude/skills/` 已从仓库移除并完成文档与 `AGENTS.md` 同步。
+- **批 B**：无额外「零引用」目录待删（`scripts/`、`python-utils/` 均有文档或本地工具用途）；后续若再删减 P1 路径，仍按 [design §4.2](./2026-05-09-repository-slim-design.md#42-删改前最小验证) 执行 `pnpm run lint`、`pnpm run build` 并对照 `deploy.yml`。
+- **远端**：合并/推送后 CI 应与删除前一致（构建不依赖已删路径）。
