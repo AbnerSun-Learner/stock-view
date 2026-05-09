@@ -1,7 +1,7 @@
 # ETF 相关性工具实现计划
 
 日期：2026-05-08
-对应规格：`docs/superpowers/specs/2026-05-08-etf-correlation-tool-design.md`
+对应规格：`doc/superpowers/specs/2026-05-08-etf-correlation-tool-design.md`
 
 ## 总体策略
 
@@ -37,7 +37,7 @@
 - 用探测结果回填 spec 中的“开放问题”：市场后缀补全规则、前十大权重总和分布。
 - 探测脚本不进入运行时调用链，仅作为离线工具，可放在 `scripts/` 下并加到 README 工具说明。
 
-验收标准：探测脚本能在 60 秒内跑完，输出 JSON 结果，并写一份简短的探测笔记到 `docs/superpowers/notes/akshare-etf-probe.md`。
+验收标准：探测脚本能在 60 秒内跑完，输出 JSON 结果，并写一份简短的探测笔记到 `doc/superpowers/notes/akshare-etf-probe.md`。
 
 ### 阶段 1 · 计算核心（纯函数 + Jest）
 
@@ -135,7 +135,7 @@
   - 510300 + 513100（A 股 vs 纳指）：预期偏低。
   - 512880 + 一只证券主题 ETF：预期偏高。
   - 故意输入一只罕见或停牌 ETF：预期降级输出。
-- 把人工回看结论记到 `docs/superpowers/notes/etf-correlation-validation.md`。
+- 把人工回看结论记到 `doc/superpowers/notes/correlation-validation.md`。
 - 如果某条预期方向对不上，回到阶段 1 / 阶段 3 调整，不要在前端层做兜底。
 
 验收标准：所有样本组合在 1 年和 3 年窗口下方向都符合预期，并且页面解释文案与分数能对得上号。

@@ -45,7 +45,7 @@ $ARGUMENTS
    - 读取 `.specify/templates/spec-template.md`，若宪章新增/删除必填段落或约束需同步。
    - 读取 `.specify/templates/tasks-template.md`，确保任务分类覆盖新增/删除的原则驱动任务类型（如可观测性、版本控制、测试纪律）。
    - 读取 `.specify/templates/commands/*.md`（包括本文件），验证无过时引用（如特定代理名）；若需通用化则更新。
-   - 读取运行时指南（如 `README.md`、`docs/quickstart.md`、代理指导文件），若引用的原则变更需更新。
+   - 读取运行时指南（如 `README.md`、`doc/` 下说明文档、代理指导文件），若引用的原则变更需更新。
 
 5. 生成同步影响报告（写入宪章文件顶部的 HTML 注释）：
    - 版本变更：旧 → 新

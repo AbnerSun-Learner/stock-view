@@ -2,6 +2,7 @@
 
 - **依据规格**：[2026-05-09-repository-slim-design.md](./2026-05-09-repository-slim-design.md)（已定稿）
 - **说明**：环境中未安装 `writing-plans` 技能文件；本计划按规格第 7 节代行同级产出。
+- **执行记录**：阶段 1–2 已于 2026-05-09 在分支 `chore/repo-slim` 落实（含 `docs/` → `doc/`、引用更新、`.gitignore`、README「仓库地图」、`.cursor/rules/generated-docs-in-doc-dir.mdc`）。
 
 ---
 
@@ -66,7 +67,7 @@
 
 ## 5. 规格层面的最终验收（对照 design §6）
 
-- [ ] 仅存在 `doc/` 作为文档根，无 `docs/`。
-- [ ] README「仓库地图」已就位。
-- [ ] P2 目录或通配已在 `.gitignore`。
+- [x] 仅存在 `doc/` 作为文档根，无 `docs/`。
+- [x] README「仓库地图」已就位。
+- [x] P2 目录或通配已在 `.gitignore`。
 - [ ] 大块删除均有 P0/P1/P2 说明与构建/工作流自检。

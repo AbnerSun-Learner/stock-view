@@ -46,6 +46,8 @@ next-env.d.ts
 # 调试与会话临时产物（不入库）
 .playwright-mcp/
 .superpowers/
+playwright-artifacts/
+/correlation-v2-light.png
 
 # python
 __pycache__/
