@@ -37,7 +37,7 @@ function RollingTooltip({ active, payload }: RollingTooltipProps) {
     <div className="border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] px-3 py-2 text-xs">
       <p className="text-[var(--muted-foreground)] mb-1">{row.date}</p>
       <p className="font-mono text-[var(--foreground)]">
-        滚动相关性 {row.value.toFixed(2)}
+        滚动相关系数 {row.value.toFixed(2)}
       </p>
     </div>
   );
@@ -77,10 +77,10 @@ export function PairRollingChart({ data }: PairRollingChartProps) {
     <div className="correlation-card p-6 md:p-8 flex flex-col">
       <div className="mb-1">
         <p className="correlation-eyebrow text-xs font-semibold tracking-[0.2em] uppercase">
-          Historical Correlation Trend
+          Rolling Linkage
         </p>
         <h3 className="mt-2 text-lg font-light text-[var(--foreground)]">
-          历史相关性趋势
+          历史联动趋势
         </h3>
         <p className="mt-1 text-[11px] text-[var(--muted-foreground)]">
           {data.a.code} 与 {data.b.code} 的 60 日滚动皮尔逊相关系数

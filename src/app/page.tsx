@@ -22,9 +22,9 @@ const TOOLS = [
   },
   {
     num: "03",
-    title: "ETF 相关性",
-    sub: "ETF Correlation",
-    desc: "走势同向性 + 底层成分重叠双信号，量化你的 ETF 持仓是否存在被忽略的重复风险",
+    title: "指数对比",
+    sub: "Index Comparison",
+    desc: "涨跌联动与底层成分重叠双信号，检视两只指数基金标的是否重合度过高、分散不足",
     tags: ["分散度", "持仓体检"],
     href: "/correlation",
   },
@@ -33,7 +33,7 @@ const TOOLS = [
 // ── About 右侧 Key Facts
 const FACTS = [
   { label: "数据区间", value: "2014 年至今" },
-  { label: "工具类型", value: "网格策略 · ETF 相关性" },
+  { label: "工具类型", value: "网格策略 · 指数对比" },
   { label: "更新频率", value: "交易日自动更新" },
   { label: "账户要求", value: "无需注册，完全免费" },
   { label: "计算方式", value: "100% 本地，无服务依赖" },
@@ -63,7 +63,7 @@ export default function LandingPage() {
               href="/correlation"
               className="text-sm text-neutral-500 hover:text-neutral-900 transition-colors duration-150"
             >
-              相关性
+              指数对比
             </Link>
             <a
               href="#about"
@@ -191,8 +191,7 @@ export default function LandingPage() {
                 </p>
                 <p>
                   主打 ETF
-                  投研模块将随功能迭代陆续开放；当前你可使用网格参数计算与 ETF
-                  相关性分析等基础能力。我们只呈现模型与事实，投资决策始终由你自己做出。
+                  投研模块将随功能迭代陆续开放；当前你可使用网格参数计算与指数对比等基础能力。我们只呈现模型与事实，投资决策始终由你自己做出。
                 </p>
                 <p className="text-neutral-900 font-medium">
                   涨跌有常，策略在心。
@@ -248,7 +247,7 @@ export default function LandingPage() {
             </Link>
             <Link href="/correlation">
               <button className="inline-flex items-center gap-2 border border-neutral-300 text-neutral-600 bg-transparent px-5 py-2.5 text-sm font-medium hover:border-neutral-900 hover:text-neutral-900 transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-400">
-                ETF 相关性分析
+                指数对比
               </button>
             </Link>
           </div>
@@ -272,7 +271,7 @@ export default function LandingPage() {
               href="/correlation"
               className="text-xs text-neutral-400 hover:text-neutral-900 transition-colors duration-150"
             >
-              ETF 相关性
+              指数对比
             </Link>
             <a
               href="#about"

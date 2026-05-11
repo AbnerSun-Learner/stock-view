@@ -1,5 +1,5 @@
 /**
- * /api/correlation/pair — 两只 ETF 的完整相关性分析。
+ * /api/correlation/pair — 两只 ETF 的完整指数对比分析。
  *
  * 外部数据仅经 TuShare（见 scripts/fetch_etf_*.py）拉取，由 fetchAllEtfData 聚合。
  *
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
     console.error("[correlation/pair] api error", error);
     return NextResponse.json(
-      { error: "相关性分析处理失败，请稍后再试" } as CorrelationApiError,
+      { error: "指数对比处理失败，请稍后再试" } as CorrelationApiError,
       { status: 500 }
     );
   }

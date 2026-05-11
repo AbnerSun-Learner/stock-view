@@ -6,7 +6,7 @@ import { MoonOutlined, SunOutlined } from "@ant-design/icons";
 import Link from "next/link";
 
 interface CorrelationNavbarProps {
-  /** 与相关性页底色对齐，避免顶栏一条「纯白腰带」 */
+  /** 与指数对比页底色对齐，避免顶栏一条「纯白腰带」 */
   surface?: "default" | "correlation";
 }
 
@@ -37,7 +37,7 @@ export function CorrelationNavbar({
             href="/correlation"
             className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors duration-300 tracking-wide valuation-nav-link"
           >
-            .correlation
+            .comparison
           </Link>
         </div>
 

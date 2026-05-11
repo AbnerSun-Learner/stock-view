@@ -5,6 +5,12 @@
       "source": "affaan-m/everything-claude-code",
       "sourceType": "github",
       "computedHash": "48c9438b32e62679de45e510b34f3e81b1341d4ba9aeae97b92bbd7e3e01986a"
+    },
+    "writing-prds": {
+      "source": "RefoundAI/lenny-skills",
+      "sourceType": "github",
+      "skillPath": "skills/writing-prds/SKILL.md",
+      "computedHash": "59f77c05d2e2fb9478b017f9cdd29951d1ceb53c6a6da93f27d2c9996e6403ca"
     }
   }
 }

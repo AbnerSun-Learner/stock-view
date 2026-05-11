@@ -1,5 +1,5 @@
 /**
- * ETF 相关性工具核心类型。
+ * ETF 指数对比工具核心类型。
  *
  * 配套规格：doc/superpowers/specs/2026-05-08-etf-correlation-tool-design.md
  * 阶段 1 关注计算核心。所有外部交互（API、UI）都基于这里的类型展开。

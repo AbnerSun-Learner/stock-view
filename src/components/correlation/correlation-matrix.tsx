@@ -73,12 +73,16 @@ function pairTooltipText(pair: PairResult, row: string, col: string): string {
   const bText = b !== null ? b.toFixed(2) : "—";
   const head = `${row} ↔ ${col}`;
   if (pair.status === "complete" && pair.finalScore !== null) {
-    return `${head}\n综合 ${pair.finalScore.toFixed(2)} · A 走势 ${aText} · B 成分 ${bText}\n${pair.adviceText}`;
+    return `${head}\n综合对比分 ${pair.finalScore.toFixed(
+      2
+    )} · A 走势 ${aText} · B 成分 ${bText}\n${pair.adviceText}`;
   }
   if (pair.status === "partial" && pair.partialScore !== null) {
     return `${head}\nA 走势 ${aText} · B 成分 ${bText}\n${pair.adviceText}`;
   }
-  return `${head}\n${pair.adviceText}${pair.missingReason ? `（${pair.missingReason}）` : ""}`;
+  return `${head}\n${pair.adviceText}${
+    pair.missingReason ? `（${pair.missingReason}）` : ""
+  }`;
 }
 
 export function CorrelationMatrix({ codes, pairs }: CorrelationMatrixProps) {

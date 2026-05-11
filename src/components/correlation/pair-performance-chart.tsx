@@ -51,34 +51,30 @@ function PerformanceTooltip({
   const row = payload[0].payload;
   if (!row) return null;
   return (
-    <div className="border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] px-3 py-2 text-xs shadow-none">
-      <p className="text-[var(--muted-foreground)] mb-1 font-mono">{label}</p>
+    <div className="correlation-rich-tooltip">
+      <p className="text-[var(--muted-foreground)] mb-2 font-mono text-[11px]">
+        {label}
+      </p>
       <p className="text-[var(--foreground)] leading-snug">
         <span>{nameA}</span>
         <span className="font-mono text-[var(--muted-foreground)]">
           （{codeA}）
         </span>
       </p>
-      <p className="font-mono tabular-nums text-[11px] mt-1 pl-1">
-        当日涨跌（估）{fmtSignedPct(row.dayChangePctA)}
-        <span className="text-[var(--muted-foreground)] font-sans ml-1 font-normal">
-          · 相对区间起点的累积 {fmtSignedPct(row.cumChangePctA)}
-        </span>
+      <p className="font-mono tabular-nums text-[11px] mt-1 pl-0.5">
+        估算涨跌幅（当日） {fmtSignedPct(row.dayChangePctA)}
       </p>
-      <p className="text-[var(--foreground)] leading-snug mt-2">
+      <p className="text-[var(--foreground)] leading-snug mt-2.5">
         <span>{nameB}</span>
         <span className="font-mono text-[var(--muted-foreground)]">
           （{codeB}）
         </span>
       </p>
-      <p className="font-mono tabular-nums text-[11px] mt-1 pl-1">
-        当日涨跌（估）{fmtSignedPct(row.dayChangePctB)}
-        <span className="text-[var(--muted-foreground)] font-sans ml-1 font-normal">
-          · 相对区间起点的累积 {fmtSignedPct(row.cumChangePctB)}
-        </span>
+      <p className="font-mono tabular-nums text-[11px] mt-1 pl-0.5">
+        估算涨跌幅（当日） {fmtSignedPct(row.dayChangePctB)}
       </p>
-      <p className="text-[10px] text-[var(--muted-foreground)] mt-2 border-t border-[color:var(--border-color)] pt-2 leading-relaxed">
-        「当日涨跌」由相邻两共同交易日收盘价推算，与交易所披露可能差在复权/四舍五入；累积值以区间首组收益为基准复利计算。
+      <p className="text-[10px] text-[var(--muted-foreground)] mt-3 border-t border-[color:var(--border-color)] pt-2.5 leading-relaxed">
+        由相邻两日共同交易日的复权收盘价推算日收益，可能与行情展示口径略有差异。
       </p>
     </div>
   );
@@ -121,10 +117,11 @@ export function PairPerformanceChart({
             {data.a.code} · {data.b.code}
           </span>
           {" · "}
-          {periodLabel} · 纵轴为<strong>相对区间起点</strong>
-          的复利累计涨跌（%），
-          <strong className="text-[var(--foreground)]">不是</strong>
-          行情 App 里的「当日涨跌幅」 · {data.rangeLabel}
+          {periodLabel}
+          ：纵轴为各交易日<strong>估算涨跌幅</strong>
+          （%），便于对照两只指数基金的涨跌节奏。
+          {" · "}
+          {data.rangeLabel}
         </p>
       </div>
 
@@ -195,7 +192,7 @@ export function PairPerformanceChart({
               />
               <Line
                 type="monotone"
-                dataKey="cumChangePctA"
+                dataKey="dayChangePctA"
                 name={legendNameA}
                 stroke={colorA}
                 strokeWidth={1.5}
@@ -205,7 +202,7 @@ export function PairPerformanceChart({
               />
               <Line
                 type="monotone"
-                dataKey="cumChangePctB"
+                dataKey="dayChangePctB"
                 name={legendNameB}
                 stroke={colorB}
                 strokeWidth={1.5}

@@ -14,11 +14,13 @@ import {
   SkeletonResultCard,
   SkeletonTable,
 } from "@/components/correlation/pair-skeleton";
+import { normalizeEtfCode } from "@/lib/correlation/etf-code";
 import type { PairCorrelationData } from "@/lib/correlation/pair-correlation-types";
 import { getPeriodLabel } from "@/lib/correlation/pair-correlation-types";
 import type { CorrelationPeriod } from "@/types/correlation";
 import { Alert, App, Segmented } from "antd";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 function isAbortError(e: unknown): boolean {
   if (e instanceof DOMException && e.name === "AbortError") return true;
@@ -34,7 +36,71 @@ const PERIOD_OPTIONS: { label: string; value: CorrelationPeriod }[] = [
   { label: "全部", value: "max" },
 ];
 
-function CorrelationPageBody() {
+function parsePeriodParam(raw: string | null): CorrelationPeriod {
+  if (
+    raw &&
+    (PERIOD_OPTIONS as { value: CorrelationPeriod }[]).some(
+      (x) => x.value === raw
+    )
+  ) {
+    return raw as CorrelationPeriod;
+  }
+  return "1y";
+}
+
+/** 解析 URL：`/correlation?a=510300&b=159915&period=1y`，与 `/api/correlation/pair` 参数一致 */
+function correlationQueryFromSearchParams(searchParams: URLSearchParams): {
+  aNorm: ReturnType<typeof normalizeEtfCode>;
+  bNorm: ReturnType<typeof normalizeEtfCode>;
+  period: CorrelationPeriod;
+} {
+  const aNorm = normalizeEtfCode(searchParams.get("a") ?? "");
+  const bNorm = normalizeEtfCode(searchParams.get("b") ?? "");
+  const period = parsePeriodParam(searchParams.get("period"));
+  return { aNorm, bNorm, period };
+}
+
+function samePairParamsInUrl(
+  searchParams: URLSearchParams,
+  codeA_: string,
+  codeB_: string,
+  period_: CorrelationPeriod
+): boolean {
+  const {
+    aNorm,
+    bNorm,
+    period: periodUrl,
+  } = correlationQueryFromSearchParams(searchParams);
+  if (
+    !(
+      aNorm.valid &&
+      bNorm.valid &&
+      aNorm.code &&
+      bNorm.code &&
+      aNorm.code !== bNorm.code
+    )
+  ) {
+    return false;
+  }
+  return (
+    aNorm.code === codeA_ && bNorm.code === codeB_ && periodUrl === period_
+  );
+}
+
+function PairPageSuspenseFallback() {
+  return (
+    <div className="correlation-page min-h-screen flex items-center justify-center text-[var(--muted-foreground)] text-sm tracking-wide">
+      载入中…
+    </div>
+  );
+}
+
+function CorrelationPageContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const searchKey = searchParams.toString();
+
   const { message: messageApi } = App.useApp();
   const messageRef = useRef(messageApi);
   useEffect(() => {
@@ -43,6 +109,8 @@ function CorrelationPageBody() {
 
   const pairFetchInflightRef = useRef(0);
   const pairFetchAbortRef = useRef<AbortController | null>(null);
+  const dataRef = useRef<PairCorrelationData | null>(null);
+  const urlPairKeyRef = useRef<string | null>(null);
 
   const [codeA, setCodeA] = useState("");
   const [codeB, setCodeB] = useState("");
@@ -54,6 +122,10 @@ function CorrelationPageBody() {
     a: string;
     b: string;
   } | null>(null);
+
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
 
   useEffect(() => {
     return () => {
@@ -113,45 +185,96 @@ function CorrelationPageBody() {
     []
   );
 
+  /** URL ?a=&b=&period=：回填、维护 session，并在 query 变化时拉数 */
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- Next searchParams → 表单与拉数单次对齐 */
+    const {
+      aNorm,
+      bNorm,
+      period: pFromQs,
+    } = correlationQueryFromSearchParams(searchParams);
+    setPeriod(pFromQs);
+    if (aNorm.valid && aNorm.code) setCodeA(aNorm.code);
+    if (bNorm.valid && bNorm.code) setCodeB(bNorm.code);
+
+    const validPair =
+      aNorm.valid &&
+      bNorm.valid &&
+      aNorm.code &&
+      bNorm.code &&
+      aNorm.code !== bNorm.code;
+
+    if (!validPair) {
+      setSessionPair(null);
+      setData(null);
+      urlPairKeyRef.current = null;
+      return;
+    }
+
+    const codeAStr = aNorm.code!;
+    const codeBStr = bNorm.code!;
+
+    setSessionPair({ a: codeAStr, b: codeBStr });
+
+    const pairKey = `${codeAStr}|${codeBStr}`;
+    const preserveOnError =
+      urlPairKeyRef.current === pairKey && dataRef.current !== null;
+    urlPairKeyRef.current = pairKey;
+
+    fetchPairData({
+      a: codeAStr,
+      b: codeBStr,
+      p: pFromQs,
+      preserveOnError,
+    });
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [searchKey, fetchPairData, searchParams]);
+
+  const pushPairQuery = useCallback(
+    (a: string, b: string, p: CorrelationPeriod) => {
+      const qs = new URLSearchParams({ a, b, period: p });
+      router.replace(`${pathname}?${qs.toString()}`, { scroll: false });
+    },
+    [pathname, router]
+  );
+
   const handleSubmit = useCallback(
     (nextA: string, nextB: string) => {
-      if (!nextA || !nextB) {
+      const a = nextA.trim();
+      const b = nextB.trim();
+      if (!a || !b) {
         messageRef.current.warning("请输入两只 ETF 代码");
         return;
       }
-      if (nextA === nextB) {
+      if (a === b) {
         messageRef.current.warning("两只 ETF 不能相同");
         return;
       }
-      if (!/^\d{6}$/.test(nextA) || !/^\d{6}$/.test(nextB)) {
+      if (!/^\d{6}$/.test(a) || !/^\d{6}$/.test(b)) {
         messageRef.current.warning("ETF 代码需为 6 位数字");
         return;
       }
-      setCodeA(nextA);
-      setCodeB(nextB);
-      setSessionPair({ a: nextA, b: nextB });
+      if (samePairParamsInUrl(searchParams, a, b, period)) {
+        fetchPairData({ a, b, p: period, preserveOnError: false });
+        return;
+      }
       setData(null);
-      fetchPairData({ a: nextA, b: nextB, p: period, preserveOnError: false });
+      setError(null);
+      pushPairQuery(a, b, period);
     },
-    [period, fetchPairData]
+    [period, pushPairQuery, fetchPairData, searchParams]
   );
 
   const handlePeriodChange = useCallback(
     (next: CorrelationPeriod) => {
       if (!sessionPair) return;
-      setPeriod(next);
-      fetchPairData({
-        a: sessionPair.a,
-        b: sessionPair.b,
-        p: next,
-        preserveOnError: true,
-      });
+      pushPairQuery(sessionPair.a, sessionPair.b, next);
     },
-    [sessionPair, fetchPairData]
+    [sessionPair, pushPairQuery]
   );
 
   const periodLabel = getPeriodLabel(period);
-  /** 仅在首次发起分析尚无结果时占位，刷新时间窗口时保留上一版内容与卡片 */
+  /** 仅在首次发起对比尚无结果时占位，刷新时间窗口时保留上一版内容与卡片 */
   const showLoadingBlocks = sessionPair !== null && loading && data === null;
   const showCharts = data !== null;
 
@@ -163,16 +286,16 @@ function CorrelationPageBody() {
         <div className="max-w-7xl mx-auto px-8 md:px-16 py-16 space-y-12">
           <header>
             <p className="correlation-eyebrow text-xs font-semibold tracking-[0.2em] uppercase mb-4">
-              ETF Correlation
+              Index Comparison
             </p>
             <h1 className="text-4xl md:text-5xl font-light tracking-[-0.02em] text-[var(--foreground)] mb-4">
-              ETF 相关性
+              指数对比
             </h1>
             <p
               className="text-base text-[var(--muted-foreground)] leading-[1.8] max-w-xl"
               style={{ letterSpacing: "0.02em" }}
             >
-              结合走势同向性与底层成分重叠，看清持仓的真实分散度，找出可能被忽略的重复风险。
+              结合净值涨跌联动与底层成分重叠，看清两只指数基金标的的真实重合度与分散度。
             </p>
           </header>
 
@@ -192,7 +315,7 @@ function CorrelationPageBody() {
 
           {error && sessionPair ? (
             <Alert
-              title="分析失败"
+              title="对比失败"
               description={error}
               type="error"
               showIcon
@@ -258,7 +381,9 @@ function CorrelationPageBody() {
 export default function CorrelationPage() {
   return (
     <AntdProvider>
-      <CorrelationPageBody />
+      <Suspense fallback={<PairPageSuspenseFallback />}>
+        <CorrelationPageContent />
+      </Suspense>
     </AntdProvider>
   );
 }

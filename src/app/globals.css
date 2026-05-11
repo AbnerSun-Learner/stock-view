@@ -10,7 +10,7 @@
   --foreground: #000000;
   --muted-foreground: #666666;
 
-  /* 相关性矩阵填色基（仅 RGB 通道，alpha 由 JS 给出） */
+  /* 指数对比矩阵填色基（仅 RGB 通道，alpha 由 JS 给出） */
   --correlation-fill-rgb: 0, 0, 0;
 
   /* 主色 */
@@ -39,7 +39,7 @@
   --hover-bg: rgba(0, 0, 0, 0.03);
   --ring: rgba(0, 0, 0, 0.2);
 
-  /* 相关性 pair：四色体系（不计中性黑白灰）
+  /* 指数对比 pair：四色体系（不计中性黑白灰）
    * 1 深蓝灰 #243b53 — 品牌与结构线（项目规范主色）
    * 2 信号蓝 #2563eb — 走势主序列 / 强调数值
    * 3 青绿 #0e7490 — 散点与对照维度（克制，偏机构仪表盘）
@@ -247,7 +247,7 @@ a.valuation-nav-link {
   border-radius: 0 !important;
 }
 
-/* 相关性页：textarea / input 与页面背景融合 */
+/* 指数对比页：textarea / input 与页面背景融合 */
 .correlation-textarea.ant-input,
 .correlation-textarea.ant-input:hover,
 .correlation-textarea.ant-input:focus {
@@ -263,7 +263,7 @@ a.valuation-nav-link {
   opacity: 0.6;
 }
 
-/* 相关性矩阵 */
+/* 指数对比矩阵 */
 .correlation-matrix-table {
   border-collapse: collapse;
   width: 100%;
@@ -319,7 +319,7 @@ a.valuation-nav-link {
   color: var(--muted-foreground);
 }
 
-/* 相关性 pair 页布局（四色仅作用于本页变量） */
+/* 指数对比 pair 页布局（四色仅作用于本页变量） */
 .correlation-page {
   background-color: var(--correlation-page-tint);
 }
@@ -379,6 +379,37 @@ a.valuation-nav-link {
 .correlation-table-head-code {
   background-color: var(--correlation-card-tint);
   color: var(--correlation-brand);
+}
+
+/* 指数对比：对比结果问号说明 & 图表 Tooltip（浅卡渐变，无侧边饰条） */
+.correlation-rich-tooltip {
+  min-width: 16rem;
+  max-width: min(22rem, 94vw);
+  padding: 0.625rem 0.875rem;
+  font-size: 0.75rem;
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+  color: var(--foreground);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--correlation-card-tint) 92%, transparent) 0%,
+    var(--correlation-card-surface) 100%
+  );
+  border: 1px solid
+    color-mix(in srgb, var(--border-color) 88%, var(--correlation-brand));
+  box-shadow: 0 6px 26px rgba(36, 59, 83, 0.12),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  pointer-events: none;
+}
+
+.dark .correlation-rich-tooltip {
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--correlation-card-tint) 94%, transparent) 0%,
+    var(--correlation-card-surface) 100%
+  );
+  border: 1px solid var(--border-color);
+  box-shadow: 0 10px 38px rgba(0, 0, 0, 0.5);
 }
 
 /* 估值列表表格：不出现纵向滚动条 */

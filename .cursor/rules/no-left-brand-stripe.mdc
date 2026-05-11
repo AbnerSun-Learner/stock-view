@@ -1,0 +1,34 @@
+---
+description: Stillwell/UI 禁止使用左侧品牌竖条装饰（Tooltip、卡片等）
+alwaysApply: true
+---
+
+# 禁止左侧品牌竖条
+
+本站在工具提示、popover、下拉说明、图表浮层等**所有模块**中，一律**不要使用**左侧加粗品牌色竖条（例如 `border-left: 3px solid var(--correlation-brand)` 或等价伪元素）。
+
+## 理由
+
+竖条会破坏极简布局节奏，且在窄屏 Tooltip 上与圆角/边框语义冲突；强调层次应依靠**整块背景层级、浅色描边、阴影**，而不是单侧色条。
+
+## 正确做法
+
+- 使用与设计体系一致的：**统一描边** `border: 1px solid var(--border-color)` 或使用已有 token（如 `--correlation-card-tint` 渐变）。
+- 需要强调时使用：**品牌标题 / eyebrow / 主按钮**，勿在浮动层侧边堆叠饰条。
+
+```css
+/* ❌ BAD */
+.popup {
+  border-left: 3px solid var(--correlation-brand);
+}
+
+/* ✅ GOOD */
+.popup {
+  border: 1px solid var(--border-color);
+  background: linear-gradient(/* 与站内 token 一致 */);
+}
+```
+
+## 自检
+
+改动含 Tooltip、Popover、Dropdown 渲染、`globals.css` 中浮层工具类时，检索 `border-left`、`::before` 左侧色条、`accent` 状竖线，避免出现新的左侧品牌条。

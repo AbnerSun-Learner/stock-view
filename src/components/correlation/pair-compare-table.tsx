@@ -124,10 +124,10 @@ export function PairCompareTable({ data }: PairCompareTableProps) {
     <div className="correlation-card p-6 md:p-8">
       <div className="mb-6">
         <p className="correlation-eyebrow text-xs font-semibold tracking-[0.2em] uppercase">
-          ETF Comparison
+          Index Comparison
         </p>
         <h3 className="mt-2 text-lg font-light text-[var(--foreground)]">
-          ETF 对比
+          指数对比
         </h3>
       </div>
 

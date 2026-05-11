@@ -63,7 +63,7 @@ export function CorrelationDetailTable({ pairs }: CorrelationDetailTableProps) {
         ),
       },
       {
-        title: "综合分",
+        title: "综合对比分",
         key: "final",
         align: "right",
         render: (_: unknown, row: DetailRow) => {
@@ -77,7 +77,7 @@ export function CorrelationDetailTable({ pairs }: CorrelationDetailTableProps) {
           }
           if (p.status === "partial" && p.partialScore !== null) {
             return (
-              <Tooltip title="仅部分信号可用，未生成综合分">
+              <Tooltip title="仅部分信号可用，未生成综合对比分">
                 <span className="font-mono tabular-nums text-sm text-[var(--muted-foreground)]">
                   ({fmt(p.partialScore)})
                 </span>

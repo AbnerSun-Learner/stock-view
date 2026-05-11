@@ -35,10 +35,10 @@ export function PairInputCard({
     <div className="correlation-card correlation-card--tint p-6 md:p-8 space-y-6">
       <div>
         <p className="correlation-eyebrow text-xs font-semibold tracking-[0.2em] uppercase">
-          ETF Selection
+          Index Pair
         </p>
         <h3 className="mt-2 text-lg font-light text-[var(--foreground)]">
-          ETF 选择
+          选择标的
         </h3>
       </div>
 
@@ -80,11 +80,15 @@ export function PairInputCard({
         className="w-full h-10 px-6 text-xs font-medium tracking-wide bg-[var(--correlation-brand)] text-[var(--correlation-on-brand)] hover:opacity-70 transition-opacity duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
         style={{ letterSpacing: "0.06em" }}
       >
-        {loading ? "分析中…" : "开始分析"}
+        {loading ? "对比中…" : "开始对比"}
       </button>
 
       <p className="text-[11px] leading-relaxed text-[var(--muted-foreground)]">
         支持 6 位国内 ETF 代码。建议从同主题 ETF 开始对比，更容易发现重复风险。
+        <span className="mt-2 block text-[10px] tracking-wide opacity-90">
+          开始对比后地址栏会带上
+          ?a=代码1&b=代码2&period=时间窗，可复制分享或下次打开自动回填。
+        </span>
       </p>
     </div>
   );

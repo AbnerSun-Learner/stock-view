@@ -42,9 +42,18 @@ export function CorrelationSummaryCard({
       </h2>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-6">
-        <SummaryStat label="最高综合分" value={formatScore(summary.maxFinalScore)} />
-        <SummaryStat label="平均综合分" value={formatScore(summary.averageFinalScore)} />
-        <SummaryStat label="高重复风险组合" value={`${summary.highRiskPairs} 对`} />
+        <SummaryStat
+          label="最高对比分"
+          value={formatScore(summary.maxFinalScore)}
+        />
+        <SummaryStat
+          label="平均对比分"
+          value={formatScore(summary.averageFinalScore)}
+        />
+        <SummaryStat
+          label="高重复风险组合"
+          value={`${summary.highRiskPairs} 对`}
+        />
         <SummaryStat
           label="完整 / 部分 / 不可用"
           value={`${completePairs} / ${partialPairs} / ${unavailablePairs}`}
@@ -59,7 +68,7 @@ export function CorrelationSummaryCard({
               {summary.topRiskPair[0]} ↔ {summary.topRiskPair[1]}
             </span>
             <span className="ml-3 text-[var(--foreground)]">
-              综合分 {formatScore(summary.maxFinalScore)}
+              对比分 {formatScore(summary.maxFinalScore)}
             </span>
           </p>
           <p className="text-xs text-[var(--muted-foreground)]">

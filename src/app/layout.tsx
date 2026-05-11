@@ -38,13 +38,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Stillwell · ETF 与指数基金投研 · 涨跌有常，策略在心",
   description:
-    "涨跌有常，策略在心。面向国内个人投资者的 ETF / 指数基金投研与工具站；已提供网格策略计算与 ETF 相关性等本地计算能力，投研能力持续迭代，无需注册。",
+    "涨跌有常，策略在心。面向国内个人投资者的 ETF / 指数基金投研与工具站；已提供网格策略计算与指数对比等本地计算能力，投研能力持续迭代，无需注册。",
   keywords: [
     "ETF",
     "指数基金",
     "投研",
     "网格交易",
-    "ETF相关性",
+    "指数对比",
     "A股",
     "Stillwell",
   ],

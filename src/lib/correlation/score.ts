@@ -38,7 +38,7 @@ export function getAdviceLevel(score: number): AdviceLevel {
 export const ADVICE_LEVEL_LABEL: Record<AdviceLevel, string> = {
   diversified: "分散较好",
   watch: "存在一定重叠",
-  concentrated: "相关性偏高",
+  concentrated: "对比重合度高",
   redundant: "高度重复",
 };
 
@@ -49,7 +49,10 @@ export const ADVICE_LEVEL_DETAIL: Record<AdviceLevel, string> = {
   redundant: "建议考虑替换其中一个",
 };
 
-function lowerConfidence(a: ConfidenceLevel, b: ConfidenceLevel): ConfidenceLevel {
+function lowerConfidence(
+  a: ConfidenceLevel,
+  b: ConfidenceLevel
+): ConfidenceLevel {
   const order: ConfidenceLevel[] = ["low", "medium", "high"];
   return order[Math.min(order.indexOf(a), order.indexOf(b))];
 }
@@ -71,14 +74,15 @@ function buildCompleteAdvice(
   return `${head}${ADVICE_LEVEL_DETAIL[level]}。`;
 }
 
-function buildPartialAdvice(
-  signal: AvailableSignal,
-  score: number
-): string {
+function buildPartialAdvice(signal: AvailableSignal, score: number): string {
   if (signal === "return") {
-    return `仅基于走势数据的部分判断：${score >= 0.6 ? "短期同向较明显" : "短期同向不明显"}。底层成分数据不足，无法形成完整结论。`;
+    return `仅基于走势数据的部分判断：${
+      score >= 0.6 ? "短期同向较明显" : "短期同向不明显"
+    }。底层成分数据不足，无法形成完整结论。`;
   }
-  return `仅基于成分数据的部分判断：${score >= 0.5 ? "底层重叠明显" : "底层重叠有限"}。走势数据不足，无法形成完整结论。`;
+  return `仅基于成分数据的部分判断：${
+    score >= 0.5 ? "底层重叠明显" : "底层重叠有限"
+  }。走势数据不足，无法形成完整结论。`;
 }
 
 function reasonText(reason: string): string {
@@ -133,7 +137,8 @@ export function computePairScore(input: ComputePairScoreInput): PairResult {
       signal === "return"
         ? (returnResult.score as number)
         : (holdingResult.score as number);
-    const missingSide = signal === "return" ? holdingResult.reason : returnResult.reason;
+    const missingSide =
+      signal === "return" ? holdingResult.reason : returnResult.reason;
     return {
       pair,
       status: "partial",
@@ -150,8 +155,12 @@ export function computePairScore(input: ComputePairScoreInput): PairResult {
 
   // 两路信号都不可用
   const reasonsTextParts = [
-    returnResult.reason !== "ok" ? `走势：${reasonText(returnResult.reason)}` : null,
-    holdingResult.reason !== "ok" ? `成分：${reasonText(holdingResult.reason)}` : null,
+    returnResult.reason !== "ok"
+      ? `走势：${reasonText(returnResult.reason)}`
+      : null,
+    holdingResult.reason !== "ok"
+      ? `成分：${reasonText(holdingResult.reason)}`
+      : null,
   ].filter((x): x is string => Boolean(x));
 
   return {

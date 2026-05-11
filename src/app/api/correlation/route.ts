@@ -58,7 +58,7 @@ export async function GET(
   } catch (error) {
     console.error("[correlation] api error", error);
     return NextResponse.json(
-      { error: "相关性分析处理失败，请稍后再试" },
+      { error: "指数对比处理失败，请稍后再试" },
       { status: 500 }
     );
   }
