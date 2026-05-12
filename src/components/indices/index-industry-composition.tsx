@@ -1,25 +1,14 @@
 "use client";
 
+import { IndicesReactECharts } from "@/components/indices/indices-react-echarts";
 import type {
   IndustryCompositionByLevel,
   IndustryWeightRow,
 } from "@/types/indices";
-import { Segmented, Table } from "antd";
-import type { ColumnsType } from "antd/es/table";
+import { Segmented } from "antd";
+import * as echarts from "echarts";
+import type { CallbackDataParams } from "echarts/types/dist/shared";
 import { useMemo, useState } from "react";
-import {
-  Cell,
-  Legend,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
-
-interface DonutTooltipProps {
-  active?: boolean;
-  payload?: readonly { name?: unknown; value?: unknown }[];
-}
 
 type SwLevel = "sw1" | "sw2" | "sw3";
 
@@ -30,30 +19,17 @@ const SW_LABELS: Record<SwLevel, string> = {
 };
 
 const PIE_PALETTE = [
-  "color-mix(in srgb, var(--correlation-brand) 92%, transparent)",
-  "color-mix(in srgb, var(--correlation-brand) 72%, transparent)",
-  "color-mix(in srgb, var(--correlation-brand) 52%, transparent)",
-  "color-mix(in srgb, #0d9488 55%, transparent)",
-  "color-mix(in srgb, #9a3412 55%, transparent)",
-  "color-mix(in srgb, #6b21a8 48%, transparent)",
-  "color-mix(in srgb, var(--muted-foreground) 55%, transparent)",
+  "#2f6fec",
+  "#0f8a7f",
+  "#7c3aed",
+  "#f97316",
+  "#dc2626",
+  "#475569",
+  "#65a30d",
+  "#a16207",
+  "#0891b2",
+  "#db2777",
 ];
-
-function DonutTooltip({ active, payload }: DonutTooltipProps) {
-  if (!active || !payload?.length) return null;
-  const p = payload[0];
-  const name = String(p.name ?? "");
-  const v = p.value as number | undefined;
-  if (v === undefined) return null;
-  return (
-    <div className="indices-chart-tooltip rounded-lg px-3 py-2 text-xs border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] shadow-md">
-      <p className="text-[var(--foreground)] font-medium">{name}</p>
-      <p className="font-mono tabular-nums text-[var(--muted-foreground)] mt-1">
-        权重 {v.toFixed(1)}%
-      </p>
-    </div>
-  );
-}
 
 interface IndexIndustryCompositionProps {
   data: IndustryCompositionByLevel;
@@ -68,45 +44,82 @@ export function IndexIndustryComposition({
     return data[level] ?? [];
   }, [data, level]);
 
-  const pieData = useMemo(
-    () =>
-      rows.map((r) => ({
-        name: r.name,
-        value: r.weightPct,
-      })),
+  const topRows = useMemo(() => rows.slice(0, 3), [rows]);
+  const restWeight = useMemo(
+    () => rows.slice(3).reduce((sum, row) => sum + row.weightPct, 0),
     [rows]
   );
 
-  const columns: ColumnsType<IndustryWeightRow> = useMemo(
-    () => [
-      {
-        title: `${SW_LABELS[level]}名称`,
-        dataIndex: "name",
-        key: "name",
-        ellipsis: { showTitle: true },
+  const pieOption = useMemo((): echarts.EChartsOption | null => {
+    if (rows.length === 0) return null;
+    const chartData = rows.map((r, i) => ({
+      name: r.name,
+      value: r.weightPct,
+      itemStyle: {
+        color: PIE_PALETTE[i % PIE_PALETTE.length],
+        borderColor: "var(--correlation-card-surface)",
+        borderWidth: 2,
       },
-      {
-        title: "权重占比",
-        dataIndex: "weightPct",
-        key: "weightPct",
-        align: "right",
-        render: (v: number) => (
-          <span className="font-mono tabular-nums">{v.toFixed(1)}%</span>
-        ),
+    }));
+
+    return {
+      tooltip: {
+        trigger: "item",
+        confine: true,
+        borderColor: "var(--border-color)",
+        backgroundColor: "var(--correlation-card-surface)",
+        textStyle: { color: "var(--foreground)", fontSize: 12 },
+        formatter: (raw: unknown) => {
+          const p = raw as { name?: string; value?: number };
+          const name = p.name ?? "";
+          const v = p.value;
+          if (typeof v !== "number") return "";
+          return `<div style="font-size:12px;"><div style="font-weight:600;">${name}</div><div style="margin-top:6px;font-variant-numeric:tabular-nums;color:var(--muted-foreground);">权重 ${v.toFixed(
+            1
+          )}%</div></div>`;
+        },
       },
-    ],
-    [level]
-  );
+      series: [
+        {
+          type: "pie",
+          radius: ["42%", "68%"],
+          center: ["50%", "52%"],
+          padAngle: 2,
+          avoidLabelOverlap: true,
+          itemStyle: { borderRadius: 2 },
+          label: {
+            show: true,
+            color: "var(--muted-foreground)",
+            fontSize: 11,
+            formatter: (p: CallbackDataParams) => {
+              if (typeof p.value !== "number") return p.name ?? "";
+              return `${p.name ?? ""}\n${p.value.toFixed(1)}%`;
+            },
+          },
+          labelLine: {
+            length: 10,
+            length2: 8,
+            lineStyle: { color: "var(--muted-foreground)", opacity: 0.45 },
+          },
+          emphasis: { disabled: true },
+          data: chartData,
+        },
+      ],
+    } satisfies echarts.EChartsOption;
+  }, [rows]);
 
   return (
-    <section className="rounded-xl border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] p-5 md:p-6 space-y-5">
+    <section className="rounded-2xl border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] p-5 shadow-[0_14px_36px_color-mix(in_srgb,var(--foreground)_5%,transparent)] md:p-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
-          <h2 className="text-lg font-medium text-[var(--foreground)] tracking-wide">
-            行业主营构成（申万）
+          <p className="text-xs font-semibold tracking-[0.2em] uppercase text-[var(--correlation-brand)]">
+            Exposure
+          </p>
+          <h2 className="mt-2 text-2xl font-medium tracking-tight text-[var(--foreground)]">
+            行业暴露
           </h2>
           <p className="text-xs text-[var(--muted-foreground)] mt-1">
-            MOCK 占位：切换级别后环形图与下表字段名同步切换。
+            按 {SW_LABELS[level]} 口径拆分当前指数行业权重结构（MOCK）。
           </p>
         </div>
         <Segmented<SwLevel>
@@ -121,60 +134,103 @@ export function IndexIndustryComposition({
         />
       </div>
 
-      {pieData.length === 0 ? (
-        <p className="text-sm text-[var(--muted-foreground)]">
+      {rows.length === 0 ? (
+        <p className="mt-6 text-sm text-[var(--muted-foreground)]">
           暂无行业拆解数据。
         </p>
       ) : (
-        <>
-          <div className="h-[280px] w-full">
-            <ResponsiveContainer width="100%" height="100%" debounce={50}>
-              <PieChart margin={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-                <Pie
-                  data={pieData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius="54%"
-                  outerRadius="76%"
-                  paddingAngle={2}
-                  stroke="var(--border-color)"
-                  strokeWidth={1}
-                  isAnimationActive={false}
-                >
-                  {pieData.map((_, i) => (
-                    <Cell
-                      key={`c-${level}-${i}`}
-                      fill={PIE_PALETTE[i % PIE_PALETTE.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip content={<DonutTooltip />} />
-                <Legend
-                  layout="horizontal"
-                  verticalAlign="bottom"
-                  align="center"
-                  wrapperStyle={{ fontSize: 11 }}
-                  formatter={(v) => (
-                    <span className="text-[var(--muted-foreground)]">{v}</span>
-                  )}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+        <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_21rem]">
+          <div className="min-w-0">
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_9.5rem] lg:items-center">
+              <div className="min-h-[360px] min-w-0">
+                {pieOption ? (
+                  <div className="relative">
+                    <IndicesReactECharts height={360} option={pieOption} />
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                      <p className="text-center text-base font-bold leading-snug text-[var(--foreground)]">
+                        {SW_LABELS[level]}
+                        <br />
+                        行业暴露
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3 lg:grid-cols-1">
+                {rows.map((row, i) => (
+                  <div
+                    key={`${level}-legend-${row.name}`}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-[color:var(--border-color)] bg-[var(--correlation-card-tint)] px-2.5 py-2"
+                  >
+                    <span className="inline-flex min-w-0 items-center gap-2">
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                        style={{
+                          backgroundColor: PIE_PALETTE[i % PIE_PALETTE.length],
+                        }}
+                      />
+                      <span className="truncate text-[var(--foreground)]">
+                        {row.name}
+                      </span>
+                    </span>
+                    <span className="shrink-0 font-mono tabular-nums text-[var(--muted-foreground)]">
+                      {row.weightPct.toFixed(1)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <div className="indices-table-wrap overflow-x-auto -mx-1 sm:mx-0 rounded-lg border border-[color:var(--border-color)] bg-[var(--correlation-card-tint)] px-2 py-3 sm:p-0 sm:border-none sm:bg-transparent">
-            <Table<IndustryWeightRow>
-              rowKey={(r, i) => `${r.name}-${i}`}
-              columns={columns}
-              dataSource={rows}
-              size="middle"
-              pagination={false}
-              className="industry-sw-table [&_.ant-table]:bg-transparent"
-            />
-          </div>
-        </>
+          <aside className="rounded-2xl border border-[color:var(--border-color)] bg-[var(--correlation-card-tint)] p-5 shadow-[0_12px_30px_color-mix(in_srgb,var(--foreground)_4%,transparent)]">
+            <p className="text-xs font-semibold tracking-[0.18em] uppercase text-[var(--correlation-brand)]">
+              结构观察
+            </p>
+            <h3 className="mt-3 text-base font-semibold text-[var(--foreground)]">
+              当前结构最集中的三大行业
+            </h3>
+            <p className="mt-2 text-xs leading-relaxed text-[var(--muted-foreground)]">
+              数据基于示例权重拆解，更新日沿用指数详情页截至日。
+            </p>
+
+            <div className="mt-5 space-y-4">
+              {topRows.map((row, i) => (
+                <div key={`${level}-top-${row.name}`} className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-[var(--foreground)]">
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{
+                          backgroundColor: PIE_PALETTE[i % PIE_PALETTE.length],
+                        }}
+                      />
+                      <span className="truncate">{row.name}</span>
+                    </span>
+                    <span className="font-mono text-sm font-semibold tabular-nums text-[var(--foreground)]">
+                      {row.weightPct.toFixed(2)}%
+                    </span>
+                  </div>
+                  <p className="pl-4 text-[11px] leading-relaxed text-[var(--muted-foreground)]">
+                    MOCK 成分示例：权重靠前，代表该指数在该行业的主要暴露来源。
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 rounded-xl border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] px-4 py-3">
+              <p className="text-[11px] text-[var(--muted-foreground)]">
+                其余行业合计
+              </p>
+              <p className="mt-1 font-mono text-lg tabular-nums text-[var(--foreground)]">
+                {restWeight.toFixed(1)}%
+              </p>
+            </div>
+
+            <p className="mt-5 text-[11px] leading-relaxed text-[var(--muted-foreground)]">
+              来源：Mock sector breakdown · 后续接入真实行业分类与成分权重。
+            </p>
+          </aside>
+        </div>
       )}
     </section>
   );

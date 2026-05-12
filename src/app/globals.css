@@ -408,6 +408,11 @@ html {
 .indices-list-table.ant-table-wrapper .ant-table-container {
   overflow-x: auto;
 }
+
+/* 行情中心宽表：触控惯性横向滚动（iOS Safari） */
+.indices-table-wrap .ant-table-container {
+  -webkit-overflow-scrolling: touch;
+}
 .indices-list-table.ant-table-wrapper .ant-table table {
   width: max-content;
   min-width: 100%;
@@ -424,8 +429,9 @@ html {
   display: inline-block;
   padding: 0.125rem 0.375rem;
   border-radius: 0.25rem;
-  background: color-mix(in srgb, var(--profit) 16%, transparent);
-  outline: 1px solid color-mix(in srgb, var(--profit) 35%, var(--border-color));
+  background: color-mix(in srgb, var(--correlation-brand) 12%, transparent);
+  outline: 1px solid
+    color-mix(in srgb, var(--correlation-brand) 30%, var(--border-color));
 }
 
 /* 估值列表页：搜索框与页面背景融合 */

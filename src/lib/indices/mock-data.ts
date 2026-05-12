@@ -440,6 +440,8 @@ const MOCK_DETAIL_SEEDS: DetailSeed[] = [
     peTtm: 7.2,
     pb: 0.72,
     percentileByWindow: { "1Y": 58, "5Y": 35, "10Y": 28, ALL: 31 },
+    /** 演示 PB 分位极端标注：当前低于 5Y/10Y */
+    pbPercentileByWindow: { "1Y": 22, "5Y": 38, "10Y": 41, ALL: 30 },
     etfs: [
       {
         code: "515180.SH",

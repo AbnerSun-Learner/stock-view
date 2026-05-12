@@ -1,6 +1,6 @@
 "use client";
 
-import { StillwellMark } from "@/components/stillwell-mark";
+import { StillwellSiteNav } from "@/components/stillwell-site-nav";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
@@ -253,20 +253,14 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] font-sans">
-      <header className="fixed left-0 right-0 top-0 z-50 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--nav-bg)_94%,transparent)] backdrop-blur-md">
-        <div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between px-6 lg:px-10">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2.5 text-[var(--foreground)] transition-colors duration-200 hover:text-[var(--accent)]"
+      <StillwellSiteNav
+        trailing={
+          <nav
+            className="flex flex-wrap items-center justify-end gap-x-5 gap-y-1 sm:gap-x-6"
+            aria-label="站内导航"
           >
-            <StillwellMark size={26} />
-            <span className="nav-brand-en text-[1.375rem] leading-none">
-              Stillwell
-            </span>
-          </Link>
-          <nav className="flex flex-wrap items-center justify-end gap-x-5 gap-y-1 sm:gap-x-6">
             {[
-              ["行情中心", "/market-center"],
+              ["行情中心", "/indices"],
               ["网格交易", "/grid"],
               ["指数对比", "/correlation"],
             ].map(([label, href]) => (
@@ -285,8 +279,8 @@ export default function LandingPage() {
               关于
             </a>
           </nav>
-        </div>
-      </header>
+        }
+      />
 
       <main>
         {/* Hero：1.1fr / 0.9fr · 展示标题比例与氛围光 */}
@@ -551,7 +545,7 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-wrap items-center gap-6">
             {[
-              ["行情中心", "/market-center"],
+              ["行情中心", "/indices"],
               ["网格交易", "/grid"],
               ["指数对比", "/correlation"],
             ].map(([label, href]) => (

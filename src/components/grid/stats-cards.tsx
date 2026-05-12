@@ -9,7 +9,7 @@ interface StatsCardsProps {
 
 export function StatsCards({ stressTest }: StatsCardsProps) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-0 border border-[color:var(--border-color)] mb-8">
+    <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
       {[
         {
           label: "总买入金额",
@@ -59,19 +59,19 @@ export function StatsCards({ stressTest }: StatsCardsProps) {
       ].map((item, i) => (
         <div
           key={i}
-          className="p-5 border-r border-b md:border-b-0 border-[color:var(--border-color)] last:border-r-0"
+          className="rounded-xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-subtle)_55%,var(--card))] p-4 shadow-[var(--ds-shadow-sm)] transition-[box-shadow,transform] duration-200 hover:shadow-[var(--ds-shadow-md)] md:p-5"
         >
-          <div className="flex items-center gap-1 mb-3">
-            <span className="text-[10px] uppercase tracking-[0.1em] text-[var(--muted-foreground)]">
+          <div className="mb-3 flex items-center gap-1">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
               {item.label}
             </span>
             {item.tooltip && (
               <div className="group relative">
                 <HelpCircle
-                  className="w-3 h-3 cursor-help text-[var(--muted-foreground)] opacity-50"
+                  className="h-3 w-3 cursor-help text-[var(--muted-foreground)] opacity-60"
                   strokeWidth={1.5}
                 />
-                <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-[99999] w-48 p-2 text-xs bg-[var(--foreground)] text-[var(--page-bg)] whitespace-normal pointer-events-none">
+                <div className="pointer-events-none absolute bottom-full left-0 z-[99999] mb-2 hidden w-52 rounded-lg border border-[var(--border)] bg-[var(--card)] p-2.5 text-xs font-normal leading-snug text-[var(--foreground)] shadow-[var(--ds-shadow-lg)] group-hover:block">
                   {item.tooltip}
                 </div>
               </div>

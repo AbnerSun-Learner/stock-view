@@ -3,9 +3,9 @@ import { getMockIndexListRows } from "@/lib/indices/mock-data";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "指数列表 · Stillwell",
+  title: "行情中心 · 指数 · Stillwell",
   description:
-    "扫描指数代码与类别，查看 PE / 分位摘要并进入单指数详情（MOCK 演示）。",
+    "MOCK：扫描指数 PE/PB 与分位，进入单指数详情查看走势、估值与行业构成。",
 };
 
 export default function IndicesListPage() {

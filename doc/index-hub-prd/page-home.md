@@ -1,7 +1,7 @@
 # 页面 PRD：落地页 `/`
 
 **对应路由**：`/`  
-**摘录来源**：`/doc/2026-05-11-index-hub-prd-analysis.md` §4.1、§5.3、§8；`/doc/2026-05-11-index-hub-pages-prd.html` §1（范围与非目标）
+**摘录来源**：`/doc/2026-05-11-index-hub-prd-analysis.md` §4.1、§5.3、§8；`/doc/2026-05-11-market-center-prd.md`（范围与非目标）
 
 ---
 

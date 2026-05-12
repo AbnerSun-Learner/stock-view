@@ -1,12 +1,16 @@
 "use client";
 
 import type { IndexListRow } from "@/types/indices";
-import { Button, Empty, Input, Table } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
+import { Button, Empty, Input, Table, Tooltip } from "antd";
 import type { ColumnsType, TableProps } from "antd/es/table";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 12;
+
+const VALUATION_HIGHLIGHT_TOOLTIP =
+  "当前分位低于近 5 年与近 10 年分位（MOCK 规则）；数值口径以数据源为准。";
 
 type SortField =
   | "code"
@@ -30,7 +34,6 @@ function fmtPct(v: number | null): string {
   return `${v.toFixed(1)}%`;
 }
 
-/** 当前窗口分位同时低于 5 年与 10 年分位（数据齐备时） */
 function isBelowBothWindows(
   current: number | null,
   y5: number | null,
@@ -50,13 +53,22 @@ function PercentileCell({ value, highlight }: PercentileCellProps) {
   if (!highlight) {
     return <span className="font-mono tabular-nums">{text}</span>;
   }
-  return (
-    <span
-      className="font-mono tabular-nums indices-list-valuation-highlight"
-      title="当前分位同时低于近 5 年与近 10 年分位（规则说明于 MOCK）"
-    >
+  const body = (
+    <span className="font-mono tabular-nums indices-list-valuation-highlight">
       {text}
     </span>
+  );
+  return (
+    <Tooltip
+      title={VALUATION_HIGHLIGHT_TOOLTIP}
+      placement="topLeft"
+      trigger={["hover", "click"]}
+      mouseEnterDelay={0.1}
+    >
+      <span className="inline-flex cursor-pointer touch-manipulation rounded-sm">
+        {body}
+      </span>
+    </Tooltip>
   );
 }
 
@@ -133,7 +145,6 @@ export function IndexListView({ initialRows }: IndexListViewProps) {
       title: "代码",
       dataIndex: "code",
       key: "code",
-      fixed: "left",
       sorter: true,
       sortOrder: sortField === "code" ? sortOrder : null,
       render: (code: string) => (
@@ -191,7 +202,7 @@ export function IndexListView({ initialRows }: IndexListViewProps) {
       ),
     },
     {
-      title: "近5年分位（PE）",
+      title: "近 5 年分位（PE）",
       dataIndex: "percentile5yPe",
       key: "percentile5yPe",
       align: "right",
@@ -202,7 +213,7 @@ export function IndexListView({ initialRows }: IndexListViewProps) {
       ),
     },
     {
-      title: "近10年分位（PE）",
+      title: "近 10 年分位（PE）",
       dataIndex: "percentile10yPe",
       key: "percentile10yPe",
       align: "right",
@@ -213,7 +224,7 @@ export function IndexListView({ initialRows }: IndexListViewProps) {
       ),
     },
     {
-      title: "当前PB",
+      title: "当前 PB",
       dataIndex: "pb",
       key: "pb",
       align: "right",
@@ -242,7 +253,7 @@ export function IndexListView({ initialRows }: IndexListViewProps) {
       ),
     },
     {
-      title: "近5年分位（PB）",
+      title: "近 5 年分位（PB）",
       dataIndex: "pbPercentile5y",
       key: "pbPercentile5y",
       align: "right",
@@ -253,7 +264,7 @@ export function IndexListView({ initialRows }: IndexListViewProps) {
       ),
     },
     {
-      title: "近10年分位（PB）",
+      title: "近 10 年分位（PB）",
       dataIndex: "pbPercentile10y",
       key: "pbPercentile10y",
       align: "right",
@@ -312,14 +323,15 @@ export function IndexListView({ initialRows }: IndexListViewProps) {
     <div className="space-y-8 pb-16">
       <header className="space-y-3">
         <p className="text-xs font-medium tracking-[0.2em] uppercase text-[var(--muted-foreground)]">
-          Index universe
+          Market center
         </p>
         <h1 className="text-3xl md:text-4xl font-light tracking-tight text-[var(--foreground)]">
-          指数列表
+          行情中心 · 指数
         </h1>
         <p className="text-sm text-[var(--muted-foreground)] max-w-2xl leading-relaxed">
-          MOCK 演示：搜索名称或代码；「当前 PE/PB 分位」若同时低于对应近 5
-          年与近 10 年分位，将以浅色底标识（规则可随数据口径调整）。
+          MOCK：搜索代码或名称；表头不换行、列宽随内容。当前 PE/PB
+          分位若同时低于对应近 5 年与近 10
+          年分位，将以浅色底标示（可点击或悬停该单元格查看说明）。
         </p>
       </header>
 
@@ -332,18 +344,32 @@ export function IndexListView({ initialRows }: IndexListViewProps) {
           ) : null}
         </Empty>
       ) : (
-        <div className="rounded-xl border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] p-3 sm:p-4">
+        <div className="rounded-xl border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] p-3 sm:p-5">
           <div className="flex justify-end mb-3 min-h-[44px] items-center">
             <Input.Search
               allowClear
               placeholder="搜索名称或代码…"
-              className="w-full sm:max-w-[18rem] sm:w-[min(100%,18rem)] touch-manipulation min-h-[44px] [&_.ant-input]:text-[15px] [&_.ant-input-affix-wrapper]:min-h-[44px]"
+              enterButton={
+                <Button
+                  type="primary"
+                  aria-label="搜索"
+                  icon={<SearchOutlined aria-hidden />}
+                  className="h-[44px] min-h-[44px] min-w-[44px] sm:min-w-auto sm:px-3"
+                />
+              }
+              className="w-full sm:max-w-[19rem] sm:w-[min(100%,19rem)] touch-manipulation [&_.ant-input]:text-[15px] [&_.ant-input-affix-wrapper]:h-[44px] [&_.ant-input-affix-wrapper]:min-h-[44px] [&_.ant-btn]:h-[44px] [&_.ant-btn]:min-h-[44px]"
               size="middle"
               value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
+              onChange={(e) => {
+                setKeyword(e.target.value);
+                setPage(1);
+              }}
               aria-label="搜索指数名称或代码"
             />
           </div>
+          <p className="sm:hidden text-xs text-[var(--muted-foreground)] mb-2 leading-relaxed">
+            表格列较多时可在下方区域内左右滑动查看全部列。
+          </p>
           <div className="indices-table-wrap -mx-1 sm:mx-0">
             <Table<IndexListRow>
               className="indices-list-table"

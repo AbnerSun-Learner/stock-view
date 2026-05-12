@@ -1,139 +1,185 @@
 "use client";
 
+import { IndicesReactECharts } from "@/components/indices/indices-react-echarts";
+import * as echarts from "echarts";
+import { useMemo } from "react";
+
 function clamp01(n: number): number {
   return Math.min(100, Math.max(0, n));
 }
 
-function SemicircleGauge({
+function PercentileGauge({
   value,
   caption,
+  accent,
 }: {
   value: number | null;
   caption: string;
+  accent: "brand" | "teal";
 }) {
-  const r = 52;
-  const cx = 60;
-  const cy = 58;
-  const arcLen = Math.PI * r;
   const pct = value === null ? 0 : clamp01(value);
-  const dash = (pct / 100) * arcLen;
+  const aria =
+    value === null
+      ? `${caption}，暂无数据`
+      : `${caption}，当前读数 ${value.toFixed(1)}，满分一百`;
+  const detailFormatter = value === null ? "—" : "{value}";
+
+  const fill =
+    value === null
+      ? "color-mix(in srgb, var(--muted-foreground) 38%, transparent)"
+      : accent === "teal"
+      ? "#0e7490"
+      : "var(--correlation-brand)";
+
+  const option = useMemo(
+    (): echarts.EChartsOption => ({
+      animation: false,
+      series: [
+        {
+          type: "gauge",
+          startAngle: 210,
+          endAngle: -30,
+          min: 0,
+          max: 100,
+          splitNumber: 5,
+          radius: "92%",
+          center: ["50%", "56%"],
+          axisLine: {
+            roundCap: true,
+            lineStyle: {
+              width: 10,
+              color: [
+                [1, "color-mix(in srgb, var(--border-color) 90%, transparent)"],
+              ],
+            },
+          },
+          progress: {
+            show: true,
+            width: 10,
+            roundCap: true,
+            itemStyle: { color: fill },
+          },
+          pointer: {
+            show: true,
+            length: "62%",
+            width: 4,
+            itemStyle: { color: fill },
+          },
+          axisTick: {
+            show: true,
+            distance: -16,
+            length: 4,
+            lineStyle: {
+              color: "var(--muted-foreground)",
+              width: 1,
+              opacity: 0.45,
+            },
+          },
+          splitLine: {
+            show: true,
+            distance: -20,
+            length: 8,
+            lineStyle: {
+              color: "var(--muted-foreground)",
+              width: 1,
+              opacity: 0.55,
+            },
+          },
+          axisLabel: {
+            show: true,
+            distance: -2,
+            color: "var(--muted-foreground)",
+            fontSize: 10,
+            formatter: (v: number) => (v % 20 === 0 ? String(v) : ""),
+          },
+          anchor: {
+            show: true,
+            showAbove: true,
+            size: 7,
+            itemStyle: {
+              color: "var(--correlation-card-surface)",
+              borderColor: fill,
+              borderWidth: 2,
+            },
+          },
+          title: { show: false },
+          detail: {
+            show: true,
+            valueAnimation: false,
+            offsetCenter: [0, "52%"],
+            color: "var(--foreground)",
+            fontSize: 20,
+            fontFamily: "var(--font-mono)",
+            formatter: detailFormatter,
+          },
+          data: [{ value: pct }],
+        },
+      ],
+    }),
+    [pct, fill, detailFormatter]
+  );
 
   return (
-    <div className="flex flex-col items-center justify-center min-w-[7.5rem]">
-      <svg
-        width="120"
-        height="72"
-        viewBox="0 0 120 72"
-        className="shrink-0"
-        aria-hidden
-      >
-        <path
-          d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
-          fill="none"
-          stroke="color-mix(in srgb, var(--border-color) 90%, transparent)"
-          strokeWidth="10"
-          strokeLinecap="round"
-        />
-        {value !== null ? (
-          <path
-            d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
-            fill="none"
-            stroke="var(--correlation-brand)"
-            strokeWidth="10"
-            strokeLinecap="round"
-            strokeDasharray={`${dash} ${arcLen}`}
-          />
-        ) : null}
-      </svg>
-      <p className="mt-[-6px] text-lg font-mono tabular-nums text-[var(--foreground)]">
-        {value === null ? "—" : `${value.toFixed(1)}`}
-      </p>
-      <p className="text-[10px] text-[var(--muted-foreground)] mt-1 text-center leading-snug max-w-[8rem]">
+    <div
+      className="flex flex-col items-center justify-center min-w-0"
+      role="img"
+      aria-label={aria}
+    >
+      <div className="w-full max-w-[12.5rem] mx-auto">
+        <IndicesReactECharts height={158} option={option} />
+      </div>
+      <p className="text-[11px] text-[var(--muted-foreground)] mt-1 text-center leading-snug">
         {caption}
       </p>
     </div>
   );
 }
 
-function WaterLevelMeter({
-  value,
-  subtitle,
-}: {
-  value: number | null;
-  subtitle: string;
-}) {
-  const pct = value === null ? 0 : clamp01(value);
-
-  return (
-    <div className="flex-1 min-w-0 min-h-[92px] flex flex-col">
-      <p className="text-[11px] text-[var(--muted-foreground)] mb-2">
-        {subtitle}
-      </p>
-      <div className="relative flex-1 min-h-[68px] rounded-lg border border-[color:var(--border-color)] bg-[var(--correlation-card-tint)] overflow-hidden flex items-center">
-        <div
-          className="absolute bottom-0 left-0 right-0 rounded-b-lg bg-gradient-to-t from-[color-mix(in_srgb,var(--correlation-brand)_48%,transparent)] to-[color-mix(in_srgb,var(--correlation-brand)_22%,transparent)] transition-[height] duration-300 ease-out"
-          style={{ height: `${pct}%` }}
-        />
-        <div className="relative z-[1] w-full px-3 py-2 flex items-center justify-between gap-3">
-          <span className="text-xs font-mono tabular-nums text-[var(--foreground)]">
-            {value === null ? "—" : `${value.toFixed(1)}`}
-            <span className="opacity-65 ml-1">/ 100</span>
-          </span>
-          <span className="text-[10px] text-[var(--muted-foreground)] shrink-0">
-            水位
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 interface IndexPercentileWidgetsProps {
-  /** 0–100 */
   gaugePePercentile: number | null;
   gaugePbPercentile: number | null;
+  isEmbedded?: boolean;
 }
 
 export function IndexPercentileWidgets({
   gaugePePercentile,
   gaugePbPercentile,
+  isEmbedded = false,
 }: IndexPercentileWidgetsProps) {
-  const peAbsent = gaugePePercentile === null;
-  const pbAbsent = gaugePbPercentile === null;
+  const content = (
+    <>
+      {isEmbedded ? null : (
+        <div>
+          <h2 className="text-lg font-medium text-[var(--foreground)] tracking-wide">
+            PE / PB 估值分位
+          </h2>
+          <p className="text-xs text-[var(--muted-foreground)] mt-1">
+            仪表盘数值范围为 <span className="font-mono">0–100</span>{" "}
+            历史分位（MOCK）；由 ECharts gauge 绘制。
+          </p>
+        </div>
+      )}
 
-  return (
-    <section className="rounded-xl border border-[color:var(--border-color)] bg-[var(--correlation-card-tint)] p-5 md:p-6 space-y-5">
-      <div>
-        <h2 className="text-lg font-medium text-[var(--foreground)] tracking-wide">
-          PE / PB 估值分位
-        </h2>
-        <p className="text-xs text-[var(--muted-foreground)] mt-1">
-          仪表盘与水位图均为 <span className="font-mono">0–100</span>{" "}
-          分位（MOCK，接入后以统一历史样本为准）。
-        </p>
-      </div>
-
-      <div className="flex flex-col sm:flex-row sm:items-stretch gap-4 sm:gap-6 border-b border-[color:var(--border-color)] pb-5">
-        <SemicircleGauge
+      <div className="grid gap-4 sm:grid-cols-2">
+        <PercentileGauge
           value={gaugePePercentile}
           caption="PE 分位仪表盘（0–100）"
+          accent="brand"
         />
-        <WaterLevelMeter
-          value={gaugePePercentile}
-          subtitle={peAbsent ? "PE 分位暂无" : "PE 历史分位 · 水位"}
-        />
-      </div>
-
-      <div className="flex flex-col sm:flex-row sm:items-stretch gap-4 sm:gap-6">
-        <SemicircleGauge
+        <PercentileGauge
           value={gaugePbPercentile}
           caption="PB 分位仪表盘（0–100）"
-        />
-        <WaterLevelMeter
-          value={gaugePbPercentile}
-          subtitle={pbAbsent ? "PB 分位暂无" : "PB 历史分位 · 水位"}
+          accent="teal"
         />
       </div>
+    </>
+  );
+
+  if (isEmbedded) return <div className="space-y-4">{content}</div>;
+
+  return (
+    <section className="rounded-2xl border border-[color:var(--border-color)] bg-[var(--correlation-card-tint)] p-5 md:p-6 space-y-5 shadow-[0_14px_36px_color-mix(in_srgb,var(--foreground)_5%,transparent)]">
+      {content}
     </section>
   );
 }

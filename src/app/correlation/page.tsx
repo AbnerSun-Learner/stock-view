@@ -1,7 +1,6 @@
 "use client";
 
 import { AntdProvider } from "@/components/antd-provider";
-import { CorrelationNavbar } from "@/components/correlation/correlation-navbar";
 import {
   LazyPairPerformanceChart,
   LazyPairRollingChart,
@@ -14,6 +13,7 @@ import {
   SkeletonResultCard,
   SkeletonTable,
 } from "@/components/correlation/pair-skeleton";
+import { StillwellSiteNav } from "@/components/stillwell-site-nav";
 import { normalizeEtfCode } from "@/lib/correlation/etf-code";
 import type { PairCorrelationData } from "@/lib/correlation/pair-correlation-types";
 import { getPeriodLabel } from "@/lib/correlation/pair-correlation-types";
@@ -301,7 +301,7 @@ function CorrelationPageContent() {
 
   return (
     <div className="correlation-page min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-      <CorrelationNavbar surface="correlation" />
+      <StillwellSiteNav />
 
       <div className="pt-[72px]">
         <div className="mx-auto max-w-6xl space-y-12 px-6 py-16 md:px-10 md:py-20 lg:py-24">

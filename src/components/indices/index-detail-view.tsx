@@ -1,21 +1,17 @@
 "use client";
 
-import { IndexEtfTable } from "@/components/indices/index-etf-table";
 import { IndexIndustryComposition } from "@/components/indices/index-industry-composition";
 import { IndexPercentileWidgets } from "@/components/indices/index-percentile-widgets";
 import { IndexPriceChart } from "@/components/indices/index-price-chart";
-import { IndexValuationChart } from "@/components/indices/index-valuation-chart";
+import { IndexReturnAnalytics } from "@/components/indices/index-return-analytics";
 import {
   DEFAULT_INDEX_CHART_WINDOW,
   INDEX_CHART_WINDOW_OPTIONS,
 } from "@/lib/indices/constants";
-import {
-  sliceAlignedValuation,
-  slicePricesByChartWindow,
-} from "@/lib/indices/slice-chart-window";
+import { slicePricesByChartWindow } from "@/lib/indices/slice-chart-window";
 import type { IndexChartWindow, IndexDetailRecord } from "@/types/indices";
-import { InfoCircleOutlined, RocketOutlined } from "@ant-design/icons";
-import { Alert, Collapse, Segmented, Switch } from "antd";
+import { InfoCircleOutlined, RightOutlined } from "@ant-design/icons";
+import { Collapse, Segmented, Switch } from "antd";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -28,17 +24,21 @@ function fmtPctile(v: number | null): string {
   return `${v.toFixed(1)}%`;
 }
 
-function fmtPe(v: number | null): string {
-  if (v === null) return "—";
-  return v.toLocaleString("zh-CN", { maximumFractionDigits: 2 });
+function fmtPrice(v: number): string {
+  return v.toLocaleString("zh-CN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
+
+const METHODOLOGY_COLLAPSE_LABEL =
+  "口径说明（MOCK，接入数据后对齐全站 PE/PB 定义）";
 
 export function IndexDetailView({ detail }: IndexDetailViewProps) {
   const [chartWindow, setChartWindow] = useState<IndexChartWindow>(
     DEFAULT_INDEX_CHART_WINDOW
   );
-  const [showDd70, setShowDd70] = useState(false);
-  const [showDd80, setShowDd80] = useState(false);
+  const [isDrawdownLineVisible, setIsDrawdownLineVisible] = useState(false);
 
   const priceSlice = useMemo(
     () =>
@@ -50,233 +50,270 @@ export function IndexDetailView({ detail }: IndexDetailViewProps) {
     [detail.fullHistoryPrices, detail.listingAnchorDate, chartWindow]
   );
 
-  const valuationSlice = useMemo(
-    () =>
-      sliceAlignedValuation(
-        detail.fullHistoryValuation,
-        chartWindow,
-        detail.listingAnchorDate
-      ),
-    [detail.fullHistoryValuation, detail.listingAnchorDate, chartWindow]
-  );
-
   const chartLabel =
     INDEX_CHART_WINDOW_OPTIONS.find((o) => o.value === chartWindow)?.label ??
     chartWindow;
 
-  const pePct = detail.percentilePeByChartWindow[chartWindow];
-  const pbPct = detail.percentilePbByChartWindow[chartWindow];
-
-  const noValuationOverview = detail.peTtm === null && detail.pb === null;
+  const extremeDrawdown = useMemo(
+    () => getExtremeDrawdownStats(priceSlice),
+    [priceSlice]
+  );
 
   return (
     <div className="space-y-10 pb-16">
-      <header className="space-y-3">
-        <p className="text-xs font-medium tracking-[0.2em] uppercase text-[var(--muted-foreground)]">
-          Index detail
-        </p>
-        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-light tracking-tight text-[var(--foreground)]">
-              {detail.name}
-            </h1>
-            <p className="mt-2 text-sm text-[var(--muted-foreground)]">
-              <span className="font-mono tabular-nums">{detail.code}</span>
-              <span className="mx-2 opacity-40">·</span>
-              <span>{detail.category}</span>
-            </p>
-          </div>
-          <div className="text-sm text-[var(--muted-foreground)]">
-            数据截至{" "}
-            <span className="font-mono text-[var(--foreground)]">
-              {detail.asOfDate}
-            </span>
-          </div>
-        </div>
-
-        <Collapse
-          ghost
-          bordered={false}
-          className="-mx-2 [&_.ant-collapse-header]:px-2 [&_.ant-collapse-content-box]:px-2 pt-1"
-          items={[
-            {
-              key: "methodology",
-              label: (
-                <span className="text-sm text-[var(--muted-foreground)] inline-flex items-center gap-2">
-                  <InfoCircleOutlined />
-                  口径说明（MOCK 占位，接入数据后对齐全站 PE/PB 定义）
-                </span>
-              ),
-              children: (
-                <p className="text-xs leading-relaxed text-[var(--muted-foreground)] max-w-2xl">
-                  PE（TTM）剔除亏损成分的处理规则、是否含港股通口径、缺失交易日插值方式等，均由数据源文档为准；
-                  本站展示数值仅供演示路由与交互闭环。
-                </p>
-              ),
-            },
-          ]}
+      <header className="relative overflow-hidden rounded-2xl border border-[color:var(--border-color)] bg-[linear-gradient(135deg,var(--correlation-card-surface),var(--correlation-card-tint))] p-5 shadow-[0_18px_48px_color-mix(in_srgb,var(--foreground)_6%,transparent)] md:p-7">
+        <div
+          className="pointer-events-none absolute -right-20 -top-24 h-56 w-56 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--correlation-brand)_14%,transparent),transparent_68%)]"
+          aria-hidden
         />
+        <div className="relative space-y-4">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,28rem)] lg:items-start">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold tracking-[0.22em] uppercase text-[var(--correlation-brand)]">
+                Market center · Index
+              </p>
+              <h1 className="mt-3 text-3xl md:text-5xl font-light tracking-tight text-[var(--foreground)]">
+                {detail.name}
+              </h1>
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                <span className="rounded-full border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] px-3 py-1 font-mono tabular-nums text-[var(--foreground)]">
+                  {detail.code}
+                </span>
+                <span className="rounded-full border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] px-3 py-1 text-[var(--muted-foreground)]">
+                  {detail.category}
+                </span>
+                <span className="rounded-full border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] px-3 py-1 text-[var(--muted-foreground)]">
+                  数据截至
+                  <span className="ms-2 font-mono tabular-nums text-[var(--foreground)]">
+                    {detail.asOfDate}
+                  </span>
+                </span>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-[color:var(--border-color)] bg-[color-mix(in_srgb,var(--correlation-card-surface)_82%,transparent)] p-4">
+              <div className="mb-3">
+                <h2 className="text-base font-medium text-[var(--foreground)]">
+                  PE / PB 估值分位
+                </h2>
+                <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                  仪表盘数值范围为 <span className="font-mono">0–100</span>{" "}
+                  历史分位（MOCK）
+                </p>
+              </div>
+              <IndexPercentileWidgets
+                gaugePePercentile={detail.gaugePePercentile}
+                gaugePbPercentile={detail.gaugePbPercentile}
+                isEmbedded
+              />
+            </div>
+          </div>
+
+          <Collapse
+            ghost
+            bordered={false}
+            expandIcon={({ isActive }) => (
+              <RightOutlined aria-hidden rotate={isActive ? 90 : undefined} />
+            )}
+            className="rounded-xl border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] [&_.ant-collapse-header]:px-4 [&_.ant-collapse-header]:py-3 [&_.ant-collapse-content-box]:px-4 [&_.ant-collapse-content-box]:pt-0"
+            items={[
+              {
+                key: "methodology",
+                label: (
+                  <span className="text-sm text-[var(--muted-foreground)] inline-flex items-center gap-2">
+                    <InfoCircleOutlined aria-hidden />
+                    {METHODOLOGY_COLLAPSE_LABEL}
+                  </span>
+                ),
+                children: (
+                  <p className="text-xs leading-relaxed text-[var(--muted-foreground)] max-w-3xl">
+                    PE（TTM）剔除亏损、港股通口径与缺失交易日处理以数据源为准；走势图区间最高价回撤水位基于当前可视序列内的最高收盘价。
+                  </p>
+                ),
+              },
+            ]}
+          />
+        </div>
       </header>
 
-      <section className="rounded-xl border border-[color:var(--border-color)] bg-[var(--correlation-card-tint)] p-5 md:p-6 space-y-5">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted-foreground)] mb-2">
-              快照与所选走势区间概要
-            </p>
-            <p className="text-xs text-[var(--muted-foreground)] mb-2">
-              PE / PB
-              数值为截至日快照；分位与下方「价格指数走势」所选时间区间联动（MOCK）。
-            </p>
-            <p className="text-sm text-[var(--foreground)]">
-              当前走势区间：
-              <span className="font-medium ms-1">{chartLabel}</span>
-            </p>
+      <section className="space-y-4">
+        <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] xl:gap-8">
+          <div className="min-w-0 flex-1 space-y-4">
+            <IndexPriceChart
+              series={priceSlice}
+              windowLabel={chartLabel}
+              showDrawdown70={isDrawdownLineVisible}
+              showDrawdown80={isDrawdownLineVisible}
+              controls={
+                <Segmented<IndexChartWindow>
+                  size="middle"
+                  options={INDEX_CHART_WINDOW_OPTIONS}
+                  value={chartWindow}
+                  onChange={(v) => setChartWindow(v)}
+                />
+              }
+            />
           </div>
-          <div className="rounded-lg border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] px-4 py-3 text-xs text-[var(--muted-foreground)] inline-flex items-start gap-2 max-w-md">
-            <RocketOutlined className="mt-0.5 shrink-0 opacity-70" />
-            <span>
-              M2 预留：网格测算、双标的对比等「下一步操作」将挂载于此区域（PRD
-              §8）。
-            </span>
+          <div className="h-full">
+            <ExtremeDrawdownPanel
+              isLineVisible={isDrawdownLineVisible}
+              onLineVisibleChange={setIsDrawdownLineVisible}
+              stats={extremeDrawdown}
+            />
           </div>
         </div>
-
-        {noValuationOverview ? (
-          <Alert
-            type="info"
-            showIcon
-            message="暂无估值"
-            description="示例指数历史或盈利口径不足以计算 PE / PB / 分位（MOCK 演练）。价格走势仍可按所选周期截取展示。"
-          />
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {detail.peTtm !== null ? (
-              <div className="rounded-lg border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] p-4">
-                <p className="text-[11px] text-[var(--muted-foreground)] mb-1">
-                  当前 PE（TTM）
-                </p>
-                <p className="text-xl font-mono tabular-nums text-[var(--foreground)]">
-                  {fmtPe(detail.peTtm)}
-                </p>
-              </div>
-            ) : null}
-            <div className="rounded-lg border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] p-4">
-              <p className="text-[11px] text-[var(--muted-foreground)] mb-1">
-                {chartLabel} · PE 分位
-              </p>
-              <p className="text-xl font-mono tabular-nums text-[var(--foreground)]">
-                {fmtPctile(pePct)}
-              </p>
-              <p className="text-[10px] text-[var(--muted-foreground)] mt-2 leading-snug">
-                与下方走势图可见区间一致的演示口径。
-              </p>
-            </div>
-            <div className="rounded-lg border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] p-4">
-              <p className="text-[11px] text-[var(--muted-foreground)] mb-1">
-                {chartLabel} · PB 分位
-              </p>
-              <p className="text-xl font-mono tabular-nums text-[var(--foreground)]">
-                {fmtPctile(pbPct)}
-              </p>
-            </div>
-            {detail.pb !== null ? (
-              <div className="rounded-lg border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] p-4">
-                <p className="text-[11px] text-[var(--muted-foreground)] mb-1">
-                  当前 PB
-                </p>
-                <p className="text-xl font-mono tabular-nums text-[var(--foreground)]">
-                  {fmtPe(detail.pb)}
-                </p>
-              </div>
-            ) : null}
-          </div>
-        )}
       </section>
 
-      <IndexPercentileWidgets
-        gaugePePercentile={detail.gaugePePercentile}
-        gaugePbPercentile={detail.gaugePbPercentile}
+      <IndexReturnAnalytics
+        series={detail.fullHistoryPrices}
+        indexName={detail.name}
       />
 
-      <section className="space-y-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <h2 className="text-lg font-medium text-[var(--foreground)] tracking-wide">
-              价格指数走势
-            </h2>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Segmented<IndexChartWindow>
-                size="middle"
-                options={INDEX_CHART_WINDOW_OPTIONS}
-                value={chartWindow}
-                onChange={(v) => setChartWindow(v)}
-              />
-              <span className="sr-only">
-                选择走势图时间区间，将同步截取估值走势图与上分位摘要
-              </span>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-3 lg:justify-end shrink-0">
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 rounded-md border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] px-3 py-2 min-h-[44px] touch-manipulation"
-            >
-              <span className="text-[var(--muted-foreground)] text-sm whitespace-nowrap">
-                70% 回撤水位
-              </span>
-              <Switch
-                checked={showDd70}
-                onChange={setShowDd70}
-                aria-label="在价格指数走势图上显示自区间最高价回撤 70% 的参考水位"
-              />
-            </button>
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 rounded-md border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] px-3 py-2 min-h-[44px] touch-manipulation"
-            >
-              <span className="text-[var(--muted-foreground)] text-sm whitespace-nowrap">
-                80% 回撤水位
-              </span>
-              <Switch
-                checked={showDd80}
-                onChange={setShowDd80}
-                aria-label="在价格指数走势图上显示自区间最高价回撤 80% 的参考水位"
-              />
-            </button>
-          </div>
-        </div>
-        <IndexPriceChart
-          series={priceSlice}
-          windowLabel={chartLabel}
-          showDrawdown70={showDd70}
-          showDrawdown80={showDd80}
-        />
-      </section>
-
-      <section className="space-y-4">
-        <h2 className="text-lg font-medium text-[var(--foreground)] tracking-wide">
-          估值走势
-        </h2>
-        <IndexValuationChart series={valuationSlice} windowLabel={chartLabel} />
-      </section>
-
       <IndexIndustryComposition data={detail.industryComposition} />
-
-      <section className="space-y-4">
-        <h2 className="text-lg font-medium text-[var(--foreground)] tracking-wide">
-          跟踪 ETF
-        </h2>
-        <IndexEtfTable etfs={detail.etfs} />
-      </section>
 
       <div className="text-center">
         <Link
           href="/indices"
           className="text-sm text-[var(--correlation-brand)] hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--correlation-brand)] rounded-sm px-1 py-2 inline-block"
         >
-          ← 返回指数列表
+          ← 返回行情中心
         </Link>
+      </div>
+    </div>
+  );
+}
+
+interface ExtremeDrawdownStats {
+  latestClose: number;
+  peak: number;
+  level70: number;
+  level80: number;
+  latestDrawdownPct: number;
+}
+
+interface ExtremeDrawdownPanelProps {
+  stats: ExtremeDrawdownStats | null;
+  isLineVisible: boolean;
+  onLineVisibleChange: (checked: boolean) => void;
+}
+
+function getExtremeDrawdownStats(
+  series: readonly { close: number }[]
+): ExtremeDrawdownStats | null {
+  if (series.length === 0) return null;
+
+  const peak = Math.max(...series.map((point) => point.close));
+  const latestClose = series[series.length - 1].close;
+
+  return {
+    latestClose,
+    peak,
+    level70: peak * 0.3,
+    level80: peak * 0.2,
+    latestDrawdownPct: (latestClose / peak - 1) * 100,
+  };
+}
+
+function ExtremeDrawdownPanel({
+  stats,
+  isLineVisible,
+  onLineVisibleChange,
+}: ExtremeDrawdownPanelProps) {
+  if (!stats) return null;
+
+  return (
+    <section className="flex h-full flex-col rounded-2xl border border-[color:var(--border-color)] bg-[linear-gradient(180deg,var(--correlation-card-surface),color-mix(in_srgb,var(--correlation-card-tint)_72%,white))] p-5 shadow-[0_14px_36px_color-mix(in_srgb,var(--foreground)_5%,transparent)] md:p-6">
+      <div className="flex items-start justify-between gap-4 border-b border-[color:var(--border-color)] pb-4">
+        <div>
+          <h2 className="inline-flex items-center gap-1.5 text-lg font-medium tracking-wide text-[var(--foreground)]">
+            极限跌幅
+            <InfoCircleOutlined
+              aria-hidden
+              className="text-sm text-[var(--muted-foreground)]"
+            />
+          </h2>
+          <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+            指数从最高点下跌 <span className="font-mono">70%</span>、
+            <span className="font-mono">80%</span> 的点位数据
+          </p>
+        </div>
+        <div className="rounded-full border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] px-2 py-1 shadow-[0_8px_18px_color-mix(in_srgb,var(--foreground)_4%,transparent)]">
+          <Switch
+            checked={isLineVisible}
+            onChange={onLineVisibleChange}
+            aria-label="在价格走势图中显示七十和八十水位线"
+          />
+        </div>
+      </div>
+
+      <div className="mt-5 grid flex-1 content-between gap-3">
+        <ExtremeDrawdownMetric
+          title="收盘"
+          value={fmtPrice(stats.latestClose)}
+          secondaryLabel="距最高点下跌"
+          secondaryValue={fmtPctile(
+            Math.abs(stats.latestDrawdownPct) < 0.005
+              ? 0
+              : stats.latestDrawdownPct
+          )}
+          tone={stats.latestDrawdownPct >= 0 ? "profit" : "loss"}
+        />
+        <ExtremeDrawdownMetric
+          title="70 水位线"
+          value={fmtPrice(stats.level70)}
+          secondaryLabel="距收盘涨跌"
+          secondaryValue="-70.00%"
+          tone="profit"
+        />
+        <ExtremeDrawdownMetric
+          title="80 水位线"
+          value={fmtPrice(stats.level80)}
+          secondaryLabel="距收盘涨跌"
+          secondaryValue="-80.00%"
+          tone="profit"
+        />
+      </div>
+    </section>
+  );
+}
+
+interface ExtremeDrawdownMetricProps {
+  title: string;
+  value: string;
+  secondaryLabel: string;
+  secondaryValue: string;
+  tone: "profit" | "loss";
+}
+
+function ExtremeDrawdownMetric({
+  title,
+  value,
+  secondaryLabel,
+  secondaryValue,
+  tone,
+}: ExtremeDrawdownMetricProps) {
+  const toneClass =
+    tone === "profit" ? "text-[var(--profit)]" : "text-[var(--loss)]";
+
+  return (
+    <div className="rounded-2xl border border-[color:var(--border-color)] bg-[color-mix(in_srgb,var(--correlation-card-surface)_88%,white)] p-4 shadow-[0_8px_20px_color-mix(in_srgb,var(--foreground)_3%,transparent)]">
+      <h3 className="text-sm font-medium text-[var(--foreground)]">{title}</h3>
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-xs font-medium text-[var(--muted-foreground)]">
+            点位
+          </p>
+          <p className="mt-1 font-mono text-lg tabular-nums text-[var(--foreground)]">
+            {value}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs font-medium text-[var(--muted-foreground)]">
+            {secondaryLabel}
+          </p>
+          <p className={`mt-1 font-mono text-lg tabular-nums ${toneClass}`}>
+            {secondaryValue}
+          </p>
+        </div>
       </div>
     </div>
   );

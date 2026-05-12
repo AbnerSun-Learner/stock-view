@@ -1,6 +1,6 @@
 # 跨页面 PRD：背景、导流、竞品、迭代与待决策
 
-**摘录来源**：`/doc/2026-05-11-index-hub-prd-analysis.md` §1、§4（导流总览）、§6–§9；`/doc/2026-05-11-index-hub-pages-prd.html` §1（范围）
+**摘录来源**：`/doc/2026-05-11-index-hub-prd-analysis.md` §1、§4（导流总览）、§6–§9；`/doc/2026-05-11-market-center-prd.md`（范围与非目标）
 
 ---
 
@@ -39,7 +39,7 @@
 | M2   | 深链 + 导航入口                   | 转化率可测     |
 | M3   | 缓存、岛屿式、`loading`、FACTS 等 | 弱网与 SEO     |
 
-**列表 / 详情迭代 PRD**：`/doc/2026-05-11-index-hub-pages-prd.html`
+**列表 / 详情迭代 PRD**：`/doc/2026-05-11-market-center-prd.md`
 
 ## 6. 开工前待决策（纲要 §7）
 

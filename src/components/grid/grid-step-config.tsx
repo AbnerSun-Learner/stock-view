@@ -50,28 +50,33 @@ export function GridStepConfig({
   }
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-4 p-6 md:p-7">
       {/* 头部 */}
-      <div className="flex items-start justify-between gap-4 mb-4">
-        <div className="flex items-center gap-2">
-          <h3 className="text-lg font-bold text-slate-800">
-            网格步长
-          </h3>
-          <div className="group relative">
-            <HelpCircle className="w-4 h-4 cursor-help text-slate-400 hover:text-slate-600:text-slate-300 transition-colors" />
-            <div className="absolute left-0 top-full mt-2 hidden group-hover:block z-[99999] w-72 p-3 text-xs rounded-lg bg-slate-900 text-slate-100 shadow-xl whitespace-normal pointer-events-none">
-              <div className="font-semibold mb-2">计算逻辑公式：</div>
-              <div className="space-y-1 font-mono text-[11px]">
-                <div>P₁ = 基准价</div>
-                <div>P₂ = P₁ × (1 - Step_initial)</div>
-                <div>Pₙ = Pₙ₋₁ × (1 - Stepₙ₋₁)</div>
-                <div className="pt-2 border-t border-slate-700">
-                  <div>动态步长更新：</div>
-                  <div>Stepₙ = Stepₙ₋₁ × (1 + Scale)</div>
-                  <div className="text-slate-400 mt-1">
-                    稳健模式 Scale=0.3
-                    <br />
-                    抄底模式 Scale=0.6
+      <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="ds-card-eyebrow mb-1.5">Step sizing</p>
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-semibold text-[var(--foreground)]">
+              网格步长
+            </h3>
+            <div className="group relative">
+              <HelpCircle className="h-4 w-4 cursor-help text-[var(--muted-foreground)] transition-colors hover:text-[var(--accent)]" />
+              <div className="pointer-events-none absolute left-0 top-full z-[99999] mt-2 hidden w-[min(100vw-2rem,20rem)] rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 text-xs leading-relaxed text-[var(--foreground)] shadow-[var(--ds-shadow-lg)] group-hover:block">
+                <div className="mb-2 font-semibold text-[var(--foreground)]">
+                  计算逻辑公式：
+                </div>
+                <div className="space-y-1 font-mono text-[11px] text-[var(--muted-foreground)]">
+                  <div>P₁ = 基准价</div>
+                  <div>P₂ = P₁ × (1 - Step_initial)</div>
+                  <div>Pₙ = Pₙ₋₁ × (1 - Stepₙ₋₁)</div>
+                  <div className="mt-2 border-t border-[var(--border)] pt-2">
+                    <div className="text-[var(--foreground)]">
+                      动态步长更新：
+                    </div>
+                    <div>Stepₙ = Stepₙ₋₁ × (1 + Scale)</div>
+                    <div className="mt-1 text-[11px] leading-snug">
+                      稳健模式 Scale=0.3 · 抄底模式 Scale=0.6
+                    </div>
                   </div>
                 </div>
               </div>
@@ -80,10 +85,10 @@ export function GridStepConfig({
         </div>
 
         {/* 功能开关 */}
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3 sm:pt-1">
           <label
             htmlFor="dynamic-switch"
-            className="text-sm font-medium text-slate-700 cursor-pointer"
+            className="cursor-pointer text-xs font-medium text-[var(--foreground)]"
           >
             启用动态间距
           </label>
@@ -91,16 +96,17 @@ export function GridStepConfig({
             id="dynamic-switch"
             role="switch"
             aria-checked={dynamicEnabled}
+            type="button"
             onClick={() => onDynamicEnabledChange(!dynamicEnabled)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] ${
+            className={`relative inline-flex h-7 w-11 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--card)] ${
               dynamicEnabled
-                ? "bg-[var(--foreground)]"
-                : "bg-slate-300"
+                ? "bg-[var(--accent)]"
+                : "bg-[color-mix(in_srgb,var(--muted-foreground)_28%,var(--border))]"
             }`}
           >
             <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-[var(--page-bg)] transition-transform duration-200 ${
-                dynamicEnabled ? "translate-x-6" : "translate-x-1"
+              className={`inline-block h-[18px] w-[18px] transform rounded-full bg-[var(--card)] shadow-[var(--ds-shadow-sm)] transition-transform duration-200 ${
+                dynamicEnabled ? "translate-x-[22px]" : "translate-x-1"
               }`}
             />
           </button>
@@ -113,9 +119,9 @@ export function GridStepConfig({
           <div className="flex items-center justify-between">
             <label
               htmlFor="base-step-input"
-              className="flex items-center gap-1 text-sm font-semibold text-slate-700"
+              className="flex items-center gap-1 text-xs font-semibold text-[var(--foreground)]"
             >
-              <span className="text-red-500">*</span>
+              <span className="text-[var(--loss)]">*</span>
               基础步长（小网）
             </label>
           </div>
@@ -146,9 +152,9 @@ export function GridStepConfig({
             <div className="flex items-center justify-between">
               <label
                 htmlFor="medium-step-input"
-                className="flex items-center gap-1 text-sm font-semibold text-slate-700"
+                className="flex items-center gap-1 text-xs font-semibold text-[var(--foreground)]"
               >
-                <span className="text-red-500">*</span>
+                <span className="text-[var(--loss)]">*</span>
                 中网步长
               </label>
             </div>
@@ -177,9 +183,9 @@ export function GridStepConfig({
             <div className="flex items-center justify-between">
               <label
                 htmlFor="large-step-input"
-                className="flex items-center gap-1 text-sm font-semibold text-slate-700"
+                className="flex items-center gap-1 text-xs font-semibold text-[var(--foreground)]"
               >
-                <span className="text-red-500">*</span>
+                <span className="text-[var(--loss)]">*</span>
                 大网步长
               </label>
             </div>
@@ -206,8 +212,8 @@ export function GridStepConfig({
 
         {/* 动态模式提示 */}
         {dynamicEnabled && (
-          <div className="border border-[color:var(--border-color)] p-3">
-            <p className="text-xs text-[var(--muted-foreground)] leading-relaxed">
+          <div className="rounded-lg border border-[var(--border)] bg-[color-mix(in_srgb,var(--accent)_5%,var(--card))] px-3 py-2.5">
+            <p className="text-xs leading-relaxed text-[var(--muted-foreground)]">
               动态模式已激活，步长会随网格档位按所选模式逐级扩张。
             </p>
           </div>
@@ -215,37 +221,38 @@ export function GridStepConfig({
 
         {/* 动态增强面板 - 展开层 */}
         {dynamicEnabled && (
-          <div className="space-y-4 pt-2">
-            <h4 className="text-sm font-semibold text-slate-700">
+          <div className="space-y-4 pt-1">
+            <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted-foreground)]">
               感官模式
             </h4>
 
             <div className="grid grid-cols-2 gap-3">
               {/* 稳健模式卡片 */}
               <button
+                type="button"
                 onClick={() => onModeChange("stable")}
-                className={`relative p-4 border transition-colors duration-150 text-left ${
+                className={`relative rounded-xl border p-4 text-left transition-[box-shadow,border-color,background-color] duration-200 ${
                   mode === "stable"
-                    ? "border-[var(--foreground)] bg-[var(--hover-bg)]"
-                    : "border-[color:var(--border-color)] hover:border-[var(--foreground)]"
+                    ? "border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] bg-[color-mix(in_srgb,var(--accent)_7%,var(--card))] shadow-[var(--ds-shadow-sm)]"
+                    : "border-[var(--border)] bg-[var(--card)] hover:border-[color-mix(in_srgb,var(--accent)_25%,var(--border))]"
                 }`}
               >
                 {mode === "stable" && (
-                  <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-[var(--foreground)]" />
+                  <div className="absolute right-3 top-3 h-2 w-2 rounded-full bg-[var(--accent)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_22%,transparent)]" />
                 )}
 
                 <div className="flex flex-col gap-3">
-                  <div className="w-10 h-10 flex items-center justify-center border border-[color:var(--border-color)]">
-                    <Shield className="w-5 h-5 text-[var(--muted-foreground)]" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-subtle)]">
+                    <Shield className="h-5 w-5 text-[var(--accent)]" />
                   </div>
                   <div>
-                    <div className="font-semibold mb-1 text-slate-800">
+                    <div className="mb-1 font-semibold text-[var(--foreground)]">
                       稳健模式
                     </div>
-                    <div className="text-xs leading-relaxed text-slate-600">
+                    <div className="text-xs leading-relaxed text-[var(--muted-foreground)]">
                       兼顾利润与防守，适合常规波动
                     </div>
-                    <div className="text-xs font-mono mt-2 text-[var(--muted-foreground)]">
+                    <div className="mt-2 font-mono text-[11px] text-[var(--muted-foreground)]">
                       Scale = 0.3
                     </div>
                   </div>
@@ -254,29 +261,30 @@ export function GridStepConfig({
 
               {/* 抄底模式卡片 */}
               <button
+                type="button"
                 onClick={() => onModeChange("aggressive")}
-                className={`relative p-4 border transition-colors duration-150 text-left ${
+                className={`relative rounded-xl border p-4 text-left transition-[box-shadow,border-color,background-color] duration-200 ${
                   mode === "aggressive"
-                    ? "border-[var(--foreground)] bg-[var(--hover-bg)]"
-                    : "border-[color:var(--border-color)] hover:border-[var(--foreground)]"
+                    ? "border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] bg-[color-mix(in_srgb,var(--accent)_7%,var(--card))] shadow-[var(--ds-shadow-sm)]"
+                    : "border-[var(--border)] bg-[var(--card)] hover:border-[color-mix(in_srgb,var(--accent)_25%,var(--border))]"
                 }`}
               >
                 {mode === "aggressive" && (
-                  <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-[var(--foreground)]" />
+                  <div className="absolute right-3 top-3 h-2 w-2 rounded-full bg-[var(--accent)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_22%,transparent)]" />
                 )}
 
                 <div className="flex flex-col gap-3">
-                  <div className="w-10 h-10 flex items-center justify-center border border-[color:var(--border-color)]">
-                    <Filter className="w-5 h-5 text-[var(--muted-foreground)]" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-subtle)]">
+                    <Filter className="h-5 w-5 text-[var(--accent-warm)]" />
                   </div>
                   <div>
-                    <div className="font-semibold mb-1 text-slate-800">
+                    <div className="mb-1 font-semibold text-[var(--foreground)]">
                       抄底模式
                     </div>
-                    <div className="text-xs leading-relaxed text-slate-600">
+                    <div className="text-xs leading-relaxed text-[var(--muted-foreground)]">
                       牺牲频率换取深度防守，适合接飞刀
                     </div>
-                    <div className="text-xs font-mono mt-2 text-[var(--muted-foreground)]">
+                    <div className="mt-2 font-mono text-[11px] text-[var(--muted-foreground)]">
                       Scale = 0.6
                     </div>
                   </div>
@@ -287,31 +295,33 @@ export function GridStepConfig({
         )}
 
         {/* 底部状态栏 */}
-        <div className="pt-4 border-t border-[color:var(--border-color)]">
-          <div className="flex items-center gap-3">
+        <div className="border-t border-[var(--border)] pt-4">
+          <div className="flex items-start gap-3">
             <div
-              className={`w-2 h-2 rounded-full flex-shrink-0 ${
+              className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
                 dynamicEnabled
-                  ? "bg-[var(--foreground)]"
-                  : "bg-slate-400"
+                  ? "bg-[var(--accent)]"
+                  : "bg-[var(--muted-foreground)]"
               }`}
             />
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs leading-relaxed text-[var(--muted-foreground)]">
               {dynamicEnabled ? (
                 <>
                   当前生效逻辑：
-                  <span className="font-semibold text-slate-800">
+                  <span className="font-semibold text-[var(--foreground)]">
+                    {" "}
                     加速扩张
                   </span>{" "}
-                  (基础: {baseStep}%, 系数: {getScaleFactor()})
+                  （基础: {baseStep}%，系数: {getScaleFactor()}）
                 </>
               ) : (
                 <>
                   当前生效逻辑：
-                  <span className="font-semibold text-slate-800">
+                  <span className="font-semibold text-[var(--foreground)]">
+                    {" "}
                     等差指数模型
                   </span>{" "}
-                  (系数: 0)
+                  （系数: 0）
                 </>
               )}
             </p>

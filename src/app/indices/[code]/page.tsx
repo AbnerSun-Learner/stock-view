@@ -20,8 +20,8 @@ export async function generateMetadata({
     };
   }
   return {
-    title: `${detail.name}（${detail.code}）· 指数详情 · Stillwell`,
-    description: `${detail.name}（${detail.code}）估值摘要、价格指数走势与跟踪 ETF（MOCK）。`,
+    title: `${detail.name}（${detail.code}）· 行情中心 · Stillwell`,
+    description: `${detail.name}（${detail.code}）价格与估值走势、分位仪表盘及申万行业构成（MOCK）。`,
   };
 }
 

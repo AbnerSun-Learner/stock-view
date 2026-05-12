@@ -1,106 +1,34 @@
 "use client";
 
-import { ChartShell } from "@/components/correlation/chart-shell";
+import { IndicesReactECharts } from "@/components/indices/indices-react-echarts";
 import type { IndexPricePoint } from "@/types/indices";
-import { useMemo } from "react";
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import * as echarts from "echarts";
+import { useMemo, type ReactNode } from "react";
 
-export interface DrawdownLevels {
-  peak: number;
-  /** 最高价回撤 70% 对应价位（最高价 × 30%） */
-  priceAt70Dd: number;
-  /** 最高价回撤 80% 对应价位（最高价 × 20%） */
-  priceAt80Dd: number;
+function fmtPrice(n: number): string {
+  return n.toLocaleString("zh-CN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
-function computeDrawdownLevels(
-  series: readonly IndexPricePoint[]
-): DrawdownLevels {
-  const peak = Math.max(...series.map((p) => p.close));
-  return {
-    peak,
-    priceAt70Dd: peak * (1 - 0.7),
-    priceAt80Dd: peak * (1 - 0.8),
-  };
+function fmtPct(n: number): string {
+  return `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
 }
 
-interface PriceTooltipBodyProps {
-  active?: boolean;
-  payload?: readonly { value?: number }[];
-  label?: string;
-  drawdownLines:
-    | (DrawdownLevels & { showDd70: boolean; showDd80: boolean })
-    | null;
-}
-
-function PriceTooltipBody({
-  active,
-  payload,
-  label,
-  drawdownLines,
-}: PriceTooltipBodyProps) {
-  if (!active || !payload?.length) return null;
-  const v = payload[0].value;
-  if (v === undefined) return null;
-
-  const fmtPrice = (n: number) =>
-    n.toLocaleString("zh-CN", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-
-  return (
-    <div className="indices-chart-tooltip rounded-lg px-3 py-2 text-xs border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] shadow-md space-y-1.5">
-      <p className="text-[var(--muted-foreground)] font-mono mb-0">{label}</p>
-      <p className="text-[var(--foreground)] font-mono tabular-nums">
-        收盘 {fmtPrice(v)}
-      </p>
-      {drawdownLines?.showDd70 || drawdownLines?.showDd80 ? (
-        <div className="pt-2 mt-2 border-t border-[color:var(--border-color)] text-[var(--muted-foreground)] space-y-1">
-          <p className="text-[11px] text-[var(--foreground)] mb-1">
-            回撤参考水位
-          </p>
-          {drawdownLines.showDd70 ? (
-            <p className="font-mono tabular-nums leading-snug">
-              最高价回撤{" "}
-              <span className="text-[var(--correlation-chart-series-2,#c2410c)]">
-                70%
-              </span>
-              ：{fmtPrice(drawdownLines.priceAt70Dd)}{" "}
-              <span className="opacity-75">（约为区间最高价的 30%）</span>
-            </p>
-          ) : null}
-          {drawdownLines.showDd80 ? (
-            <p className="font-mono tabular-nums leading-snug">
-              最高价回撤{" "}
-              <span className="text-[var(--correlation-chart-series-4,#92400e)]">
-                80%
-              </span>
-              ：{fmtPrice(drawdownLines.priceAt80Dd)}{" "}
-              <span className="opacity-75">（约为区间最高价的 20%）</span>
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
-  );
+function getQuarterLabel(isoDate: string): string {
+  const year = isoDate.slice(0, 4);
+  const month = Number(isoDate.slice(5, 7));
+  if (month === 1) return year;
+  return `${month}月`;
 }
 
 interface IndexPriceChartProps {
   series: readonly IndexPricePoint[];
   windowLabel: string;
-  /** 区间为可视序列内最高价回撤 70% 对应价位标注 */
   showDrawdown70: boolean;
   showDrawdown80: boolean;
+  controls?: ReactNode;
 }
 
 export function IndexPriceChart({
@@ -108,34 +36,240 @@ export function IndexPriceChart({
   windowLabel,
   showDrawdown70,
   showDrawdown80,
+  controls,
 }: IndexPriceChartProps) {
-  const axisColor = "var(--muted-foreground)";
-  const gridColor = "var(--border-color)";
-  const lineColor = "var(--valuation-chart-close-line)";
-
-  const drawdownLevels = useMemo(
-    () => (series.length > 0 ? computeDrawdownLevels(series) : null),
-    [series]
-  );
-
-  const ticks = useMemo(() => {
-    if (series.length <= 6) return series.map((p) => p.date);
-    const step = Math.max(1, Math.floor(series.length / 5));
+  const axisTickDates = useMemo(() => {
     const out: string[] = [];
-    for (let i = 0; i < series.length; i += step) out.push(series[i].date);
-    const last = series[series.length - 1].date;
-    if (out[out.length - 1] !== last) out.push(last);
-    return out;
+    const seen = new Set<string>();
+
+    for (const point of series) {
+      const yearMonth = point.date.slice(0, 7);
+      if (seen.has(yearMonth)) continue;
+      seen.add(yearMonth);
+
+      const month = Number(point.date.slice(5, 7));
+      if ([1, 4, 7, 10].includes(month)) out.push(point.date);
+    }
+
+    const maxTicks = 10;
+    if (out.length <= maxTicks) return out;
+
+    const step = Math.ceil(out.length / maxTicks);
+    return out.filter((_, index) => index % step === 0);
   }, [series]);
 
-  const tooltipDrawdown =
-    drawdownLevels && (showDrawdown70 || showDrawdown80)
-      ? {
-          ...drawdownLevels,
-          showDd70: showDrawdown70,
-          showDd80: showDrawdown80,
-        }
-      : null;
+  const option = useMemo(() => {
+    if (series.length === 0) return null;
+
+    const dates = series.map((p) => p.date);
+    const closes = series.map((p) => p.close);
+    const tickSet = new Set(axisTickDates);
+    const peak = Math.max(...closes);
+    const firstClose = closes[0];
+    const markLineData: echarts.MarkLineComponentOption["data"] = [];
+
+    if (showDrawdown70) {
+      markLineData.push({
+        yAxis: Number((peak * 0.3).toFixed(2)),
+        name: "70 水位线",
+        lineStyle: {
+          color: "color-mix(in srgb, var(--profit) 75%, transparent)",
+          width: 1,
+          type: "dashed",
+        },
+        label: {
+          show: true,
+          formatter: "70 水位",
+          color: "var(--profit)",
+          fontSize: 10,
+        },
+      });
+    }
+
+    if (showDrawdown80) {
+      markLineData.push({
+        yAxis: Number((peak * 0.2).toFixed(2)),
+        name: "80 水位线",
+        lineStyle: {
+          color: "color-mix(in srgb, var(--profit) 90%, transparent)",
+          width: 1,
+          type: "dashed",
+        },
+        label: {
+          show: true,
+          formatter: "80 水位",
+          color: "var(--profit)",
+          fontSize: 10,
+        },
+      });
+    }
+
+    return {
+      grid: {
+        left: 50,
+        right: 48,
+        top: 18,
+        bottom: 8,
+        containLabel: true,
+      },
+      tooltip: {
+        trigger: "axis",
+        confine: true,
+        showContent: true,
+        axisPointer: {
+          type: "cross",
+          label: {
+            show: true,
+            backgroundColor:
+              "color-mix(in srgb, var(--correlation-brand) 36%, var(--correlation-card-surface))",
+            color: "var(--foreground)",
+            fontSize: 11,
+          },
+          crossStyle: {
+            color:
+              "color-mix(in srgb, var(--muted-foreground) 62%, transparent)",
+            type: "dashed",
+          },
+          lineStyle: {
+            color:
+              "color-mix(in srgb, var(--muted-foreground) 62%, transparent)",
+            type: "dashed",
+          },
+        },
+        borderColor: "var(--border-color)",
+        backgroundColor: "var(--correlation-card-surface)",
+        extraCssText:
+          "box-shadow:0 18px 42px rgba(15,23,42,0.12);border-radius:10px;padding:12px 14px;",
+        textStyle: {
+          color: "var(--foreground)",
+          fontSize: 12,
+        },
+        formatter: (raw: unknown) => {
+          const items = Array.isArray(raw) ? raw : [raw];
+          const p = items[0] as {
+            axisValue?: string;
+            dataIndex?: number;
+            value?: number;
+          };
+          const date = p?.axisValue ?? "";
+          const value = p?.value;
+          const index = typeof p?.dataIndex === "number" ? p.dataIndex : -1;
+          if (typeof value !== "number") return "";
+          const runningPeak =
+            index >= 0 ? Math.max(...closes.slice(0, index + 1)) : peak;
+          const cumulative = (value / firstClose - 1) * 100;
+          const drawdown = (value / runningPeak - 1) * 100;
+          const cumulativeColor =
+            cumulative >= 0 ? "var(--loss)" : "var(--profit)";
+          const drawdownColor = drawdown >= 0 ? "var(--loss)" : "var(--profit)";
+
+          let html = `<div style="font-size:12px;min-width:170px;">`;
+          html += `<div style="display:flex;align-items:center;gap:8px;font-weight:700;color:var(--foreground);margin-bottom:8px;"><span style="width:8px;height:8px;border-radius:999px;background:var(--correlation-brand);display:inline-block;"></span>${date}</div>`;
+          html += `<div style="font-variant-numeric:tabular-nums;color:var(--muted-foreground);">收盘价：<strong style="color:var(--foreground);">${fmtPrice(
+            value
+          )}</strong></div>`;
+          html += `<div style="font-variant-numeric:tabular-nums;margin-top:4px;color:var(--muted-foreground);">累计涨跌：<strong style="color:${cumulativeColor};">${fmtPct(
+            cumulative
+          )}</strong></div>`;
+          html += `<div style="font-variant-numeric:tabular-nums;margin-top:4px;color:var(--muted-foreground);">距前高下跌：<strong style="color:${drawdownColor};">${fmtPct(
+            drawdown
+          )}</strong></div>`;
+          html += `</div>`;
+          return html;
+        },
+      },
+      xAxis: {
+        type: "category",
+        data: dates,
+        boundaryGap: false,
+        axisLine: { lineStyle: { color: "var(--muted-foreground)" } },
+        axisTick: { show: false },
+        axisLabel: {
+          color: "var(--muted-foreground)",
+          fontSize: 10,
+          rotate: 0,
+          interval: 0,
+          formatter: (v: string) => (tickSet.has(v) ? getQuarterLabel(v) : ""),
+        },
+      },
+      yAxis: [
+        {
+          type: "value",
+          position: "left",
+          scale: true,
+          axisLine: {
+            show: true,
+            lineStyle: { color: "var(--border-color)" },
+          },
+          axisTick: { show: false },
+          splitLine: {
+            lineStyle: {
+              color: "var(--border-color)",
+              opacity: 0.48,
+            },
+          },
+          axisLabel: {
+            color: "var(--muted-foreground)",
+            fontSize: 10,
+            formatter: (val: number) =>
+              val >= 1000
+                ? `${Number((val / 1000).toFixed(1))}K`
+                : val.toLocaleString("zh-CN", { maximumFractionDigits: 0 }),
+          },
+        },
+        {
+          type: "value",
+          position: "right",
+          scale: true,
+          axisLine: { show: false },
+          axisTick: { show: false },
+          splitLine: { show: false },
+          axisLabel: {
+            color: "var(--muted-foreground)",
+            fontSize: 10,
+            formatter: (val: number) =>
+              val >= 1000
+                ? `${Number((val / 1000).toFixed(1))}K`
+                : val.toLocaleString("zh-CN", { maximumFractionDigits: 0 }),
+          },
+        },
+      ],
+      series: [
+        {
+          type: "line",
+          name: "收盘",
+          yAxisIndex: 0,
+          data: closes,
+          showSymbol: false,
+          smooth: false,
+          lineStyle: {
+            width: 1.8,
+            color: "var(--correlation-brand)",
+          },
+          itemStyle: { color: "var(--correlation-brand)" },
+          areaStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              {
+                offset: 0,
+                color:
+                  "color-mix(in srgb, var(--correlation-brand) 14%, transparent)",
+              },
+              { offset: 1, color: "rgba(255,255,255,0)" },
+            ]),
+          },
+          emphasis: { disabled: true },
+          markLine:
+            markLineData.length > 0
+              ? {
+                  silent: true,
+                  symbol: "none",
+                  data: markLineData,
+                }
+              : undefined,
+        },
+      ],
+    } satisfies echarts.EChartsOption;
+  }, [series, axisTickDates, showDrawdown70, showDrawdown80]);
 
   if (series.length === 0) {
     return (
@@ -148,133 +282,25 @@ export function IndexPriceChart({
     );
   }
 
-  const ddPeakLabel =
-    drawdownLevels !== null
-      ? `区间内最高收盘价 ${drawdownLevels.peak.toLocaleString("zh-CN", {
-          maximumFractionDigits: 2,
-        })}`
-      : "";
-
   return (
-    <div className="rounded-xl border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] p-4 md:p-5">
-      <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
-        <p className="text-xs text-[var(--muted-foreground)] tracking-wide max-w-xl">
+    <div className="rounded-2xl border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] p-4 shadow-[0_14px_36px_color-mix(in_srgb,var(--foreground)_5%,transparent)] md:p-5">
+      <div className="mb-4 space-y-3">
+        <h2 className="text-lg font-medium tracking-wide text-[var(--foreground)]">
+          价格指数走势
+        </h2>
+        {controls ? (
+          <div className="flex justify-center overflow-x-auto pb-1">
+            {controls}
+          </div>
+        ) : null}
+        <p className="text-xs text-[var(--muted-foreground)] tracking-wide">
           价格指数收盘 · {windowLabel}（周线 MOCK，复权口径与数据源对齐后替换）
         </p>
-        {(showDrawdown70 || showDrawdown80) && drawdownLevels ? (
-          <p className="text-[10px] text-[var(--muted-foreground)] font-mono tabular-nums text-right leading-relaxed">
-            {ddPeakLabel}
-          </p>
-        ) : null}
       </div>
-      <ChartShell height={320}>
-        <ResponsiveContainer width="100%" height="100%" debounce={50}>
-          <LineChart
-            data={series as IndexPricePoint[]}
-            margin={{ top: 8, right: 12, bottom: 4, left: 4 }}
-          >
-            <CartesianGrid
-              strokeDasharray="3 6"
-              stroke={gridColor}
-              opacity={0.55}
-            />
-            <XAxis
-              dataKey="date"
-              ticks={ticks}
-              stroke={axisColor}
-              tick={{ fill: axisColor, fontSize: 10 }}
-              tickMargin={8}
-              interval={0}
-              angle={-22}
-              textAnchor="end"
-              height={52}
-            />
-            <YAxis
-              stroke={axisColor}
-              tick={{ fill: axisColor, fontSize: 10 }}
-              domain={["auto", "auto"]}
-              width={56}
-              tickFormatter={(v) =>
-                typeof v === "number"
-                  ? v.toLocaleString("zh-CN", { maximumFractionDigits: 0 })
-                  : String(v)
-              }
-            />
-            <Tooltip
-              cursor={{ stroke: gridColor }}
-              content={(tp) => (
-                <PriceTooltipBody
-                  active={tp.active}
-                  payload={
-                    tp.payload as readonly { value?: number }[] | undefined
-                  }
-                  label={tp.label as string | undefined}
-                  drawdownLines={tooltipDrawdown}
-                />
-              )}
-            />
-            {showDrawdown70 && drawdownLevels ? (
-              <ReferenceLine
-                y={drawdownLevels.priceAt70Dd}
-                stroke="color-mix(in srgb, #ea580c 88%, transparent)"
-                strokeDasharray="5 4"
-                ifOverflow="extendDomain"
-              />
-            ) : null}
-            {showDrawdown80 && drawdownLevels ? (
-              <ReferenceLine
-                y={drawdownLevels.priceAt80Dd}
-                stroke="color-mix(in srgb, #a16207 88%, transparent)"
-                strokeDasharray="4 4"
-                ifOverflow="extendDomain"
-              />
-            ) : null}
-            <Line
-              type="monotone"
-              dataKey="close"
-              name="收盘"
-              stroke={lineColor}
-              strokeWidth={1.8}
-              dot={false}
-              isAnimationActive={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </ChartShell>
-      {(showDrawdown70 || showDrawdown80) && drawdownLevels ? (
-        <ul className="mt-3 space-y-1 text-[10px] text-[var(--muted-foreground)]">
-          <li>
-            「70%」「80%」为开关：打开后在图中标注自
-            <strong>区间内最高价向下回撤</strong>
-            相应比例对应的价格水位；tooltip 中会同步复述参考值。
-          </li>
-          {showDrawdown70 ? (
-            <li className="font-mono tabular-nums">
-              回撤 70% 参考线：
-              <span className="text-[var(--foreground)]">
-                {drawdownLevels.priceAt70Dd.toLocaleString("zh-CN", {
-                  minimumFractionDigits: 2,
-                })}
-              </span>
-            </li>
-          ) : null}
-          {showDrawdown80 ? (
-            <li className="font-mono tabular-nums">
-              回撤 80% 参考线：
-              <span className="text-[var(--foreground)]">
-                {drawdownLevels.priceAt80Dd.toLocaleString("zh-CN", {
-                  minimumFractionDigits: 2,
-                })}
-              </span>
-            </li>
-          ) : null}
-        </ul>
-      ) : (
-        <p className="mt-3 text-[10px] leading-relaxed text-[var(--muted-foreground)]">
-          脚注：M1 仅展示单一收盘曲线；复权方式（前复权 /
-          全收益）以接入行情源时的说明为准。
-        </p>
-      )}
+      {option ? <IndicesReactECharts height={380} option={option} /> : null}
+      <p className="mt-3 text-[10px] leading-relaxed text-[var(--muted-foreground)]">
+        复权方式（前复权 / 全收益）以接入行情源时的说明为准。
+      </p>
     </div>
   );
 }

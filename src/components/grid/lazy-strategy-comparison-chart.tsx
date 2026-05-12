@@ -13,11 +13,14 @@ export const LazyStrategyComparisonChart = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div
-        className="flex min-h-[360px] items-center justify-center text-sm text-[var(--muted-foreground)]"
-        style={{ letterSpacing: "0.03em" }}
-      >
-        加载图表…
+      <div className="flex min-h-[360px] flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-[var(--border)] bg-[color-mix(in_srgb,var(--surface-subtle)_65%,var(--card))] px-8">
+        <div
+          className="h-9 w-9 animate-pulse rounded-full bg-[color-mix(in_srgb,var(--accent)_20%,transparent)]"
+          aria-hidden
+        />
+        <p className="text-sm font-medium text-[var(--muted-foreground)]">
+          加载图表…
+        </p>
       </div>
     ),
   }

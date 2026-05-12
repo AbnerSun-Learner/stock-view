@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="420" viewBox="0 0 820 420">
+  <rect width="820" height="420" fill="#f8fafc"/>
+  <text x="32" y="36" fill="#243b53" font-size="14" font-weight="600">上证指数 · 000001</text>
+  <rect x="32" y="48" width="756" height="72" rx="10" fill="#eef3f9" stroke="#e5e5e5"/>
+  <text x="48" y="76" fill="#666" font-size="10">估值摘要（可与下图区间联动策略待定）</text>
+  <rect x="48" y="86" width="420" height="26" rx="6" fill="#fff" stroke="#d1d5db"/>
+  <text x="58" y="102" fill="#243b53" font-size="9">YTD · 1Y · 3Y · 5Y · 10Y · 上市来 · 全部</text>
+  <text x="32" y="152" fill="#111" font-size="12" font-weight="600">价格指数走势</text>
+  <rect x="32" y="162" width="756" height="200" rx="10" fill="#fff" stroke="#e5e5e5"/>
+  <polyline fill="none" stroke="#2563eb" stroke-width="2" points="56,320 120,280 200,300 280,240 360,260 440,220 520,250 600,200 680,230 760,210"/>
+  <line x1="56" y1="285" x2="760" y2="285" stroke="#b45309" stroke-dasharray="6 4" opacity="0.85"/>
+  <text x="620" y="278" fill="#b45309" font-size="8">−70% 参照</text>
+  <line x1="56" y1="308" x2="760" y2="308" stroke="#0e7490" stroke-dasharray="4 4" opacity="0.85"/>
+  <text x="620" y="302" fill="#0e7490" font-size="8">−80% 参照</text>
+  <rect x="560" y="176" width="200" height="26" rx="6" fill="#f9fafb" stroke="#e5e5e5"/>
+  <text x="572" y="192" fill="#333" font-size="9">回撤参照：○70% ●80%</text>
+  <text x="48" y="386" fill="#666" font-size="9">Tooltip：价位 · 跌幅语义 · 可选距现价（示意）</text>
+</svg>
