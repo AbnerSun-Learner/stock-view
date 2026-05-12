@@ -1,65 +1,76 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:is(.dark *));
-
-/* 极简主义配色方案 */
+/* Minimalist Modern（用户设计体系）· Electric Blue #0052FF → #4D7CFF + Slate
+ * 业务页保留 --primary / --card-bg 等别名；以下为 DS 语义与阴影阶梯 */
 :root {
-  /* 页面背景 */
-  --page-bg: #ffffff;
+  --page-bg: #fafafa;
   --background: var(--page-bg);
-  --foreground: #000000;
-  --muted-foreground: #666666;
+  --nav-bg: #ffffff;
+  --foreground: #0f172a;
+  --muted-foreground: #64748b;
+
+  --muted: #f1f5f9;
+  --card: #ffffff;
+  --accent-secondary: #4d7cff;
+  --accent-foreground: #ffffff;
+  --border: #e2e8f0;
+  --ring-focus: #0052ff;
+
+  --ds-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --ds-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --ds-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.08);
+  --ds-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1);
+
+  --landing-bg: #fafafa;
 
   /* 指数对比矩阵填色基（仅 RGB 通道，alpha 由 JS 给出） */
-  --correlation-fill-rgb: 0, 0, 0;
+  --correlation-fill-rgb: 0, 82, 255;
 
-  /* 主色 */
-  --primary: #000000;
-  --brand: #000000;
-  --brand-text: #000000;
+  --primary: #0052ff;
+  --brand: #0052ff;
+  --brand-text: #1d4ed8;
+  --accent-electric-end: var(--accent-secondary);
 
-  /* 强调色（极少使用） */
-  --accent: #000000;
-  --warning: #999999;
+  --accent: #0052ff;
+  --accent-warm: #ff6b00;
+  --warning: #c0a26f;
 
-  /* 数据可视化色（保留功能性颜色） */
-  --profit: #059669;
-  --loss: #dc2626;
-  --neutral: #666666;
+  --profit: #009933;
+  --loss: #ee2500;
+  --neutral: #909499;
 
-  /* 网格类型背景色（极简化） */
   --grid-small: transparent;
-  --grid-medium: #f5f5f5;
-  --grid-large: #f0f0f0;
+  --grid-medium: #f1f5f9;
+  --grid-large: #e2e8f0;
 
-  /* 卡片和边框 */
-  --card-bg: #ffffff;
+  --surface-subtle: #f1f5f9;
+
+  --card-bg: var(--card);
   --card-bg-elevated: #ffffff;
-  --border-color: #e5e5e5;
-  --hover-bg: rgba(0, 0, 0, 0.03);
-  --ring: rgba(0, 0, 0, 0.2);
+  --border-color: var(--border);
+  --hover-bg: color-mix(in srgb, #0052ff 9%, transparent);
+  --ring: rgba(0, 82, 255, 0.35);
 
-  /* 指数对比 pair：四色体系（不计中性黑白灰）
-   * 1 深蓝灰 #243b53 — 品牌与结构线（项目规范主色）
-   * 2 信号蓝 #2563eb — 走势主序列 / 强调数值
-   * 3 青绿 #0e7490 — 散点与对照维度（克制，偏机构仪表盘）
-   * 4 琥珀 #b45309 — 段落分隔与次要节奏（勿大块铺色）
-   */
-  --correlation-brand: #243b53;
-  --correlation-brand-soft: rgba(36, 59, 83, 0.14);
-  --correlation-chart-line: #2563eb;
-  --correlation-chart-scatter: #0e7490;
-  --correlation-chart-fit: #243b53;
-  --correlation-accent-warm: #b45309;
+  --shadow-accent: 0 4px 14px rgba(0, 82, 255, 0.25);
+  --shadow-accent-lg: 0 8px 24px rgba(0, 82, 255, 0.35);
+
+  --correlation-brand: #0052ff;
+  --correlation-brand-soft: rgba(0, 82, 255, 0.12);
+  --correlation-chart-line: #4d7cff;
+  --correlation-chart-scatter: #ff6b00;
+  --correlation-chart-fit: #0f172a;
+  --correlation-accent-warm: #ff6b00;
   --correlation-on-brand: #ffffff;
-  --correlation-page-tint: #f8fafc;
+  --correlation-page-tint: #fafafa;
   --correlation-card-surface: #ffffff;
-  --correlation-card-tint: #eef3f9;
-  --correlation-stat-surface: rgba(37, 99, 235, 0.07);
+  --correlation-card-tint: color-mix(in srgb, #0052ff 7%, #ffffff);
+  --correlation-stat-surface: color-mix(in srgb, #0052ff 9%, transparent);
 
-  /* 指数估值双轴折线图（仅图表曲线语义色，不与 UI 品牌色混用） */
-  --valuation-chart-metric-line: #3b82f6;
-  --valuation-chart-close-line: #333333;
+  --valuation-chart-metric-line: #4d7cff;
+  --valuation-chart-close-line: #64748b;
+
+  /** 页面英文文案（Arial），与中文混排时 CJK 走系统/Noto 回退 */
+  --font-english: Arial, "Helvetica Neue", Helvetica, sans-serif;
 }
 
 @theme inline {
@@ -74,8 +85,11 @@
    */
   --font-sans: var(--font-inter), var(--font-noto-sans-sc), "PingFang SC",
     "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-mono: var(--font-geist-mono), "Cascadia Code", "Fira Code", "Menlo",
-    monospace;
+  --font-display: var(--font-calistoga), var(--font-noto-sans-sc), "PingFang SC",
+    "Songti SC", Georgia, serif;
+  --font-mono: var(--font-jetbrains-mono), var(--font-geist-mono),
+    "Cascadia Code", "Fira Code", "Menlo", monospace;
+  --font-english: Arial, "Helvetica Neue", Helvetica, sans-serif;
 
   --color-primary: var(--primary);
   --color-brand: var(--brand);
@@ -84,47 +98,6 @@
   --color-profit: var(--profit);
   --color-loss: var(--loss);
   --color-muted: var(--muted-foreground);
-}
-
-/* 暗色模式 */
-.dark {
-  --page-bg: #0a0a0a;
-  --background: var(--page-bg);
-  --foreground: #f5f5f5;
-  --muted-foreground: #999999;
-
-  --correlation-fill-rgb: 245, 245, 245;
-  --primary: #ffffff;
-  --brand: #ffffff;
-  --brand-text: #f5f5f5;
-  --accent: #ffffff;
-  --warning: #808080;
-  --profit: #10b981;
-  --loss: #f87171;
-  --neutral: #808080;
-  --grid-small: transparent;
-  --grid-medium: rgba(255, 255, 255, 0.04);
-  --grid-large: rgba(255, 255, 255, 0.06);
-  --card-bg: #111111;
-  --card-bg-elevated: #111111;
-  --border-color: #2d2d2d;
-  --hover-bg: rgba(255, 255, 255, 0.04);
-  --ring: rgba(255, 255, 255, 0.2);
-
-  --correlation-brand: #93c5fd;
-  --correlation-brand-soft: rgba(147, 197, 253, 0.2);
-  --correlation-chart-line: #60a5fa;
-  --correlation-chart-scatter: #14b8a6;
-  --correlation-chart-fit: #bae6fd;
-  --correlation-accent-warm: #fb923c;
-  --correlation-on-brand: #0c1628;
-  --correlation-page-tint: #0c1018;
-  --correlation-card-surface: #121820;
-  --correlation-card-tint: #1a2434;
-  --correlation-stat-surface: rgba(96, 165, 250, 0.12);
-
-  --valuation-chart-metric-line: #60a5fa;
-  --valuation-chart-close-line: #a3a3a3;
 }
 
 body {
@@ -145,15 +118,21 @@ body {
   letter-spacing: 0.01em;
 }
 
-/* 标题：中英文大标题统一字距收紧，行高紧凑 */
+/* 标题：h1/h2 展示级 Calistoga（CJK 由 Noto 接管）；h3–h6 保持 Inter 体系 */
 h1,
-h2,
+h2 {
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-family: var(--font-calistoga), var(--font-noto-sans-sc), "PingFang SC",
+    "Songti SC", Georgia, serif;
+}
+
 h3,
 h4,
 h5,
 h6 {
   line-height: 1.2;
-  letter-spacing: -0.01em; /* 英文大字号自然收紧；中文 CJK 字符不受影响 */
+  letter-spacing: -0.01em;
   font-family: var(--font-inter), var(--font-noto-sans-sc), "PingFang SC",
     "Microsoft YaHei", sans-serif;
 }
@@ -185,6 +164,198 @@ h6 {
     "Microsoft YaHei", sans-serif;
 }
 
+/* 营销 / 现代极简：展示级标题（中文自动回退 Noto） */
+.font-display {
+  font-family: var(--font-calistoga), var(--font-noto-sans-sc), "PingFang SC",
+    "Songti SC", Georgia, serif;
+  letter-spacing: -0.02em;
+}
+
+.marketing-gradient-text {
+  background: linear-gradient(
+    to right,
+    var(--primary),
+    var(--accent-electric-end)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.marketing-dot-texture {
+  background-color: var(--foreground);
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgba(255, 255, 255, 0.06) 1px,
+    transparent 0
+  );
+  background-size: 32px 32px;
+}
+
+/* 设计体系 · 章节标签 pill（border accent/30 · bg accent/5 · Mono 12px · tracking 0.15em） */
+.ds-section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  background: color-mix(in srgb, var(--accent) 5%, var(--card));
+}
+
+.ds-section-label__text {
+  font-family: var(--font-english), var(--font-noto-sans-sc), "PingFang SC",
+    sans-serif;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+}
+
+/** 反色 / 深色底上的标签：略提高对比 */
+.ds-section-label--on-dark {
+  border-color: color-mix(
+    in srgb,
+    var(--accent) 40%,
+    rgba(255, 255, 255, 0.14)
+  );
+  background: color-mix(in srgb, var(--accent) 10%, rgba(255, 255, 255, 0.04));
+}
+
+/** 内容卡片顶部英语眉题（Arial · accent） */
+.ds-card-eyebrow {
+  font-family: var(--font-english), var(--font-noto-sans-sc), "PingFang SC",
+    sans-serif;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+}
+
+/** Hero 氛围光：accent 径向渐变 ~8% / 6% */
+.ds-hero-glow {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(
+      ellipse 85% 65% at 18% 12%,
+      color-mix(in srgb, var(--accent) 8%, transparent),
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 75% 55% at 88% 78%,
+      color-mix(in srgb, var(--accent-secondary) 6%, transparent),
+      transparent 52%
+    );
+}
+
+/** 主标题内渐变关键词下划线条 */
+.gradient-underline {
+  position: absolute;
+  left: 0;
+  bottom: -0.25rem;
+  width: 100%;
+  height: 0.75rem;
+  border-radius: 0.125rem;
+  background: linear-gradient(
+    to right,
+    rgba(0, 82, 255, 0.15),
+    rgba(77, 124, 255, 0.1)
+  );
+}
+
+@media (min-width: 768px) {
+  .gradient-underline {
+    bottom: -0.5rem;
+    height: 1rem;
+  }
+}
+
+/** 反色 CTA：固定在 #0f172a 底上的 outline 次按钮 */
+.ds-btn-outline-on-dark {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.92);
+  box-shadow: none;
+  transition: transform 200ms ease, border-color 200ms ease,
+    background-color 200ms ease, box-shadow 200ms ease;
+}
+
+.ds-btn-outline-on-dark:hover {
+  border-color: color-mix(in srgb, var(--accent) 55%, rgba(255, 255, 255, 0.2));
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.ds-btn-outline-on-dark:active {
+  transform: scale(0.98);
+}
+
+/** 顶栏英文品牌名（Lobster）·字色与章节标签 / 卡片眉题一致 */
+.nav-brand-en {
+  font-family: var(--font-lobster), cursive;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+}
+
+/** 页面内英文文案：Arial（与中文混排时 CJK 回退 Noto） */
+.font-en-arial {
+  font-family: var(--font-english), var(--font-noto-sans-sc), "PingFang SC",
+    sans-serif;
+}
+
+.marketing-primary-btn {
+  background: linear-gradient(
+    90deg,
+    var(--primary),
+    var(--accent-electric-end)
+  );
+  color: var(--correlation-on-brand);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-accent);
+  transition: transform 200ms ease, box-shadow 200ms ease, filter 200ms ease;
+}
+
+.marketing-primary-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-accent-lg);
+  filter: brightness(1.08);
+}
+
+.marketing-primary-btn:active {
+  transform: scale(0.98);
+}
+
+/* 与主按钮配套的箭头：由父级 .group 触发位移 */
+.marketing-primary-btn__icon {
+  transition: transform 200ms ease;
+}
+
+.group:hover .marketing-primary-btn__icon,
+.group:focus-visible .marketing-primary-btn__icon {
+  transform: translate(2px, -1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketing-primary-btn,
+  .marketing-primary-btn:hover,
+  .marketing-primary-btn:active {
+    transform: none;
+    filter: none;
+  }
+
+  .group:hover .marketing-primary-btn__icon,
+  .group:focus-visible .marketing-primary-btn__icon {
+    transform: none;
+  }
+}
+
 /* 中文段落：末行左对齐，避免最后一行被撑开 */
 p,
 li {
@@ -207,8 +378,8 @@ table {
 
 /* 等宽字体类：仅在代码/数字场景手动添加 .font-mono */
 .font-mono {
-  font-family: var(--font-geist-mono), "Cascadia Code", "Menlo", "Courier New",
-    monospace;
+  font-family: var(--font-jetbrains-mono), var(--font-geist-mono),
+    "Cascadia Code", "Menlo", "Courier New", monospace;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
 }
@@ -233,9 +404,28 @@ html {
   }
 }
 
-/* 估值页导航栏链接 */
-a.valuation-nav-link {
-  color: #666666 !important;
+/* 指数列表：表头不换行、列宽随内容；不含左侧色条 */
+.indices-list-table.ant-table-wrapper .ant-table-container {
+  overflow-x: auto;
+}
+.indices-list-table.ant-table-wrapper .ant-table table {
+  width: max-content;
+  min-width: 100%;
+  table-layout: auto;
+}
+.indices-list-table.ant-table-wrapper .ant-table-thead > tr > th {
+  white-space: nowrap;
+}
+.indices-list-table.ant-table-wrapper .ant-table-tbody > tr > td {
+  vertical-align: middle;
+}
+
+.indices-list-valuation-highlight {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  background: color-mix(in srgb, var(--profit) 16%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--profit) 35%, var(--border-color));
 }
 
 /* 估值列表页：搜索框与页面背景融合 */
@@ -253,9 +443,10 @@ a.valuation-nav-link {
 .correlation-textarea.ant-input:focus {
   background-color: transparent !important;
   border-color: var(--border-color);
-  border-radius: 0 !important;
+  border-radius: 0.75rem !important;
   color: var(--foreground) !important;
-  font-family: var(--font-geist-mono), "Cascadia Code", "Menlo", monospace;
+  font-family: var(--font-jetbrains-mono), var(--font-geist-mono),
+    "Cascadia Code", "Menlo", monospace;
   font-variant-numeric: tabular-nums;
 }
 .correlation-textarea.ant-input::placeholder {
@@ -280,28 +471,26 @@ a.valuation-nav-link {
   background: transparent;
 }
 .correlation-matrix-head {
-  font-family: var(--font-geist-mono), "Menlo", monospace;
+  font-family: var(--font-english), var(--font-noto-sans-sc), "PingFang SC",
+    sans-serif;
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
   color: var(--muted-foreground);
-  background: #f5f5f5;
-}
-.dark .correlation-matrix-head {
-  background: #1a1a1a;
+  background: var(--surface-subtle);
 }
 .correlation-matrix-row-head {
-  font-family: var(--font-geist-mono), "Menlo", monospace;
+  font-family: var(--font-english), var(--font-noto-sans-sc), "PingFang SC",
+    sans-serif;
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
   color: var(--muted-foreground);
-  background: #f5f5f5;
+  background: var(--surface-subtle);
   text-align: left;
   padding-left: 16px;
-}
-.dark .correlation-matrix-row-head {
-  background: #1a1a1a;
 }
 .correlation-matrix-cell {
   cursor: default;
@@ -319,9 +508,9 @@ a.valuation-nav-link {
   color: var(--muted-foreground);
 }
 
-/* 指数对比 pair 页布局（四色仅作用于本页变量） */
+/* 指数对比 pair 页：画布与 Minimalist Modern 全站 `--background` 一致 */
 .correlation-page {
-  background-color: var(--correlation-page-tint);
+  background-color: var(--background);
 }
 .correlation-results-rule {
   border-bottom-width: 2px;
@@ -335,12 +524,14 @@ a.valuation-nav-link {
 .correlation-card {
   background-color: var(--correlation-card-surface);
   border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  box-shadow: var(--ds-shadow-md);
 }
 .correlation-card--tint {
   background-color: var(--correlation-card-tint);
 }
 .correlation-eyebrow {
-  color: var(--correlation-brand);
+  color: var(--accent);
 }
 .correlation-period-toolbar {
   overflow-x: auto;
@@ -348,7 +539,7 @@ a.valuation-nav-link {
 }
 .correlation-segmented.ant-segmented {
   background: var(--correlation-card-tint) !important;
-  border-radius: 0 !important;
+  border-radius: 0.75rem !important;
   flex-wrap: nowrap !important;
   max-width: none;
 }
@@ -358,27 +549,24 @@ a.valuation-nav-link {
   flex-wrap: nowrap !important;
   width: auto !important;
 }
-.dark .correlation-segmented.ant-segmented {
-  background: var(--correlation-card-tint) !important;
-}
 .correlation-segmented .ant-segmented-item-selected {
-  background: var(--correlation-brand) !important;
-  color: var(--correlation-on-brand) !important;
-  border-radius: 0 !important;
+  background: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+  border-radius: 0.5rem !important;
 }
 .correlation-segmented .ant-segmented-item {
   color: var(--muted-foreground);
-  border-radius: 0 !important;
+  border-radius: 0.5rem !important;
 }
 .correlation-segmented .ant-segmented-item-label {
   font-weight: 500;
 }
 .correlation-segmented .ant-segmented-item:hover {
-  color: var(--correlation-chart-line);
+  color: var(--accent-secondary);
 }
 .correlation-table-head-code {
   background-color: var(--correlation-card-tint);
-  color: var(--correlation-brand);
+  color: var(--accent);
 }
 
 /* 指数对比：对比结果问号说明 & 图表 Tooltip（浅卡渐变，无侧边饰条） */
@@ -386,6 +574,8 @@ a.valuation-nav-link {
   min-width: 16rem;
   max-width: min(22rem, 94vw);
   padding: 0.625rem 0.875rem;
+  font-family: var(--font-english), var(--font-noto-sans-sc), "PingFang SC",
+    sans-serif;
   font-size: 0.75rem;
   line-height: 1.55;
   letter-spacing: 0.01em;
@@ -397,19 +587,9 @@ a.valuation-nav-link {
   );
   border: 1px solid
     color-mix(in srgb, var(--border-color) 88%, var(--correlation-brand));
-  box-shadow: 0 6px 26px rgba(36, 59, 83, 0.12),
+  box-shadow: 0 6px 26px rgba(0, 82, 255, 0.14),
     0 1px 0 rgba(255, 255, 255, 0.06) inset;
   pointer-events: none;
-}
-
-.dark .correlation-rich-tooltip {
-  background: linear-gradient(
-    165deg,
-    color-mix(in srgb, var(--correlation-card-tint) 94%, transparent) 0%,
-    var(--correlation-card-surface) 100%
-  );
-  border: 1px solid var(--border-color);
-  box-shadow: 0 10px 38px rgba(0, 0, 0, 0.5);
 }
 
 /* 估值列表表格：不出现纵向滚动条 */
@@ -426,27 +606,20 @@ a.valuation-nav-link {
 
 /* 估值详情页 Segmented */
 .valuation-segmented.ant-segmented {
-  background: #f5f5f5 !important;
+  background: var(--surface-subtle) !important;
   border-radius: 0 !important;
-}
-.dark .valuation-segmented.ant-segmented {
-  background: #1a1a1a !important;
 }
 .valuation-segmented .ant-segmented-item-selected {
-  background: #ffffff !important;
-  color: #000000 !important;
+  background: var(--card-bg) !important;
+  color: var(--foreground) !important;
   border-radius: 0 !important;
 }
-.dark .valuation-segmented .ant-segmented-item-selected {
-  background: #2d2d2d !important;
-  color: #f5f5f5 !important;
-}
 .valuation-segmented .ant-segmented-item {
-  color: #666666;
+  color: var(--muted-foreground);
   border-radius: 0 !important;
 }
 .valuation-segmented .ant-segmented-item:hover {
-  color: #000000;
+  color: var(--foreground);
 }
 
 /* 数据表格悬停效果 */
@@ -462,16 +635,13 @@ a.valuation-nav-link {
   border-radius: 0 !important;
 }
 .ant-table-thead > tr > th {
-  background: #f5f5f5 !important;
+  background: var(--surface-subtle) !important;
   border-bottom: 1px solid var(--border-color) !important;
   font-size: 11px !important;
   font-weight: 500 !important;
   letter-spacing: 0.06em !important;
   text-transform: uppercase !important;
   color: var(--muted-foreground) !important;
-}
-.dark .ant-table-thead > tr > th {
-  background: #1a1a1a !important;
 }
 .ant-table-tbody > tr > td {
   border-bottom: 1px solid var(--border-color) !important;
@@ -492,11 +662,11 @@ a.valuation-nav-link {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cccccc;
+  background: #ccd0d9;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #999999;
+  background: #aeb0bb;
 }
 
 /* 数据颜色 */
@@ -524,36 +694,21 @@ a.valuation-nav-link {
 }
 
 .valuation-tag.undervalued {
-  color: #059669;
+  color: var(--profit);
   background: transparent;
-  border-color: rgba(5, 150, 105, 0.3);
+  border-color: color-mix(in srgb, var(--profit) 35%, var(--border-color));
 }
 
 .valuation-tag.overvalued {
-  color: #dc2626;
+  color: var(--loss);
   background: transparent;
-  border-color: rgba(220, 38, 38, 0.3);
+  border-color: color-mix(in srgb, var(--loss) 35%, var(--border-color));
 }
 
 .valuation-tag.fair {
-  color: #b45309;
+  color: var(--warning);
   background: transparent;
-  border-color: rgba(180, 83, 9, 0.3);
-}
-
-.dark .valuation-tag.undervalued {
-  color: #10b981;
-  border-color: rgba(16, 185, 129, 0.3);
-}
-
-.dark .valuation-tag.overvalued {
-  color: #f87171;
-  border-color: rgba(248, 113, 113, 0.3);
-}
-
-.dark .valuation-tag.fair {
-  color: #fbbf24;
-  border-color: rgba(251, 191, 36, 0.3);
+  border-color: color-mix(in srgb, var(--warning) 35%, var(--border-color));
 }
 
 /* 减少动画（无障碍） */

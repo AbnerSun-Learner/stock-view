@@ -52,28 +52,28 @@ function PerformanceTooltip({
   if (!row) return null;
   return (
     <div className="correlation-rich-tooltip">
-      <p className="text-[var(--muted-foreground)] mb-2 font-mono text-[11px]">
+      <p className="mb-2 font-en-arial tabular-nums text-[11px] text-[var(--muted-foreground)]">
         {label}
       </p>
-      <p className="text-[var(--foreground)] leading-snug">
+      <p className="leading-snug text-[var(--foreground)]">
         <span>{nameA}</span>
-        <span className="font-mono text-[var(--muted-foreground)]">
+        <span className="font-en-arial text-[var(--muted-foreground)] tabular-nums">
           （{codeA}）
         </span>
       </p>
-      <p className="font-mono tabular-nums text-[11px] mt-1 pl-0.5">
+      <p className="mt-1 pl-0.5 font-en-arial tabular-nums text-[11px]">
         估算涨跌幅（当日） {fmtSignedPct(row.dayChangePctA)}
       </p>
-      <p className="text-[var(--foreground)] leading-snug mt-2.5">
+      <p className="mt-2.5 leading-snug text-[var(--foreground)]">
         <span>{nameB}</span>
-        <span className="font-mono text-[var(--muted-foreground)]">
+        <span className="font-en-arial text-[var(--muted-foreground)] tabular-nums">
           （{codeB}）
         </span>
       </p>
-      <p className="font-mono tabular-nums text-[11px] mt-1 pl-0.5">
+      <p className="mt-1 pl-0.5 font-en-arial tabular-nums text-[11px]">
         估算涨跌幅（当日） {fmtSignedPct(row.dayChangePctB)}
       </p>
-      <p className="text-[10px] text-[var(--muted-foreground)] mt-3 border-t border-[color:var(--border-color)] pt-2.5 leading-relaxed">
+      <p className="mt-3 border-t border-[color:var(--border-color)] pt-2.5 text-[10px] leading-relaxed text-[var(--muted-foreground)]">
         由相邻两日共同交易日的复权收盘价推算日收益，可能与行情展示口径略有差异。
       </p>
     </div>
@@ -106,14 +106,12 @@ export function PairPerformanceChart({
   return (
     <div className="correlation-card p-6 md:p-8 flex flex-col">
       <div className="mb-1">
-        <p className="correlation-eyebrow text-xs font-semibold tracking-[0.2em] uppercase">
-          Performance Trend
-        </p>
-        <h3 className="mt-2 text-lg font-light text-[var(--foreground)]">
+        <p className="ds-card-eyebrow">Performance Trend</p>
+        <h3 className="mt-2 text-lg font-semibold leading-snug tracking-tight text-[var(--foreground)]">
           业绩走势（{data.a.name} vs {data.b.name}）
         </h3>
         <p className="mt-1 text-[11px] text-[var(--muted-foreground)]">
-          <span className="font-mono tracking-tight">
+          <span className="font-en-arial tracking-tight tabular-nums">
             {data.a.code} · {data.b.code}
           </span>
           {" · "}

@@ -1,30 +1,30 @@
 # 指数目录功能 PRD — 按页面归类索引
 
-本目录将 **`doc/2026-05-11-index-hub-prd-analysis.md`**（纲要）与 **`doc/2026-05-11-index-hub-m1-requirements.md`**（M1 详拆）中的需求，**按站内页面维度**归档，便于按路由分工评审与实现。
+本目录将 **`doc/2026-05-11-index-hub-prd-analysis.md`**（纲要）与 **`doc/2026-05-11-index-hub-pages-prd.html`**（指数列表 / 详情迭代需求，含验收表与线框）对照使用；其它路由仍保留轻量 `page-*.md` 摘录。
 
 ## 页面 ↔ 文档映射
 
-| 路由 / 页面                      | 归类文档                                             |
-| -------------------------------- | ---------------------------------------------------- |
-| 落地页 `/`                       | [`page-home.md`](./page-home.md)                     |
-| 指数列表 `/indices`              | [`page-indices-list.md`](./page-indices-list.md)     |
-| 指数详情 `/indices/[code]`       | [`page-indices-detail.md`](./page-indices-detail.md) |
-| 网格计算 `/grid`                 | [`page-grid.md`](./page-grid.md)                     |
-| 指数对比 `/correlation`          | [`page-correlation.md`](./page-correlation.md)       |
-| 跨页面（背景、导流、竞品、迭代） | [`cross-cutting.md`](./cross-cutting.md)             |
+| 路由 / 页面                      | 归类文档                                                                                              |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| 落地页 `/`                       | [`page-home.md`](./page-home.md)                                                                      |
+| 指数列表 `/indices`              | [`2026-05-11-index-hub-pages-prd.html` §2（列表）](../2026-05-11-index-hub-pages-prd.html#sec-list)   |
+| 指数详情 `/indices/[code]`       | [`2026-05-11-index-hub-pages-prd.html` §3（详情）](../2026-05-11-index-hub-pages-prd.html#sec-detail) |
+| 网格计算 `/grid`                 | [`page-grid.md`](./page-grid.md)                                                                      |
+| 指数对比 `/correlation`          | [`page-correlation.md`](./page-correlation.md)                                                        |
+| 跨页面（背景、导流、竞品、迭代） | [`cross-cutting.md`](./cross-cutting.md)                                                              |
 
-## 原文档位置（权威全文）
+## 权威全文位置
 
 | 文档                                        | 路径                                                                    |
 | ------------------------------------------- | ----------------------------------------------------------------------- |
 | PRD 纲要                                    | `/doc/2026-05-11-index-hub-prd-analysis.md`                             |
-| M1 需求拆分                                 | `/doc/2026-05-11-index-hub-m1-requirements.md`                          |
-| 与 ETF.run 技术对照（非页面 PRD，工程参考） | `/doc/2026-05-11-stock-view-vs-etfrun-architecture-and-optimization.md` |
+| 列表 / 详情迭代 PRD（HTML）                 | `/doc/2026-05-11-index-hub-pages-prd.html`                              |
+| 与 ETF.run 技术对照（工程参考，非页面 PRD） | `/doc/2026-05-11-stock-view-vs-etfrun-architecture-and-optimization.md` |
 
 ## 说明
 
-- 本目录内各 `page-*.md` 为 **摘录与归类**，篇幅冲突时以纲要 + M1 原文为准。
-- M1 当前约定：**不包含** 首页第三条导航入口；首页相关条目见 `page-home.md` 中的 **M2+** 标注。
+- 列表与详情的 **字段、交互与示意图** 以 HTML PRD 为准；纲要 §8 迭代切片仍适用宏观排期。
+- `page-home.md`、`page-grid.md`、`page-correlation.md` 为摘录；篇幅冲突时以纲要 + HTML PRD 为准。
 
 ---
 

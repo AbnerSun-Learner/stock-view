@@ -40,7 +40,7 @@ function SectorList({ sectors }: { sectors: SectorWeight[] }) {
           className="flex items-baseline justify-between gap-3 text-xs"
         >
           <span className="text-[var(--foreground)]">{s.name}</span>
-          <span className="font-mono tabular-nums text-[var(--muted-foreground)]">
+          <span className="font-en-arial tabular-nums text-[var(--muted-foreground)]">
             {(s.weight * 100).toFixed(1)}%
           </span>
         </li>
@@ -60,7 +60,7 @@ function HoldingsList({ items }: { items: HoldingItemMock[] }) {
           className="flex items-baseline justify-between gap-3 text-xs"
         >
           <span className="text-[var(--foreground)]">{h.name}</span>
-          <span className="font-mono tabular-nums text-[var(--muted-foreground)]">
+          <span className="font-en-arial tabular-nums text-[var(--muted-foreground)]">
             {(h.weight * 100).toFixed(2)}%
           </span>
         </li>
@@ -123,10 +123,8 @@ export function PairCompareTable({ data }: PairCompareTableProps) {
   return (
     <div className="correlation-card p-6 md:p-8">
       <div className="mb-6">
-        <p className="correlation-eyebrow text-xs font-semibold tracking-[0.2em] uppercase">
-          Index Comparison
-        </p>
-        <h3 className="mt-2 text-lg font-light text-[var(--foreground)]">
+        <p className="ds-card-eyebrow">Index Comparison</p>
+        <h3 className="mt-2 text-lg font-semibold leading-snug tracking-tight text-[var(--foreground)]">
           指数对比
         </h3>
       </div>
@@ -135,14 +133,18 @@ export function PairCompareTable({ data }: PairCompareTableProps) {
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-y border-[color:var(--border-color)]">
-              <th className="py-3 px-4 text-left text-[11px] font-medium tracking-[0.16em] uppercase text-[var(--muted-foreground)] w-1/4 bg-[var(--correlation-card-tint)]">
+              <th className="font-en-arial py-3 px-4 text-left text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--muted-foreground)] w-1/4 bg-[var(--correlation-card-tint)]">
                 Ticker
               </th>
-              <th className="correlation-table-head-code py-3 px-4 text-left text-[11px] font-semibold tracking-[0.16em] uppercase">
-                <span className="font-mono text-base">{data.a.code}</span>
+              <th className="correlation-table-head-code py-3 px-4 text-left text-[11px] font-semibold uppercase tracking-[0.16em]">
+                <span className="font-en-arial text-base tabular-nums">
+                  {data.a.code}
+                </span>
               </th>
-              <th className="correlation-table-head-code py-3 px-4 text-left text-[11px] font-semibold tracking-[0.16em] uppercase">
-                <span className="font-mono text-base">{data.b.code}</span>
+              <th className="correlation-table-head-code py-3 px-4 text-left text-[11px] font-semibold uppercase tracking-[0.16em]">
+                <span className="font-en-arial text-base tabular-nums">
+                  {data.b.code}
+                </span>
               </th>
             </tr>
           </thead>
@@ -157,7 +159,7 @@ export function PairCompareTable({ data }: PairCompareTableProps) {
                     {row.label}
                   </p>
                   {row.subLabel ? (
-                    <p className="mt-0.5 text-[10px] tracking-[0.16em] uppercase text-[var(--muted-foreground)]">
+                    <p className="font-en-arial mt-0.5 text-[10px] uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
                       {row.subLabel}
                     </p>
                   ) : null}

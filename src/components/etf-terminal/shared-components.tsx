@@ -10,14 +10,14 @@ export function StatCard({
   color: "indigo" | "green" | "blue" | "slate";
 }) {
   const colors = {
-    indigo: "border-indigo-500 text-indigo-600 dark:text-indigo-400",
-    green: "border-green-500 text-green-600 dark:text-green-400",
-    blue: "border-blue-500 text-blue-600 dark:text-blue-400",
-    slate: "border-slate-500 text-slate-600 dark:text-slate-400",
+    indigo: "border-indigo-500 text-indigo-600",
+    green: "border-green-500 text-green-600",
+    blue: "border-blue-500 text-blue-600",
+    slate: "border-slate-500 text-slate-600",
   };
   return (
     <div
-      className={`p-4 rounded-2xl bg-white dark:bg-slate-800 border-l-4 shadow-sm ${
+      className={`p-4 rounded-2xl bg-white border-l-4 shadow-sm ${
         colors[color] || colors.slate
       }`}
     >
@@ -55,7 +55,7 @@ export function InputGroup({
         value={displayValue}
         onChange={(e) => onChange(e.target.value)}
         step="any"
-        className="p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm font-mono font-bold"
+        className="p-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm font-mono font-bold"
       />
     </div>
   );

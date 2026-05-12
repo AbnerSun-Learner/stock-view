@@ -1,8 +1,6 @@
 "use client";
 
 import { StillwellMark } from "@/components/stillwell-mark";
-import { useTheme } from "@/components/theme-provider";
-import { MoonOutlined, SunOutlined } from "@ant-design/icons";
 import Link from "next/link";
 
 interface CorrelationNavbarProps {
@@ -13,46 +11,25 @@ interface CorrelationNavbarProps {
 export function CorrelationNavbar({
   surface = "default",
 }: CorrelationNavbarProps) {
-  const { theme, toggleTheme } = useTheme();
-  const markVariant = theme === "dark" ? "inverse" : "color";
   const navBg =
     surface === "correlation"
-      ? "bg-[var(--correlation-page-tint)]"
-      : "bg-[var(--page-bg)]";
+      ? "bg-[color-mix(in_srgb,var(--nav-bg)_94%,transparent)]"
+      : "bg-[color-mix(in_srgb,var(--page-bg)_94%,transparent)]";
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 ${navBg} border-b border-[color:var(--border-color)]`}
+      className={`fixed left-0 right-0 top-0 z-50 border-b border-[var(--border)] ${navBg} backdrop-blur-md`}
     >
-      <div className="flex justify-between items-center px-8 md:px-16 py-5 max-w-7xl mx-auto">
-        <div className="flex items-center gap-1">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm font-medium text-[var(--foreground)] hover:opacity-70 transition-opacity duration-300 tracking-wide"
-          >
-            <StillwellMark size={24} variant={markVariant} />
-            Stillwell
-          </Link>
-          <Link
-            href="/correlation"
-            className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors duration-300 tracking-wide valuation-nav-link"
-          >
-            .comparison
-          </Link>
-        </div>
-
-        <button
-          type="button"
-          onClick={toggleTheme}
-          aria-label={theme === "light" ? "切换到深色模式" : "切换到浅色模式"}
-          className="w-8 h-8 flex items-center justify-center text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors duration-300"
+      <div className="mx-auto flex h-[72px] max-w-6xl items-center px-6 lg:px-10">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2.5 text-[var(--foreground)] transition-colors duration-200 hover:text-[var(--accent)]"
         >
-          {theme === "light" ? (
-            <SunOutlined style={{ fontSize: 14 }} />
-          ) : (
-            <MoonOutlined style={{ fontSize: 14 }} />
-          )}
-        </button>
+          <StillwellMark size={26} />
+          <span className="nav-brand-en text-[1.25rem] leading-none">
+            Stillwell
+          </span>
+        </Link>
       </div>
     </nav>
   );

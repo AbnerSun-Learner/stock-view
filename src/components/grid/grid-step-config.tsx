@@ -54,12 +54,12 @@ export function GridStepConfig({
       {/* 头部 */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex items-center gap-2">
-          <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+          <h3 className="text-lg font-bold text-slate-800">
             网格步长
           </h3>
           <div className="group relative">
-            <HelpCircle className="w-4 h-4 cursor-help text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors" />
-            <div className="absolute left-0 top-full mt-2 hidden group-hover:block z-[99999] w-72 p-3 text-xs rounded-lg bg-slate-900 dark:bg-slate-950 text-slate-100 shadow-xl whitespace-normal pointer-events-none">
+            <HelpCircle className="w-4 h-4 cursor-help text-slate-400 hover:text-slate-600:text-slate-300 transition-colors" />
+            <div className="absolute left-0 top-full mt-2 hidden group-hover:block z-[99999] w-72 p-3 text-xs rounded-lg bg-slate-900 text-slate-100 shadow-xl whitespace-normal pointer-events-none">
               <div className="font-semibold mb-2">计算逻辑公式：</div>
               <div className="space-y-1 font-mono text-[11px]">
                 <div>P₁ = 基准价</div>
@@ -83,7 +83,7 @@ export function GridStepConfig({
         <div className="flex items-center gap-3">
           <label
             htmlFor="dynamic-switch"
-            className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer"
+            className="text-sm font-medium text-slate-700 cursor-pointer"
           >
             启用动态间距
           </label>
@@ -95,7 +95,7 @@ export function GridStepConfig({
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-2 focus:ring-offset-[var(--page-bg)] ${
               dynamicEnabled
                 ? "bg-[var(--foreground)]"
-                : "bg-slate-300 dark:bg-slate-600"
+                : "bg-slate-300"
             }`}
           >
             <span
@@ -113,7 +113,7 @@ export function GridStepConfig({
           <div className="flex items-center justify-between">
             <label
               htmlFor="base-step-input"
-              className="flex items-center gap-1 text-sm font-semibold text-slate-700 dark:text-slate-300"
+              className="flex items-center gap-1 text-sm font-semibold text-slate-700"
             >
               <span className="text-red-500">*</span>
               基础步长（小网）
@@ -146,7 +146,7 @@ export function GridStepConfig({
             <div className="flex items-center justify-between">
               <label
                 htmlFor="medium-step-input"
-                className="flex items-center gap-1 text-sm font-semibold text-slate-700 dark:text-slate-300"
+                className="flex items-center gap-1 text-sm font-semibold text-slate-700"
               >
                 <span className="text-red-500">*</span>
                 中网步长
@@ -177,7 +177,7 @@ export function GridStepConfig({
             <div className="flex items-center justify-between">
               <label
                 htmlFor="large-step-input"
-                className="flex items-center gap-1 text-sm font-semibold text-slate-700 dark:text-slate-300"
+                className="flex items-center gap-1 text-sm font-semibold text-slate-700"
               >
                 <span className="text-red-500">*</span>
                 大网步长
@@ -216,7 +216,7 @@ export function GridStepConfig({
         {/* 动态增强面板 - 展开层 */}
         {dynamicEnabled && (
           <div className="space-y-4 pt-2">
-            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+            <h4 className="text-sm font-semibold text-slate-700">
               感官模式
             </h4>
 
@@ -239,10 +239,10 @@ export function GridStepConfig({
                     <Shield className="w-5 h-5 text-[var(--muted-foreground)]" />
                   </div>
                   <div>
-                    <div className="font-semibold mb-1 text-slate-800 dark:text-slate-200">
+                    <div className="font-semibold mb-1 text-slate-800">
                       稳健模式
                     </div>
-                    <div className="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+                    <div className="text-xs leading-relaxed text-slate-600">
                       兼顾利润与防守，适合常规波动
                     </div>
                     <div className="text-xs font-mono mt-2 text-[var(--muted-foreground)]">
@@ -270,10 +270,10 @@ export function GridStepConfig({
                     <Filter className="w-5 h-5 text-[var(--muted-foreground)]" />
                   </div>
                   <div>
-                    <div className="font-semibold mb-1 text-slate-800 dark:text-slate-200">
+                    <div className="font-semibold mb-1 text-slate-800">
                       抄底模式
                     </div>
-                    <div className="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+                    <div className="text-xs leading-relaxed text-slate-600">
                       牺牲频率换取深度防守，适合接飞刀
                     </div>
                     <div className="text-xs font-mono mt-2 text-[var(--muted-foreground)]">
@@ -293,14 +293,14 @@ export function GridStepConfig({
               className={`w-2 h-2 rounded-full flex-shrink-0 ${
                 dynamicEnabled
                   ? "bg-[var(--foreground)]"
-                  : "bg-slate-400 dark:bg-slate-600"
+                  : "bg-slate-400"
               }`}
             />
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+            <p className="text-xs text-slate-600 leading-relaxed">
               {dynamicEnabled ? (
                 <>
                   当前生效逻辑：
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  <span className="font-semibold text-slate-800">
                     加速扩张
                   </span>{" "}
                   (基础: {baseStep}%, 系数: {getScaleFactor()})
@@ -308,7 +308,7 @@ export function GridStepConfig({
               ) : (
                 <>
                   当前生效逻辑：
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  <span className="font-semibold text-slate-800">
                     等差指数模型
                   </span>{" "}
                   (系数: 0)

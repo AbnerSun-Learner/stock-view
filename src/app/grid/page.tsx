@@ -189,7 +189,6 @@ export default function GridPage() {
                         gridData={gridData}
                         basePrice={params.basePrice}
                         priceDecimals={priceDecimals}
-                        theme="light"
                       />
                     </div>
 

@@ -1,7 +1,7 @@
 # 页面 PRD：网格计算 `/grid`
 
 **对应路由**：`/grid`  
-**摘录来源**：`/doc/2026-05-11-index-hub-prd-analysis.md` §4.2、§5.1；`/doc/2026-05-11-index-hub-m1-requirements.md` §2.2、§8（衔接）
+**摘录来源**：`/doc/2026-05-11-index-hub-prd-analysis.md` §4.2、§5.1；`/doc/2026-05-11-index-hub-pages-prd.html` §1（范围与非目标）
 
 ---
 

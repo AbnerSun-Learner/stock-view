@@ -84,12 +84,12 @@ export function BaseInfoConfig({
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center gap-2 mb-4">
-        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+        <h3 className="text-lg font-bold text-slate-800">
           基准信息
         </h3>
         <div className="group relative">
-          <HelpCircle className="w-4 h-4 cursor-help text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors" />
-          <div className="absolute left-0 top-full mt-2 hidden group-hover:block z-[99999] w-64 p-3 text-xs rounded-lg bg-slate-900 dark:bg-slate-950 text-slate-100 shadow-xl whitespace-normal pointer-events-none">
+          <HelpCircle className="w-4 h-4 cursor-help text-slate-400 hover:text-slate-600:text-slate-300 transition-colors" />
+          <div className="absolute left-0 top-full mt-2 hidden group-hover:block z-[99999] w-64 p-3 text-xs rounded-lg bg-slate-900 text-slate-100 shadow-xl whitespace-normal pointer-events-none">
             设置网格交易的基础参数，包括交易单位、价格精度和价格区间
           </div>
         </div>
@@ -100,7 +100,7 @@ export function BaseInfoConfig({
           <div key={field.key} className="space-y-2">
             <label
               htmlFor={field.key}
-              className="flex items-center gap-1 text-sm font-semibold text-slate-700 dark:text-slate-300"
+              className="flex items-center gap-1 text-sm font-semibold text-slate-700"
             >
               <span className="text-red-500">*</span>
               {field.label}

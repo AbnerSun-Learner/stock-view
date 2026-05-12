@@ -1,7 +1,7 @@
 # 页面 PRD：指数对比 `/correlation`
 
 **对应路由**：`/correlation`  
-**摘录来源**：`/doc/2026-05-11-index-hub-prd-analysis.md` §4.3–4.4、§5.2、§5.3；`/doc/2026-05-11-index-hub-m1-requirements.md` §2.2
+**摘录来源**：`/doc/2026-05-11-index-hub-prd-analysis.md` §4.3–4.4、§5.2、§5.3；`/doc/2026-05-11-index-hub-pages-prd.html` §1（范围与非目标）
 
 ---
 

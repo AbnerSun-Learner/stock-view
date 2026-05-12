@@ -19,6 +19,7 @@ import type { PairCorrelationData } from "@/lib/correlation/pair-correlation-typ
 import { getPeriodLabel } from "@/lib/correlation/pair-correlation-types";
 import type { CorrelationPeriod } from "@/types/correlation";
 import { Alert, App, Segmented } from "antd";
+import { motion, useReducedMotion } from "framer-motion";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
@@ -87,15 +88,35 @@ function samePairParamsInUrl(
   );
 }
 
+const easeOut = [0.16, 1, 0.3, 1] as const;
+
+function CorrelationHeaderPulse() {
+  const reduceMotion = useReducedMotion();
+  if (reduceMotion) {
+    return (
+      <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--accent)]" />
+    );
+  }
+  return (
+    <motion.span
+      className="h-2 w-2 shrink-0 rounded-full bg-[var(--accent)]"
+      aria-hidden
+      animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
+      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+    />
+  );
+}
+
 function PairPageSuspenseFallback() {
   return (
-    <div className="correlation-page min-h-screen flex items-center justify-center text-[var(--muted-foreground)] text-sm tracking-wide">
+    <div className="correlation-page flex min-h-screen items-center justify-center bg-[var(--background)] text-sm tracking-wide text-[var(--muted-foreground)]">
       载入中…
     </div>
   );
 }
 
 function CorrelationPageContent() {
+  const reduceMotion = useReducedMotion();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -279,25 +300,38 @@ function CorrelationPageContent() {
   const showCharts = data !== null;
 
   return (
-    <div className="correlation-page min-h-screen text-[var(--foreground)]">
+    <div className="correlation-page min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       <CorrelationNavbar surface="correlation" />
 
-      <div className="pt-20">
-        <div className="max-w-7xl mx-auto px-8 md:px-16 py-16 space-y-12">
-          <header>
-            <p className="correlation-eyebrow text-xs font-semibold tracking-[0.2em] uppercase mb-4">
-              Index Comparison
-            </p>
-            <h1 className="text-4xl md:text-5xl font-light tracking-[-0.02em] text-[var(--foreground)] mb-4">
-              指数对比
-            </h1>
-            <p
-              className="text-base text-[var(--muted-foreground)] leading-[1.8] max-w-xl"
-              style={{ letterSpacing: "0.02em" }}
-            >
-              结合净值涨跌联动与底层成分重叠，看清两只指数基金标的的真实重合度与分散度。
-            </p>
-          </header>
+      <div className="pt-[72px]">
+        <div className="mx-auto max-w-6xl space-y-12 px-6 py-16 md:px-10 md:py-20 lg:py-24">
+          <motion.header
+            className="relative isolate"
+            initial={
+              reduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }
+            }
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: reduceMotion ? 0 : 0.68, ease: easeOut }}
+          >
+            <div className="ds-hero-glow" aria-hidden />
+            <div className="relative z-[1]">
+              <div className="ds-section-label">
+                <CorrelationHeaderPulse />
+                <span className="ds-section-label__text">Index Comparison</span>
+              </div>
+              <h1 className="mb-4 max-w-4xl text-[2.5rem] font-normal leading-[1.08] tracking-tight text-[var(--foreground)] md:text-5xl lg:text-6xl">
+                指数对比
+              </h1>
+              <p
+                className="max-w-xl text-base leading-[1.7] text-[var(--muted-foreground)]"
+                style={{ letterSpacing: "0.02em" }}
+              >
+                结合净值涨跌联动与底层成分重叠，看清两只指数基金标的的
+                <span className="marketing-gradient-text">真实重合度</span>
+                与分散度。
+              </p>
+            </div>
+          </motion.header>
 
           {showCharts ? (
             <section className="flex flex-row justify-end items-center gap-4 pb-6 correlation-results-rule overflow-x-auto correlation-period-toolbar">
@@ -330,7 +364,7 @@ function CorrelationPageContent() {
                       preserveOnError: false,
                     })
                   }
-                  className="text-xs px-3 py-1 bg-[var(--correlation-brand)] text-[var(--correlation-on-brand)] hover:opacity-70 transition-opacity"
+                  className="marketing-primary-btn px-4 py-2 text-xs font-semibold text-[var(--accent-foreground)]"
                 >
                   重试
                 </button>

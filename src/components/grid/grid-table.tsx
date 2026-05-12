@@ -49,7 +49,7 @@ export function GridTable({ gridData, priceDecimals }: GridTableProps) {
     <div className="overflow-x-auto border border-[color:var(--border-color)]">
       <table className="w-full border-collapse">
         <thead>
-          <tr className="border-b border-[color:var(--border-color)] bg-[#f5f5f5] dark:bg-[#1a1a1a]">
+          <tr className="border-b border-[color:var(--border-color)] bg-[#f5f5f5][#1a1a1a]">
             {[
               { label: "类型" },
               { label: "档位" },

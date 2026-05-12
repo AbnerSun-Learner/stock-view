@@ -1,6 +1,12 @@
-import { ThemeProvider } from "@/components/theme-provider";
 import type { Metadata } from "next";
-import { Geist_Mono, Inter, Noto_Sans_SC } from "next/font/google";
+import {
+  Calistoga,
+  Geist_Mono,
+  Inter,
+  JetBrains_Mono,
+  Lobster,
+  Noto_Sans_SC,
+} from "next/font/google";
 import "./globals.css";
 
 /**
@@ -11,6 +17,16 @@ const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600"],
+  display: "swap",
+});
+
+/**
+ * Calistoga — 展示级衬线（营销标题英文氛围；中文由 Noto 回退）
+ */
+const calistoga = Calistoga({
+  variable: "--font-calistoga",
+  subsets: ["latin"],
+  weight: ["400"],
   display: "swap",
 });
 
@@ -27,12 +43,30 @@ const notoSansSC = Noto_Sans_SC({
 });
 
 /**
+ * JetBrains Mono — 技术感标签 / 章节徽章（与设计体系一致时可优先于 Geist）
+ */
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  display: "swap",
+});
+
+/**
  * Geist Mono — 等宽数字字体
  * 用于金融数据表格、价格、分位数等需要等宽对齐的场景
  */
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+/** Lobster — 顶栏英文品牌名 Stillwell */
+const lobster = Lobster({
+  variable: "--font-lobster",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -58,9 +92,9 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${notoSansSC.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} ${calistoga.variable} ${notoSansSC.variable} ${jetbrainsMono.variable} ${geistMono.variable} ${lobster.variable} antialiased`}
       >
-        <ThemeProvider>{children}</ThemeProvider>
+        {children}
       </body>
     </html>
   );

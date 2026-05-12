@@ -34,17 +34,15 @@ export function PairInputCard({
   return (
     <div className="correlation-card correlation-card--tint p-6 md:p-8 space-y-6">
       <div>
-        <p className="correlation-eyebrow text-xs font-semibold tracking-[0.2em] uppercase">
-          Index Pair
-        </p>
-        <h3 className="mt-2 text-lg font-light text-[var(--foreground)]">
+        <p className="ds-card-eyebrow">Index Pair</p>
+        <h3 className="mt-2 text-lg font-semibold leading-snug tracking-tight text-[var(--foreground)]">
           选择标的
         </h3>
       </div>
 
       <div className="space-y-4">
         <div>
-          <label className="block text-[11px] font-medium tracking-[0.18em] uppercase text-[var(--muted-foreground)] mb-2">
+          <label className="font-en-arial mb-2 block text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
             ETF 1
           </label>
           <Input
@@ -53,12 +51,11 @@ export function PairInputCard({
             onPressEnter={handleSubmit}
             placeholder="请输入 6 位代码"
             className="correlation-textarea"
-            style={{ borderRadius: 0 }}
             maxLength={6}
           />
         </div>
         <div>
-          <label className="block text-[11px] font-medium tracking-[0.18em] uppercase text-[var(--muted-foreground)] mb-2">
+          <label className="font-en-arial mb-2 block text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
             ETF 2
           </label>
           <Input
@@ -67,7 +64,6 @@ export function PairInputCard({
             onPressEnter={handleSubmit}
             placeholder="请输入 6 位代码"
             className="correlation-textarea"
-            style={{ borderRadius: 0 }}
             maxLength={6}
           />
         </div>
@@ -77,7 +73,7 @@ export function PairInputCard({
         type="button"
         onClick={handleSubmit}
         disabled={loading}
-        className="w-full h-10 px-6 text-xs font-medium tracking-wide bg-[var(--correlation-brand)] text-[var(--correlation-on-brand)] hover:opacity-70 transition-opacity duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
+        className="marketing-primary-btn w-full min-h-12 px-6 text-xs font-semibold tracking-wide text-[var(--accent-foreground)] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:transform-none disabled:hover:shadow-none disabled:hover:filter-none"
         style={{ letterSpacing: "0.06em" }}
       >
         {loading ? "对比中…" : "开始对比"}

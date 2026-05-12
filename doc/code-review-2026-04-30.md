@@ -203,7 +203,7 @@ src/
 
 - `.claude/skills/`
 - `.cursor/skills/ui-ux-pro-max/`
-- `.cursor/skills/stillwell-ui/SKILL.md`
+- `.cursor/skills/stillwell-design-system/SKILL.md`
 - `.agents/skills/frontend-patterns/SKILL.md`
 - `skills-lock.json`
 - `AGENTS.md`
@@ -217,7 +217,7 @@ src/
 
 建议：
 
-- 只保留项目强相关的 AI 上下文，例如 `.cursor/rules/*`、`.cursor/skills/stillwell-ui/SKILL.md`。
+- 只保留项目强相关的 AI 上下文，例如 `.cursor/rules/*`、`.cursor/skills/stillwell-design-system/SKILL.md`。
 - 将通用 skill 从 Git 跟踪中移除，依赖 `skills-lock.json` 或工具安装流程恢复。
 - 如果必须保留 `AGENTS.md`，建议在文件头部说明它是 AI 工具入口，不是业务文档。
 
@@ -281,23 +281,23 @@ src/
 
 ### 6. 设计文档目录定位不清
 
-> **2026-05-09**：根目录 `design-system/` 已按精简计划删除；原文件可从 Git 历史恢复。UI 规范请优先参考 `.cursor/skills/stillwell-ui/SKILL.md`。
+> **2026-05-09**：根目录 `design-system/` 已按精简计划删除；原文件可从 Git 历史恢复。UI 规范请优先参考 `.cursor/skills/stillwell-design-system/SKILL.md`。
 
 相关路径：
 
 - `design-system/PAGE_AUDIT.md`
 - `design-system/UI_TEMPLATE.md`
-- `.cursor/skills/stillwell-ui/SKILL.md`
+- `.cursor/skills/stillwell-design-system/SKILL.md`
 
 问题：
 
 - `design-system/` 目录当前只包含两个 Markdown 文档，没有 tokens、组件库、样式包或设计系统代码。
-- `.cursor/skills/stillwell-ui/SKILL.md` 已经承担 UI 生成规范，职责与 `design-system/` 文档部分重叠。
+- `.cursor/skills/stillwell-design-system/SKILL.md` 已经承担 UI 生成规范，职责与 `design-system/` 文档部分重叠。
 
 建议：
 
 - 将 `design-system/` 移到 `doc/design-system/`。
-- 或将其中内容合并为 `stillwell-ui` skill 的参考资料，形成单一 UI 规范入口。
+- 或将其中内容合并为 `stillwell-design-system` skill 的参考资料，形成单一 UI 规范入口。
 
 ### 7. 疑似废弃组件和命名不一致
 

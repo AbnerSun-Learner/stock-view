@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Agent skill bundles ship CommonJS utilities; not part of Next app lint surface.
+    ".agents/**",
   ]),
 ]);
 

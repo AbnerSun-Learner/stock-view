@@ -34,9 +34,9 @@ function RollingTooltip({ active, payload }: RollingTooltipProps) {
   const row = payload[0]?.payload;
   if (!row) return null;
   return (
-    <div className="border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] px-3 py-2 text-xs">
-      <p className="text-[var(--muted-foreground)] mb-1">{row.date}</p>
-      <p className="font-mono text-[var(--foreground)]">
+    <div className="font-en-arial rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-xs shadow-[var(--ds-shadow-sm)]">
+      <p className="mb-1 text-[var(--muted-foreground)]">{row.date}</p>
+      <p className="font-en-arial tabular-nums text-[var(--foreground)]">
         滚动相关系数 {row.value.toFixed(2)}
       </p>
     </div>
@@ -76,10 +76,8 @@ export function PairRollingChart({ data }: PairRollingChartProps) {
   return (
     <div className="correlation-card p-6 md:p-8 flex flex-col">
       <div className="mb-1">
-        <p className="correlation-eyebrow text-xs font-semibold tracking-[0.2em] uppercase">
-          Rolling Linkage
-        </p>
-        <h3 className="mt-2 text-lg font-light text-[var(--foreground)]">
+        <p className="ds-card-eyebrow">Rolling Linkage</p>
+        <h3 className="mt-2 text-lg font-semibold leading-snug tracking-tight text-[var(--foreground)]">
           历史联动趋势
         </h3>
         <p className="mt-1 text-[11px] text-[var(--muted-foreground)]">

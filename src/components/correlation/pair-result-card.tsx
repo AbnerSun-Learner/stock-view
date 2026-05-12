@@ -30,10 +30,8 @@ export function PairResultCard({ data, periodLabel }: PairResultCardProps) {
   return (
     <div className="correlation-card p-6 md:p-8 space-y-6">
       <div>
-        <p className="correlation-eyebrow text-xs font-semibold tracking-[0.2em] uppercase">
-          Comparison Results
-        </p>
-        <h3 className="mt-2 text-lg font-light text-[var(--foreground)]">
+        <p className="ds-card-eyebrow">Comparison Results</p>
+        <h3 className="mt-2 text-lg font-semibold leading-snug tracking-tight text-[var(--foreground)]">
           对比结果
         </h3>
       </div>
@@ -43,7 +41,7 @@ export function PairResultCard({ data, periodLabel }: PairResultCardProps) {
           综合对比分
         </p>
         <div className="flex items-baseline gap-3 flex-wrap">
-          <span className="text-4xl font-light tabular-nums text-[var(--correlation-brand)]">
+          <span className="text-4xl font-light tabular-nums text-[var(--accent)]">
             {fmt(data.finalScore)}
           </span>
           <span className={`valuation-tag ${advice.tagClass}`}>
@@ -105,7 +103,7 @@ interface StatWithTipProps {
 
 function StatWithTip({ label, tooltip, value }: StatWithTipProps) {
   return (
-    <div className="rounded-none border border-[color:var(--border-color)] bg-[var(--correlation-stat-surface)] px-3 py-2">
+    <div className="rounded-lg border border-[color:var(--border-color)] bg-[var(--correlation-stat-surface)] px-3 py-2">
       <div className="flex items-center gap-1 mb-1">
         <p className="text-[10px] font-medium tracking-[0.16em] uppercase text-[var(--muted-foreground)]">
           {label}
@@ -120,7 +118,7 @@ function StatWithTip({ label, tooltip, value }: StatWithTipProps) {
           </span>
         </span>
       </div>
-      <p className="text-base font-light tabular-nums text-[var(--correlation-chart-line)]">
+      <p className="text-base font-light font-en-arial tabular-nums text-[var(--correlation-chart-line)]">
         {value}
       </p>
     </div>

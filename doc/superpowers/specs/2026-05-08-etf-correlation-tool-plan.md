@@ -110,7 +110,7 @@
   - `correlation-matrix.tsx`：两两矩阵，颜色梯度按建议区间映射，缺失/部分单元格给 tooltip。
   - `correlation-detail-table.tsx`：使用 antd Table，支持按综合分降序，缺失项显示状态标签。
   - `correlation-explanation.tsx`：列出最高风险组合及原因、数据缺失说明。
-- 可选样式：复用 `src/app/globals.css` 中已存在的 CSS 变量，沿用 stillwell-ui 的极简风格。
+- 可选样式：复用 `src/app/globals.css` 中已存在的 CSS 变量，沿用 stillwell-design-system 的极简风格。
 
 验收标准：
 

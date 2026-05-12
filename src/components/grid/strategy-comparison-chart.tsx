@@ -35,7 +35,6 @@ interface StrategyComparisonChartProps {
   gridData: GridRow[];
   basePrice: number;
   priceDecimals: number;
-  theme?: "light" | "dark";
 }
 
 interface ChartDataPoint {
@@ -63,7 +62,6 @@ interface CustomTooltipProps {
     tooltipBg: string;
     tooltipBorder: string;
   };
-  theme: "light" | "dark";
   priceDecimals: number;
 }
 
@@ -120,16 +118,16 @@ function CustomTooltip({
       }}
     >
       {/* 标题 */}
-      <div className="mb-3 pb-3 border-b border-slate-200 dark:border-slate-700">
+      <div className="mb-3 pb-3 border-b border-slate-200">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+          <span className="text-xs font-medium text-indigo-600">
             档位 {data.gridPosition.toFixed(2)}
           </span>
         </div>
-        <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+        <div className="text-sm font-semibold text-slate-800">
           买入触发价 {data.priceLabel}
         </div>
-        <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+        <div className="text-xs text-slate-600 mt-1">
           买入价 ¥{data.gridBuyPrice.toFixed(priceDecimals)} ·{" "}
           {data.gridBuyShares.toLocaleString()} 股 · ¥
           {data.gridBuyAmount.toLocaleString()}
@@ -138,21 +136,21 @@ function CustomTooltip({
 
       {/* 一次全仓死拿 */}
       <div className="mb-3 space-y-1">
-        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
+        <div className="text-xs font-medium text-slate-600 flex items-center gap-1">
           <div className="w-3 h-0.5 bg-red-500"></div>
           一次全仓死拿
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="text-lg font-bold text-red-600 dark:text-red-400">
+          <span className="text-lg font-bold text-red-600">
             -¥{Math.abs(lumpSumLossAmount / 1000).toFixed(1)}k
           </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400">
+          <span className="text-xs text-slate-500">
             (跌幅 -{Math.abs(lumpSumDropRate).toFixed(1)}%)
           </span>
         </div>
-        <div className="text-xs text-slate-600 dark:text-slate-400">
+        <div className="text-xs text-slate-600">
           回本需涨{" "}
-          <span className="font-semibold text-red-600 dark:text-red-400">
+          <span className="font-semibold text-red-600">
             +{lumpSumBreakEvenRise.toFixed(1)}%
           </span>
         </div>
@@ -160,30 +158,30 @@ function CustomTooltip({
 
       {/* 本策略 */}
       <div className="mb-3 space-y-1">
-        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
+        <div className="text-xs font-medium text-slate-600 flex items-center gap-1">
           <div className="w-3 h-0.5 bg-green-500"></div>
           本策略
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="text-lg font-bold text-green-600 dark:text-green-400">
+          <span className="text-lg font-bold text-green-600">
             -¥{Math.abs(gridLossAmount / 1000).toFixed(1)}k
           </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400">
+          <span className="text-xs text-slate-500">
             (跌幅 -{Math.abs(gridDropRate).toFixed(1)}%)
           </span>
         </div>
-        <div className="text-xs text-slate-600 dark:text-slate-400">
+        <div className="text-xs text-slate-600">
           回本需涨{" "}
-          <span className="font-semibold text-green-600 dark:text-green-400">
+          <span className="font-semibold text-green-600">
             +{gridBreakEvenRise.toFixed(1)}%
           </span>
         </div>
       </div>
 
       {/* 策略优势 */}
-      <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
+      <div className="pt-3 border-t border-slate-200">
         <div className="flex items-center justify-between mb-2">
-          <div className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
+          <div className="text-xs font-medium text-slate-600 flex items-center gap-1">
             <svg
               className="w-4 h-4 text-green-600"
               fill="none"
@@ -200,17 +198,17 @@ function CustomTooltip({
             策略优势
           </div>
         </div>
-        <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400">
+        <div className="flex items-center gap-3 text-xs text-slate-600">
           <div className="flex items-baseline gap-1">
             <span>少亏</span>
-            <span className="font-bold text-green-600 dark:text-green-400">
+            <span className="font-bold text-green-600">
               ¥{Math.abs(lessLoss / 1000).toFixed(1)}k
             </span>
           </div>
-          <span className="text-slate-300 dark:text-slate-600">·</span>
+          <span className="text-slate-300">·</span>
           <div className="flex items-baseline gap-1">
             <span>回本门槛</span>
-            <span className="font-semibold text-green-600 dark:text-green-400">
+            <span className="font-semibold text-green-600">
               -{Math.abs(breakEvenThreshold).toFixed(1)}%
             </span>
           </div>
@@ -224,7 +222,6 @@ export function StrategyComparisonChart({
   gridData,
   basePrice,
   priceDecimals,
-  theme = "light",
 }: StrategyComparisonChartProps) {
   // 计算策略对比数据 - 以网格买入点为基准
   const chartData = useMemo(() => {
@@ -300,18 +297,18 @@ export function StrategyComparisonChart({
 
   // 专业金融配色方案
   const colors = {
-    lumpSum: theme === "dark" ? "#f87171" : "#ef4444", // 亏损红色
-    grid: theme === "dark" ? "#22c55e" : "#10b981", // 盈利绿色
-    primary: theme === "dark" ? "#3b82f6" : "#0066cc", // 主色调
-    accent: theme === "dark" ? "#fb923c" : "#ff6b35", // 强调色
-    text: theme === "dark" ? "#ededed" : "#1a1a1a",
-    textLight: theme === "dark" ? "#9ca3af" : "#6b7280",
-    gridLine: theme === "dark" ? "#374151" : "#e5e7eb",
-    background: theme === "dark" ? "#0a0a0a" : "#fafafa",
-    tooltipBg: theme === "dark" ? "#1a1a1a" : "#ffffff",
-    tooltipBorder: theme === "dark" ? "#374151" : "#e5e7eb",
-    buyPoint: theme === "dark" ? "#60a5fa" : "#3b82f6", // 买入点颜色 - 蓝色
-    buyPointBorder: theme === "dark" ? "#93c5fd" : "#60a5fa", // 买入点边框
+    lumpSum: "#ef4444",
+    grid: "#10b981",
+    primary: "#0066cc",
+    accent: "#ff6b35",
+    text: "#1a1a1a",
+    textLight: "#6b7280",
+    gridLine: "#e5e7eb",
+    background: "#fafafa",
+    tooltipBg: "#ffffff",
+    tooltipBorder: "#e5e7eb",
+    buyPoint: "#3b82f6",
+    buyPointBorder: "#60a5fa",
   };
 
   // 格式化 Y 轴 - 百分比显示（负数格式）
@@ -324,10 +321,10 @@ export function StrategyComparisonChart({
     <div className="w-full">
       {/* 标题 */}
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+        <h3 className="text-lg font-semibold text-slate-800">
           策略优势推演（抗跌能力）
         </h3>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+        <p className="text-sm text-slate-600 mt-1">
           模拟单边下跌行情：对比 一次全仓死拿 与 本策略 的浮亏差距
         </p>
       </div>
@@ -374,7 +371,6 @@ export function StrategyComparisonChart({
                   {...props}
                   active={true}
                   colors={colors}
-                  theme={theme}
                   priceDecimals={priceDecimals}
                 />
               )}
