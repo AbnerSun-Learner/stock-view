@@ -10,8 +10,7 @@ export default function IndexDetailNotFound() {
         未找到该指数
       </h1>
       <p className="text-sm text-[var(--muted-foreground)] max-w-md mb-8 leading-relaxed">
-        代码可能输入有误，或 MOCK
-        数据集尚未收录该标的。接入真实目录后将统一校验规范化代码。
+        代码可能输入有误、暂未收录，或 TuShare 当前暂无可用数据。
       </p>
       <Link
         href="/indices"

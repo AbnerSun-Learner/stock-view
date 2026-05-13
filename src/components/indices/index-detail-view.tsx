@@ -31,8 +31,7 @@ function fmtPrice(v: number): string {
   });
 }
 
-const METHODOLOGY_COLLAPSE_LABEL =
-  "口径说明（MOCK，接入数据后对齐全站 PE/PB 定义）";
+const METHODOLOGY_COLLAPSE_LABEL = "口径说明（TuShare 指数行情与估值）";
 
 export function IndexDetailView({ detail }: IndexDetailViewProps) {
   const [chartWindow, setChartWindow] = useState<IndexChartWindow>(
@@ -93,11 +92,11 @@ export function IndexDetailView({ detail }: IndexDetailViewProps) {
             <div className="rounded-2xl border border-[color:var(--border-color)] bg-[color-mix(in_srgb,var(--correlation-card-surface)_82%,transparent)] p-4">
               <div className="mb-3">
                 <h2 className="text-base font-medium text-[var(--foreground)]">
-                  PE / PB 估值分位
+                  PE / PB 估值百分位
                 </h2>
                 <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                   仪表盘数值范围为 <span className="font-mono">0–100</span>{" "}
-                  历史分位（MOCK）
+                  历史分位
                 </p>
               </div>
               <IndexPercentileWidgets
@@ -226,10 +225,6 @@ function ExtremeDrawdownPanel({
         <div>
           <h2 className="inline-flex items-center gap-1.5 text-lg font-medium tracking-wide text-[var(--foreground)]">
             极限跌幅
-            <InfoCircleOutlined
-              aria-hidden
-              className="text-sm text-[var(--muted-foreground)]"
-            />
           </h2>
           <p className="mt-1 text-xs text-[var(--muted-foreground)]">
             指数从最高点下跌 <span className="font-mono">70%</span>、

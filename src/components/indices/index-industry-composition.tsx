@@ -31,6 +31,9 @@ const PIE_PALETTE = [
   "#db2777",
 ];
 
+const MAX_VISIBLE_INDUSTRY_ROWS = 9;
+const OTHER_INDUSTRY_NAME = "其他";
+
 interface IndexIndustryCompositionProps {
   data: IndustryCompositionByLevel;
 }
@@ -40,15 +43,30 @@ export function IndexIndustryComposition({
 }: IndexIndustryCompositionProps) {
   const [level, setLevel] = useState<SwLevel>("sw1");
 
-  const rows: IndustryWeightRow[] = useMemo(() => {
+  const sourceRows: IndustryWeightRow[] = useMemo(() => {
     return data[level] ?? [];
   }, [data, level]);
 
+  const rows: IndustryWeightRow[] = useMemo(() => {
+    const visible = sourceRows.slice(0, MAX_VISIBLE_INDUSTRY_ROWS);
+    const hiddenWeight = sourceRows
+      .slice(MAX_VISIBLE_INDUSTRY_ROWS)
+      .reduce((sum, row) => sum + row.weightPct, 0);
+    if (hiddenWeight <= 0) return visible;
+    return [
+      ...visible,
+      {
+        name: OTHER_INDUSTRY_NAME,
+        weightPct: Math.round(hiddenWeight * 10) / 10,
+      },
+    ];
+  }, [sourceRows]);
+
   const topRows = useMemo(() => rows.slice(0, 3), [rows]);
-  const restWeight = useMemo(
-    () => rows.slice(3).reduce((sum, row) => sum + row.weightPct, 0),
-    [rows]
-  );
+  const restWeight = useMemo(() => {
+    return sourceRows.slice(3).reduce((sum, row) => sum + row.weightPct, 0);
+  }, [sourceRows]);
+  const asOfLabel = data.asOfDate ?? "最新可用交易日";
 
   const pieOption = useMemo((): echarts.EChartsOption | null => {
     if (rows.length === 0) return null;
@@ -119,7 +137,8 @@ export function IndexIndustryComposition({
             行业暴露
           </h2>
           <p className="text-xs text-[var(--muted-foreground)] mt-1">
-            按 {SW_LABELS[level]} 口径拆分当前指数行业权重结构（MOCK）。
+            按 {SW_LABELS[level]} 口径拆分当前指数行业权重结构，权重截至{" "}
+            <span className="font-mono tabular-nums">{asOfLabel}</span>。
           </p>
         </div>
         <Segmented<SwLevel>
@@ -136,12 +155,12 @@ export function IndexIndustryComposition({
 
       {rows.length === 0 ? (
         <p className="mt-6 text-sm text-[var(--muted-foreground)]">
-          暂无行业拆解数据。
+          TuShare 暂无可用行业拆解数据。
         </p>
       ) : (
-        <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_21rem]">
-          <div className="min-w-0">
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_9.5rem] lg:items-center">
+        <div className="mt-6 grid items-stretch gap-6 xl:grid-cols-[minmax(0,1fr)_21rem]">
+          <div className="min-w-0 h-full">
+            <div className="grid h-full gap-5 lg:grid-cols-[minmax(0,1fr)_9.5rem] lg:items-stretch">
               <div className="min-h-[360px] min-w-0">
                 {pieOption ? (
                   <div className="relative">
@@ -156,11 +175,11 @@ export function IndexIndustryComposition({
                   </div>
                 ) : null}
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3 lg:grid-cols-1">
+              <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3 lg:flex lg:h-full lg:flex-col lg:justify-between lg:gap-0">
                 {rows.map((row, i) => (
                   <div
                     key={`${level}-legend-${row.name}`}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-[color:var(--border-color)] bg-[var(--correlation-card-tint)] px-2.5 py-2"
+                    className="flex min-h-10 items-center justify-between gap-2 rounded-lg border border-[color:var(--border-color)] bg-[var(--correlation-card-tint)] px-2.5 py-2"
                   >
                     <span className="inline-flex min-w-0 items-center gap-2">
                       <span
@@ -190,7 +209,8 @@ export function IndexIndustryComposition({
               当前结构最集中的三大行业
             </h3>
             <p className="mt-2 text-xs leading-relaxed text-[var(--muted-foreground)]">
-              数据基于示例权重拆解，更新日沿用指数详情页截至日。
+              数据基于当前可用行业权重拆解，权重截至{" "}
+              <span className="font-mono tabular-nums">{asOfLabel}</span>。
             </p>
 
             <div className="mt-5 space-y-4">
@@ -211,7 +231,7 @@ export function IndexIndustryComposition({
                     </span>
                   </div>
                   <p className="pl-4 text-[11px] leading-relaxed text-[var(--muted-foreground)]">
-                    MOCK 成分示例：权重靠前，代表该指数在该行业的主要暴露来源。
+                    权重靠前，代表该指数在该行业的主要暴露来源。
                   </p>
                 </div>
               ))}
@@ -227,7 +247,7 @@ export function IndexIndustryComposition({
             </div>
 
             <p className="mt-5 text-[11px] leading-relaxed text-[var(--muted-foreground)]">
-              来源：Mock sector breakdown · 后续接入真实行业分类与成分权重。
+              来源：指数行业权重数据。
             </p>
           </aside>
         </div>

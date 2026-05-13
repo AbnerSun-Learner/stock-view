@@ -58,7 +58,7 @@ export function IndexEtfTable({ etfs }: IndexEtfTableProps) {
   if (sorted.length === 0) {
     return (
       <div className="rounded-2xl border border-[color:var(--border-color)] bg-[var(--correlation-card-tint)] px-6 py-10 text-center text-sm text-[var(--muted-foreground)]">
-        暂无跟踪 ETF 数据（MOCK 空映射演练）
+        TuShare 暂无可用跟踪 ETF 数据
       </div>
     );
   }
@@ -74,7 +74,7 @@ export function IndexEtfTable({ etfs }: IndexEtfTableProps) {
             跟踪 ETF
           </h3>
           <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-            MOCK：按规模与流动性排序，展示可交易产品的成本、折溢价与跟踪误差。
+            按规模与流动性排序，展示可交易产品的成本、折溢价与跟踪误差。
           </p>
         </div>
         <div className="rounded-xl border border-[color:var(--border-color)] bg-[var(--correlation-card-tint)] px-4 py-3 text-xs text-[var(--muted-foreground)]">
@@ -197,7 +197,7 @@ export function IndexEtfTable({ etfs }: IndexEtfTableProps) {
           <ul className="mt-5 space-y-2 text-[11px] leading-relaxed text-[var(--muted-foreground)]">
             <li>· 管理费率越低，长期持有成本越友好。</li>
             <li>· 折溢价接近 0，通常代表二级市场价格更贴近净值。</li>
-            <li>· 跟踪误差为 MOCK 年化近似，后续接入真实披露口径。</li>
+            <li>· 跟踪误差以数据源可用披露口径为准。</li>
           </ul>
         </aside>
       </div>

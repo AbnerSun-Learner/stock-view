@@ -28,12 +28,6 @@ interface HoldingReturnCell {
   cagr: number;
 }
 
-interface DrawdownPoint {
-  date: string;
-  close: number;
-  drawdownPct: number;
-}
-
 const MONTHS = [
   "1月",
   "2月",
@@ -52,7 +46,15 @@ const MONTHS = [
 const HEATMAP_COLORS = ["#15803d", "#dcfce7", "#fee2e2", "#b91c1c"];
 
 function fmtPct(v: number): string {
-  return `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
+  if (!Number.isFinite(v)) return "—";
+  return `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
+}
+
+function fmtDateWithWeekday(isoDate: string): string {
+  const weekday = ["日", "一", "二", "三", "四", "五", "六"][
+    new Date(`${isoDate}T12:00:00`).getDay()
+  ];
+  return `${isoDate}（周${weekday}）`;
 }
 
 function heatColor(v: number): string {
@@ -78,14 +80,16 @@ function groupByYear(series: readonly IndexPricePoint[]) {
 }
 
 function buildAnnualReturns(series: readonly IndexPricePoint[]) {
-  return groupByYear(series)
-    .map(([year, points]) => {
-      if (points.length < 2) return null;
-      const first = points[0].close;
-      const last = points[points.length - 1].close;
+  const grouped = groupByYear(series);
+  return grouped
+    .map(([year, points], index) => {
+      const previousYear = grouped[index - 1]?.[1];
+      const previousClose = previousYear?.[previousYear.length - 1]?.close;
+      const last = points[points.length - 1]?.close;
+      if (!previousClose || !last) return null;
       return {
         year,
-        returnPct: (last / first - 1) * 100,
+        returnPct: (last / previousClose - 1) * 100,
       };
     })
     .filter((row): row is AnnualReturnRow => row !== null);
@@ -101,14 +105,20 @@ function buildMonthlyReturns(series: readonly IndexPricePoint[]) {
   }
 
   const annual = new Map<number, (number | null)[]>();
-  for (const [key, points] of byMonth.entries()) {
-    if (points.length < 2) continue;
+  let previousMonthClose: number | null = null;
+  for (const [key, points] of [...byMonth.entries()].sort(([a], [b]) =>
+    a.localeCompare(b)
+  )) {
+    const lastClose = points[points.length - 1]?.close;
+    if (!lastClose) continue;
     const year = Number(key.slice(0, 4));
     const month = Number(key.slice(5, 7)) - 1;
     const row =
       annual.get(year) ?? Array.from<number | null>({ length: 12 }).fill(null);
-    row[month] = (points[points.length - 1].close / points[0].close - 1) * 100;
+    if (previousMonthClose)
+      row[month] = (lastClose / previousMonthClose - 1) * 100;
     annual.set(year, row);
+    previousMonthClose = lastClose;
   }
 
   const yearly = buildAnnualReturns(series);
@@ -124,13 +134,17 @@ function buildMonthlyReturns(series: readonly IndexPricePoint[]) {
 }
 
 function buildHoldingReturns(series: readonly IndexPricePoint[]) {
-  const yearly = groupByYear(series)
-    .map(([year, points]) => ({
-      year,
-      first: points[0]?.close,
-      last: points[points.length - 1]?.close,
-    }))
-    .filter((row) => row.first && row.last);
+  const grouped = groupByYear(series);
+  const yearly = grouped
+    .map(([year, points], index) => {
+      const previousYear = grouped[index - 1]?.[1];
+      return {
+        year,
+        startBase: previousYear?.[previousYear.length - 1]?.close,
+        last: points[points.length - 1]?.close,
+      };
+    })
+    .filter((row) => row.startBase && row.last);
 
   const cells: HoldingReturnCell[] = [];
   for (let i = 0; i < yearly.length; i += 1) {
@@ -138,7 +152,7 @@ function buildHoldingReturns(series: readonly IndexPricePoint[]) {
       const start = yearly[i];
       const end = yearly[j];
       const years = end.year - start.year + 1;
-      const cagr = (Math.pow(end.last / start.first, 1 / years) - 1) * 100;
+      const cagr = (Math.pow(end.last / start.startBase, 1 / years) - 1) * 100;
       cells.push({
         startYear: start.year,
         endYear: end.year,
@@ -151,13 +165,15 @@ function buildHoldingReturns(series: readonly IndexPricePoint[]) {
 }
 
 function buildDrawdownSeries(series: readonly IndexPricePoint[]) {
-  let peak = Number.NEGATIVE_INFINITY;
+  let peak: IndexPricePoint | null = null;
   return series.map((point) => {
-    peak = Math.max(peak, point.close);
+    if (!peak || point.close > peak.close) peak = point;
     return {
       date: point.date,
       close: point.close,
-      drawdownPct: (point.close / peak - 1) * 100,
+      peakDate: peak.date,
+      peakClose: peak.close,
+      drawdownPct: (point.close / peak.close - 1) * 100,
     };
   });
 }
@@ -185,6 +201,16 @@ export function IndexReturnAnalytics({
   const holdingReturns = useMemo(() => buildHoldingReturns(series), [series]);
   const monthlyReturns = useMemo(() => buildMonthlyReturns(series), [series]);
   const drawdownSeries = useMemo(() => buildDrawdownSeries(series), [series]);
+  const holdingYearsCount = useMemo(
+    () => new Set(holdingReturns.map((cell) => cell.startYear)).size,
+    [holdingReturns]
+  );
+  const holdingMaxYears = useMemo(
+    () => Math.max(...holdingReturns.map((cell) => cell.years), 1),
+    [holdingReturns]
+  );
+  const holdingChartHeight = Math.max(540, holdingYearsCount * 34 + 92);
+  const holdingChartMinWidth = Math.max(980, holdingMaxYears * 68 + 96);
 
   const annualOption = useMemo((): echarts.EChartsOption => {
     const years = annualReturns.map((row) => String(row.year));
@@ -250,10 +276,15 @@ export function IndexReturnAnalytics({
     const closeData = drawdownSeries.map((point) =>
       Number(point.close.toFixed(2))
     );
-    const drawdownData = drawdownSeries.map((point) =>
+    const drawdownData = drawdownSeries.map((point) => ({
+      value: Number(point.drawdownPct.toFixed(2)),
+      peakDate: point.peakDate,
+      peakClose: Number(point.peakClose.toFixed(2)),
+    }));
+    const drawdownValues = drawdownSeries.map((point) =>
       Number(point.drawdownPct.toFixed(2))
     );
-    const minDrawdown = Math.min(...drawdownData, 0);
+    const minDrawdown = Math.min(...drawdownValues, 0);
     const axisMin = Math.max(-100, Math.floor((minDrawdown - 5) / 10) * 10);
 
     return {
@@ -273,13 +304,29 @@ export function IndexReturnAnalytics({
           ) as { value?: number } | undefined;
           const drawdown = items.find(
             (item) => (item as { seriesName?: string }).seriesName === "回撤"
-          ) as { value?: number } | undefined;
+          ) as
+            | {
+                value?: number;
+                data?: { peakDate?: string; peakClose?: number };
+              }
+            | undefined;
+          const peakDate = drawdown?.data?.peakDate ?? "";
+          const peakClose = drawdown?.data?.peakClose;
 
-          return `<div style="font-size:12px;"><div style="color:var(--muted-foreground);margin-bottom:6px;">${date}</div><div style="font-variant-numeric:tabular-nums;">点位：${close?.value?.toLocaleString(
+          return `<div style="font-size:12px;min-width:230px;"><div style="font-weight:700;color:var(--foreground);margin-bottom:8px;">${fmtDateWithWeekday(
+            date
+          )}</div><div style="font-variant-numeric:tabular-nums;">收盘点位：${close?.value?.toLocaleString(
             "zh-CN",
-            { maximumFractionDigits: 2 }
-          )}</div><div style="font-variant-numeric:tabular-nums;color:#b91c1c;">回撤：${drawdown?.value?.toFixed(
-            1
+            { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+          )}</div><div style="font-variant-numeric:tabular-nums;margin-top:4px;color:var(--muted-foreground);">区间高点：${peakDate}${
+            typeof peakClose === "number"
+              ? ` / ${peakClose.toLocaleString("zh-CN", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}`
+              : ""
+          }</div><div style="font-variant-numeric:tabular-nums;margin-top:4px;color:#166534;">当前回撤区间：${peakDate} - ${date}，${drawdown?.value?.toFixed(
+            2
           )}%</div></div>`;
         },
       },
@@ -380,9 +427,8 @@ export function IndexReturnAnalytics({
 
   const holdingOption = useMemo((): echarts.EChartsOption => {
     const years = [...new Set(holdingReturns.map((cell) => cell.startYear))];
-    const maxYears = Math.max(...holdingReturns.map((cell) => cell.years), 1);
     return {
-      grid: { left: 48, right: 16, top: 10, bottom: 36 },
+      grid: { left: 58, right: 18, top: 12, bottom: 42 },
       tooltip: {
         trigger: "item",
         confine: true,
@@ -390,8 +436,12 @@ export function IndexReturnAnalytics({
         backgroundColor: "var(--correlation-card-surface)",
         textStyle: { color: "var(--foreground)", fontSize: 12 },
         formatter: (raw: unknown) => {
-          const p = raw as { data?: [number, number, number, number, number] };
-          const data = p.data;
+          const p = raw as {
+            data?:
+              | { value?: [number, number, number, number, number] }
+              | [number, number, number, number, number];
+          };
+          const data = Array.isArray(p.data) ? p.data : p.data?.value;
           if (!data) return "";
           const start = data[3];
           const end = data[4];
@@ -403,17 +453,25 @@ export function IndexReturnAnalytics({
       },
       xAxis: {
         type: "category",
-        data: Array.from({ length: maxYears }, (_, i) => `${i + 1}年`),
-        axisLabel: { color: "var(--muted-foreground)", fontSize: 10 },
+        data: Array.from({ length: holdingMaxYears }, (_, i) => `${i + 1}年`),
+        axisLabel: {
+          color: "var(--muted-foreground)",
+          fontFamily: "var(--font-mono)",
+          fontSize: 12,
+        },
         axisTick: { show: false },
-        axisLine: { show: false },
+        axisLine: { lineStyle: { color: "var(--border-color)" } },
       },
       yAxis: {
         type: "category",
         data: years.map(String),
-        axisLabel: { color: "var(--muted-foreground)", fontSize: 10 },
+        axisLabel: {
+          color: "var(--muted-foreground)",
+          fontFamily: "var(--font-mono)",
+          fontSize: 12,
+        },
         axisTick: { show: false },
-        axisLine: { show: false },
+        axisLine: { lineStyle: { color: "var(--border-color)" } },
       },
       visualMap: {
         dimension: 2,
@@ -435,21 +493,29 @@ export function IndexReturnAnalytics({
               cell.startYear,
               cell.endYear,
             ],
-            itemStyle: { color: heatColor(cell.cagr) },
+            itemStyle: {
+              borderColor: "var(--correlation-card-surface)",
+              borderRadius: 6,
+              borderWidth: 2,
+              color: heatColor(cell.cagr),
+            },
           })),
           label: {
             show: true,
-            fontSize: 9,
+            color: "var(--foreground)",
+            fontFamily: "var(--font-mono)",
+            fontSize: 12,
+            fontWeight: 500,
             formatter: (p: { value?: unknown }) => {
               const value = Array.isArray(p.value) ? p.value[2] : null;
-              return typeof value === "number" ? value.toFixed(1) : "";
+              return typeof value === "number" ? fmtPct(value) : "";
             },
           },
           emphasis: { disabled: true },
         },
       ],
     };
-  }, [holdingReturns]);
+  }, [holdingMaxYears, holdingReturns]);
 
   if (series.length < 2) return null;
 
@@ -457,7 +523,7 @@ export function IndexReturnAnalytics({
     <section className="space-y-8">
       <ReturnCard
         title={`${indexName} 年度回报`}
-        description="按自然年聚合周线收盘价，展示年度收益率分布（MOCK）。"
+        description="按自然年聚合 TuShare 日线收盘价，展示年度收益率分布。"
       >
         <IndicesReactECharts height={340} option={annualOption} />
         <AnnualStats rows={annualReturns} />
@@ -465,7 +531,7 @@ export function IndexReturnAnalytics({
 
       <ReturnCard
         title={`${indexName} 自高点回撤`}
-        description="每个交易日距历史最高点的跌幅；灰线为点位，红色面积表示回撤深度。"
+        description="每个交易日距历史最高收盘价的跌幅；灰线为点位，红色面积表示回撤深度。"
       >
         <IndicesReactECharts height={380} option={drawdownOption} />
         <p className="mt-3 text-[11px] text-[var(--muted-foreground)]">
@@ -475,18 +541,21 @@ export function IndexReturnAnalytics({
 
       <ReturnCard
         title={`${indexName} 跨年持有年化收益率`}
-        description="每个单元格表示从横向起点买入、持有到对应年份的年化收益率。"
+        description="每个单元格表示从起始年前一年年末买入、持有到对应年份年末的年化收益率。"
       >
         <div className="overflow-x-auto">
-          <div className="min-w-[760px]">
-            <IndicesReactECharts height={520} option={holdingOption} />
+          <div style={{ minWidth: holdingChartMinWidth }}>
+            <IndicesReactECharts
+              height={holdingChartHeight}
+              option={holdingOption}
+            />
           </div>
         </div>
       </ReturnCard>
 
       <ReturnCard
         title="月度涨跌统计"
-        description="按月聚合收益率，并统计每个月历史上涨概率（MOCK）。"
+        description="按月聚合收益率，并统计每个月历史上涨概率。"
       >
         <MonthlyReturnTable rows={monthlyReturns} />
       </ReturnCard>
@@ -569,25 +638,36 @@ function MonthlyReturnTable({ rows }: { rows: MonthlyReturnRow[] }) {
       <table className="min-w-[920px] w-full border-separate border-spacing-0 text-xs">
         <thead>
           <tr>
-            <th className="sticky left-0 z-[1] bg-[var(--correlation-card-surface)] px-3 py-3 text-left font-semibold text-[var(--foreground)]">
+            <th className="sticky left-0 z-[2] bg-[var(--correlation-card-surface)] px-3 py-3 text-left font-semibold text-[var(--foreground)]">
               年份
             </th>
-            {MONTHS.map((month, i) => (
+            {MONTHS.map((month) => (
               <th
                 key={month}
                 className="px-3 py-3 text-center font-semibold text-[var(--foreground)]"
               >
-                <div>{month}</div>
-                <div className="mt-1 font-mono text-[10px] text-[var(--profit)]">
-                  {probabilities[i] === null
-                    ? "—"
-                    : `${probabilities[i]!.toFixed(0)}%`}
-                </div>
+                {month}
               </th>
             ))}
             <th className="px-3 py-3 text-center font-semibold text-[var(--foreground)]">
               年度
             </th>
+          </tr>
+          <tr>
+            <th className="sticky left-0 z-[2] border-t border-[var(--border-color)] bg-[var(--correlation-card-surface)] px-3 py-2 text-left font-semibold text-[var(--foreground)]">
+              上涨概率
+            </th>
+            {probabilities.map((probability, i) => (
+              <td
+                key={`probability-${MONTHS[i]}`}
+                className="border-t border-[var(--border-color)] px-3 py-2 text-center font-mono tabular-nums text-[var(--profit)]"
+              >
+                {probability === null ? "—" : `${probability.toFixed(2)}%`}
+              </td>
+            ))}
+            <td className="border-t border-[var(--border-color)] px-3 py-2 text-center text-[var(--muted-foreground)]">
+              —
+            </td>
           </tr>
         </thead>
         <tbody>

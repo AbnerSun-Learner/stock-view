@@ -34,6 +34,7 @@ function PercentileGauge({
   const option = useMemo(
     (): echarts.EChartsOption => ({
       animation: false,
+      tooltip: { show: false },
       series: [
         {
           type: "gauge",
@@ -41,9 +42,9 @@ function PercentileGauge({
           endAngle: -30,
           min: 0,
           max: 100,
-          splitNumber: 5,
-          radius: "92%",
-          center: ["50%", "56%"],
+          splitNumber: 2,
+          radius: "86%",
+          center: ["50%", "50%"],
           axisLine: {
             roundCap: true,
             lineStyle: {
@@ -67,8 +68,8 @@ function PercentileGauge({
           },
           axisTick: {
             show: true,
-            distance: -16,
-            length: 4,
+            distance: -12,
+            length: 3,
             lineStyle: {
               color: "var(--muted-foreground)",
               width: 1,
@@ -77,8 +78,8 @@ function PercentileGauge({
           },
           splitLine: {
             show: true,
-            distance: -20,
-            length: 8,
+            distance: -14,
+            length: 6,
             lineStyle: {
               color: "var(--muted-foreground)",
               width: 1,
@@ -87,10 +88,11 @@ function PercentileGauge({
           },
           axisLabel: {
             show: true,
-            distance: -2,
+            distance: -4,
             color: "var(--muted-foreground)",
             fontSize: 10,
-            formatter: (v: number) => (v % 20 === 0 ? String(v) : ""),
+            formatter: (v: number) =>
+              [0, 50, 100].includes(v) ? String(v) : "",
           },
           anchor: {
             show: true,
@@ -106,12 +108,13 @@ function PercentileGauge({
           detail: {
             show: true,
             valueAnimation: false,
-            offsetCenter: [0, "52%"],
+            offsetCenter: [0, "58%"],
             color: "var(--foreground)",
             fontSize: 20,
             fontFamily: "var(--font-mono)",
             formatter: detailFormatter,
           },
+          emphasis: { disabled: true },
           data: [{ value: pct }],
         },
       ],
@@ -155,7 +158,7 @@ export function IndexPercentileWidgets({
           </h2>
           <p className="text-xs text-[var(--muted-foreground)] mt-1">
             仪表盘数值范围为 <span className="font-mono">0–100</span>{" "}
-            历史分位（MOCK）；由 ECharts gauge 绘制。
+            历史分位；由 ECharts gauge 绘制。
           </p>
         </div>
       )}

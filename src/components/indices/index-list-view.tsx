@@ -7,10 +7,8 @@ import type { ColumnsType, TableProps } from "antd/es/table";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
-const PAGE_SIZE = 12;
-
 const VALUATION_HIGHLIGHT_TOOLTIP =
-  "当前分位低于近 5 年与近 10 年分位（MOCK 规则）；数值口径以数据源为准。";
+  "当前分位低于近 5 年与近 10 年分位；数值口径以 TuShare 返回数据为准。";
 
 type SortField =
   | "code"
@@ -43,9 +41,36 @@ function isBelowBothWindows(
   return current < y5 && current < y10;
 }
 
+function mean(values: number[]): number | null {
+  if (values.length === 0) return null;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
 interface PercentileCellProps {
   value: number | null;
   highlight: boolean;
+}
+
+interface IndexListStatProps {
+  label: string;
+  value: string;
+  tone?: "default" | "brand";
+}
+
+function IndexListStat({ label, value, tone = "default" }: IndexListStatProps) {
+  const valueClass =
+    tone === "brand"
+      ? "text-[var(--correlation-brand)]"
+      : "text-[var(--foreground)]";
+
+  return (
+    <div className="rounded-2xl border border-[color:var(--border-color)] bg-[color-mix(in_srgb,var(--correlation-card-surface)_84%,transparent)] p-4 shadow-[0_10px_26px_color-mix(in_srgb,var(--foreground)_4%,transparent)]">
+      <p className="text-xs text-[var(--muted-foreground)]">{label}</p>
+      <p className={`mt-2 font-mono text-2xl tabular-nums ${valueClass}`}>
+        {value}
+      </p>
+    </div>
+  );
 }
 
 function PercentileCell({ value, highlight }: PercentileCellProps) {
@@ -78,7 +103,6 @@ interface IndexListViewProps {
 
 export function IndexListView({ initialRows }: IndexListViewProps) {
   const [keyword, setKeyword] = useState("");
-  const [page, setPage] = useState(1);
   const [sortField, setSortField] = useState<SortField>("code");
   const [sortOrder, setSortOrder] = useState<"ascend" | "descend">("ascend");
 
@@ -129,22 +153,67 @@ export function IndexListView({ initialRows }: IndexListViewProps) {
     return list;
   }, [filtered, sortField, sortOrder]);
 
-  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
-  const displayPage = Math.min(page, totalPages);
-
-  const paged = useMemo(() => {
-    const start = (displayPage - 1) * PAGE_SIZE;
-    return sorted.slice(start, start + PAGE_SIZE);
-  }, [sorted, displayPage]);
+  const stats = useMemo(() => {
+    const lowPeRows = initialRows.filter((row) =>
+      isBelowBothWindows(
+        row.pePercentileCurrent,
+        row.percentile5yPe,
+        row.percentile10yPe
+      )
+    );
+    const lowPbRows = initialRows.filter((row) =>
+      isBelowBothWindows(
+        row.pbPercentileCurrent,
+        row.pbPercentile5y,
+        row.pbPercentile10y
+      )
+    );
+    const avgPePercentile = mean(
+      initialRows
+        .map((row) => row.pePercentileCurrent)
+        .filter((value): value is number => value !== null)
+    );
+    return {
+      total: initialRows.length,
+      lowPe: lowPeRows.length,
+      lowPb: lowPbRows.length,
+      avgPePercentile,
+    };
+  }, [initialRows]);
 
   const linkFocus =
     "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--correlation-brand)] rounded-sm";
 
   const columns: ColumnsType<IndexListRow> = [
     {
+      title: "名称",
+      dataIndex: "name",
+      key: "name",
+      fixed: "left",
+      width: 160,
+      ellipsis: { showTitle: true },
+      sorter: true,
+      sortOrder: sortField === "name" ? sortOrder : null,
+      render: (name: string, record) => (
+        <div className="min-w-[8.5rem]">
+          <Link
+            href={`/indices/${encodeURIComponent(record.code)}`}
+            className={`text-[var(--foreground)] hover:text-[var(--correlation-brand)] transition-colors ${linkFocus}`}
+          >
+            {name}
+          </Link>
+          <p className="mt-1 font-mono text-[10px] leading-none text-[var(--muted-foreground)]">
+            更新 {record.asOfDate}
+          </p>
+        </div>
+      ),
+    },
+    {
       title: "代码",
       dataIndex: "code",
       key: "code",
+      fixed: "left",
+      width: 132,
       sorter: true,
       sortOrder: sortField === "code" ? sortOrder : null,
       render: (code: string) => (
@@ -153,22 +222,6 @@ export function IndexListView({ initialRows }: IndexListViewProps) {
           className={`font-mono tabular-nums text-[var(--correlation-brand)] hover:opacity-80 ${linkFocus}`}
         >
           {code}
-        </Link>
-      ),
-    },
-    {
-      title: "名称",
-      dataIndex: "name",
-      key: "name",
-      ellipsis: { showTitle: true },
-      sorter: true,
-      sortOrder: sortField === "name" ? sortOrder : null,
-      render: (name: string, record) => (
-        <Link
-          href={`/indices/${encodeURIComponent(record.code)}`}
-          className={`text-[var(--foreground)] hover:text-[var(--correlation-brand)] transition-colors ${linkFocus}`}
-        >
-          {name}
         </Link>
       ),
     },
@@ -316,36 +369,84 @@ export function IndexListView({ initialRows }: IndexListViewProps) {
 
   const clearKeyword = () => {
     setKeyword("");
-    setPage(1);
   };
 
   return (
     <div className="space-y-8 pb-16">
-      <header className="space-y-3">
-        <p className="text-xs font-medium tracking-[0.2em] uppercase text-[var(--muted-foreground)]">
-          Market center
-        </p>
-        <h1 className="text-3xl md:text-4xl font-light tracking-tight text-[var(--foreground)]">
-          行情中心 · 指数
-        </h1>
-        <p className="text-sm text-[var(--muted-foreground)] max-w-2xl leading-relaxed">
-          MOCK：搜索代码或名称；表头不换行、列宽随内容。当前 PE/PB
-          分位若同时低于对应近 5 年与近 10
-          年分位，将以浅色底标示（可点击或悬停该单元格查看说明）。
-        </p>
+      <header className="relative overflow-hidden rounded-2xl border border-[color:var(--border-color)] bg-[linear-gradient(135deg,var(--correlation-card-surface),var(--correlation-card-tint))] p-5 shadow-[0_18px_48px_color-mix(in_srgb,var(--foreground)_6%,transparent)] md:p-7">
+        <div
+          className="pointer-events-none absolute -right-24 -top-28 h-64 w-64 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--correlation-brand)_14%,transparent),transparent_68%)]"
+          aria-hidden
+        />
+        <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)] lg:items-end">
+          <div>
+            <p className="text-xs font-semibold tracking-[0.22em] uppercase text-[var(--correlation-brand)]">
+              Market center · Index
+            </p>
+            <h1 className="mt-3 text-3xl font-light tracking-tight text-[var(--foreground)] md:text-5xl">
+              行情中心 · 指数
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[var(--muted-foreground)]">
+              扫描指数 PE/PB
+              与历史分位，快速定位沪深300、科创50等指数当前估值位置。
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+              <span className="rounded-full border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] px-3 py-1 text-[var(--muted-foreground)]">
+                表头可排序
+              </span>
+              <span className="rounded-full border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] px-3 py-1 text-[var(--muted-foreground)]">
+                支持名称 / 代码搜索
+              </span>
+              <span className="rounded-full border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] px-3 py-1 text-[var(--muted-foreground)]">
+                低分位点击查看说明
+              </span>
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <IndexListStat label="指数样本" value={`${stats.total}`} />
+            <IndexListStat
+              label="PE 低分位"
+              value={`${stats.lowPe}`}
+              tone="brand"
+            />
+            <IndexListStat
+              label="PB 低分位"
+              value={`${stats.lowPb}`}
+              tone="brand"
+            />
+            <IndexListStat
+              label="平均 PE 分位"
+              value={fmtPct(stats.avgPePercentile)}
+            />
+          </div>
+        </div>
       </header>
 
       {filtered.length === 0 ? (
-        <Empty description={keyword.trim() ? "无匹配指数" : "暂无数据"}>
-          {keyword.trim() ? (
-            <Button type="primary" onClick={clearKeyword}>
-              清除关键词
-            </Button>
-          ) : null}
-        </Empty>
+        <div className="rounded-2xl border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] p-10 text-center shadow-[0_14px_36px_color-mix(in_srgb,var(--foreground)_5%,transparent)]">
+          <Empty description={keyword.trim() ? "无匹配指数" : "暂无数据"}>
+            {keyword.trim() ? (
+              <Button type="primary" onClick={clearKeyword}>
+                清除关键词
+              </Button>
+            ) : null}
+          </Empty>
+        </div>
       ) : (
-        <div className="rounded-xl border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] p-3 sm:p-5">
-          <div className="flex justify-end mb-3 min-h-[44px] items-center">
+        <div className="rounded-2xl border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] p-4 shadow-[0_14px_36px_color-mix(in_srgb,var(--foreground)_5%,transparent)] sm:p-5">
+          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="text-lg font-medium tracking-wide text-[var(--foreground)]">
+                指数估值列表
+              </h2>
+              <p className="mt-1 text-xs leading-relaxed text-[var(--muted-foreground)]">
+                当前显示{" "}
+                <span className="font-mono text-[var(--foreground)]">
+                  {sorted.length}
+                </span>{" "}
+                个匹配项；已平铺展示全部结果。
+              </p>
+            </div>
             <Input.Search
               allowClear
               placeholder="搜索名称或代码…"
@@ -362,7 +463,6 @@ export function IndexListView({ initialRows }: IndexListViewProps) {
               value={keyword}
               onChange={(e) => {
                 setKeyword(e.target.value);
-                setPage(1);
               }}
               aria-label="搜索指数名称或代码"
             />
@@ -376,16 +476,8 @@ export function IndexListView({ initialRows }: IndexListViewProps) {
               tableLayout="auto"
               rowKey={(r) => r.code}
               columns={columns}
-              dataSource={paged}
-              pagination={{
-                current: displayPage,
-                pageSize: PAGE_SIZE,
-                total: sorted.length,
-                showSizeChanger: false,
-                hideOnSinglePage: sorted.length <= PAGE_SIZE,
-                onChange: (p) => setPage(p),
-                className: "!mb-0 mt-3",
-              }}
+              dataSource={sorted}
+              pagination={false}
               scroll={{ x: "max-content" }}
               onChange={handleTableChange}
               size="middle"

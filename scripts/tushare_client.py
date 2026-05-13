@@ -47,6 +47,13 @@ def _apply_yuque_proxy_env(gateway_normalized: str) -> None:
 
 
 def create_pro():  # noqa: ANN401 — tushare.DataApi instance
+    try:
+        from load_local_secrets import load_local_secrets
+
+        load_local_secrets()
+    except Exception:
+        pass
+
     token = (os.environ.get("TUSHARE_TOKEN") or "").strip()
     if not token:
         raise RuntimeError("TUSHARE_TOKEN is not set")

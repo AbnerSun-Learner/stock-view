@@ -183,6 +183,7 @@ function industryFor(seed: DetailSeed): IndustryCompositionByLevel {
 
   if (seed.code === "000932.SH") {
     return {
+      asOfDate: AS_OF,
       sw1: normWeights([
         { name: "主要消费", weightPct: 78 },
         { name: "可选消费", weightPct: 22 },
@@ -206,6 +207,7 @@ function industryFor(seed: DetailSeed): IndustryCompositionByLevel {
 
   if (seed.code === "399967.SZ") {
     return {
+      asOfDate: AS_OF,
       sw1: normWeights([
         { name: "国防军工", weightPct: 94 },
         { name: "机械设备", weightPct: 6 },
@@ -228,6 +230,7 @@ function industryFor(seed: DetailSeed): IndustryCompositionByLevel {
 
   /** 泛用宽基模板 */
   return {
+    asOfDate: AS_OF,
     sw1: normWeights([
       { name: "工业", weightPct: 21 },
       { name: "金融", weightPct: 19 },
@@ -629,6 +632,7 @@ export function getMockIndexListRows(): IndexListRow[] {
       code: s.code,
       name: s.name,
       category: s.category,
+      asOfDate: AS_OF,
       peTtm: s.peTtm,
       pePercentileCurrent: s.percentileByWindow["1Y"],
       percentile5yPe: s.percentileByWindow["5Y"],

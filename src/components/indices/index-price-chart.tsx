@@ -67,49 +67,68 @@ export function IndexPriceChart({
     const peak = Math.max(...closes);
     const firstClose = closes[0];
     const markLineData: echarts.MarkLineComponentOption["data"] = [];
+    const drawdown70Level = Number((peak * 0.3).toFixed(2));
+    const drawdown80Level = Number((peak * 0.2).toFixed(2));
+    let lowestVisibleLevel: number | null = null;
+    if (showDrawdown80) lowestVisibleLevel = drawdown80Level;
+    if (!showDrawdown80 && showDrawdown70) lowestVisibleLevel = drawdown70Level;
 
     if (showDrawdown70) {
       markLineData.push({
-        yAxis: Number((peak * 0.3).toFixed(2)),
+        yAxis: drawdown70Level,
         name: "70 水位线",
         lineStyle: {
-          color: "color-mix(in srgb, var(--profit) 75%, transparent)",
-          width: 1,
+          color: "#f59e0b",
+          width: 1.6,
           type: "dashed",
         },
         label: {
           show: true,
           formatter: "70 水位",
-          color: "var(--profit)",
-          fontSize: 10,
+          color: "#92400e",
+          backgroundColor: "rgba(255, 251, 235, 0.92)",
+          borderColor: "#f59e0b",
+          borderWidth: 1,
+          borderRadius: 8,
+          padding: [3, 7],
+          fontSize: 11,
+          fontWeight: 700,
+          position: "insideEndTop",
         },
       });
     }
 
     if (showDrawdown80) {
       markLineData.push({
-        yAxis: Number((peak * 0.2).toFixed(2)),
+        yAxis: drawdown80Level,
         name: "80 水位线",
         lineStyle: {
-          color: "color-mix(in srgb, var(--profit) 90%, transparent)",
-          width: 1,
+          color: "#ef4444",
+          width: 1.6,
           type: "dashed",
         },
         label: {
           show: true,
           formatter: "80 水位",
-          color: "var(--profit)",
-          fontSize: 10,
+          color: "#991b1b",
+          backgroundColor: "rgba(254, 242, 242, 0.92)",
+          borderColor: "#ef4444",
+          borderWidth: 1,
+          borderRadius: 8,
+          padding: [3, 7],
+          fontSize: 11,
+          fontWeight: 700,
+          position: "insideEndTop",
         },
       });
     }
 
     return {
       grid: {
-        left: 50,
-        right: 48,
+        left: 8,
+        right: 16,
         top: 18,
-        bottom: 8,
+        bottom: 28,
         containLabel: true,
       },
       tooltip: {
@@ -197,6 +216,11 @@ export function IndexPriceChart({
           type: "value",
           position: "left",
           scale: true,
+          min:
+            lowestVisibleLevel === null
+              ? undefined
+              : ({ min }: { min: number }) =>
+                  Math.floor(Math.min(min, lowestVisibleLevel) * 0.95),
           axisLine: {
             show: true,
             lineStyle: { color: "var(--border-color)" },
@@ -277,7 +301,7 @@ export function IndexPriceChart({
         className="flex items-center justify-center rounded-xl border border-[color:var(--border-color)] bg-[var(--correlation-card-tint)] text-sm text-[var(--muted-foreground)]"
         style={{ height: 320 }}
       >
-        暂无收盘价序列（MOCK）
+        TuShare 暂无可用收盘价序列
       </div>
     );
   }
@@ -294,12 +318,12 @@ export function IndexPriceChart({
           </div>
         ) : null}
         <p className="text-xs text-[var(--muted-foreground)] tracking-wide">
-          价格指数收盘 · {windowLabel}（周线 MOCK，复权口径与数据源对齐后替换）
+          价格指数收盘 · {windowLabel}（TuShare 日线）
         </p>
       </div>
       {option ? <IndicesReactECharts height={380} option={option} /> : null}
       <p className="mt-3 text-[10px] leading-relaxed text-[var(--muted-foreground)]">
-        复权方式（前复权 / 全收益）以接入行情源时的说明为准。
+        收盘点位来自 TuShare 指数日线，收益与回撤基于当前可视序列计算。
       </p>
     </div>
   );

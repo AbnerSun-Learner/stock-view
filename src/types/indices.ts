@@ -15,7 +15,7 @@ export interface IndexPricePoint {
   close: number;
 }
 
-/** 估值走势点（周线 MOCK） */
+/** 估值走势点 */
 export interface IndexValuationPoint {
   date: string;
   peTtm: number | null;
@@ -24,11 +24,13 @@ export interface IndexValuationPoint {
 
 export interface IndustryWeightRow {
   name: string;
-  /** 权重百分比 0–100（MOCK） */
+  /** 权重百分比 0–100 */
   weightPct: number;
 }
 
 export interface IndustryCompositionByLevel {
+  /** 行业权重数据截至日 */
+  asOfDate: string | null;
   /** 申万一级 */
   sw1: IndustryWeightRow[];
   /** 申万二级 */
@@ -37,13 +39,15 @@ export interface IndustryCompositionByLevel {
   sw3: IndustryWeightRow[];
 }
 
-/** 列表行（MOCK / 将来 API 对齐） */
+/** 列表行 */
 export interface IndexListRow {
   code: string;
   name: string;
   category: IndexCategory;
+  /** 数据更新时间 / 截至日 */
+  asOfDate: string;
   peTtm: number | null;
-  /** 当前 PE 估值分位（列表口径 MOCK） */
+  /** 当前 PE 估值分位 */
   pePercentileCurrent: number | null;
   percentile5yPe: number | null;
   percentile10yPe: number | null;
@@ -64,11 +68,11 @@ export interface TrackingEtfRow {
   avgDailyTurnoverYi: number | null;
   /** 折溢价率（%） */
   premiumDiscount: number | null;
-  /** 跟踪误差（%，年化近似 MOCK） */
+  /** 跟踪误差（%） */
   trackingError: number | null;
 }
 
-/** 详情聚合（MOCK）；价格序列为全历史，窗口由内联 slice 推导 */
+/** 详情聚合；价格序列为全历史，窗口由内联 slice 推导 */
 export interface IndexDetailRecord {
   code: string;
   name: string;
@@ -89,9 +93,9 @@ export interface IndexDetailRecord {
   gaugePbPercentile: number | null;
   /** 全样本收盘价走势（升序日期） */
   fullHistoryPrices: IndexPricePoint[];
-  /** 对齐日期的估值序列（MOCK） */
+  /** 估值序列（升序日期） */
   fullHistoryValuation: IndexValuationPoint[];
-  /** 申万行业权重（MOCK） */
+  /** 申万行业权重 */
   industryComposition: IndustryCompositionByLevel;
   etfs: TrackingEtfRow[];
 }
