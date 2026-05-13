@@ -408,7 +408,8 @@ html {
 .indices-list-table.ant-table-wrapper .ant-table-container {
   overflow-x: auto;
   overflow-y: hidden !important;
-  border-radius: 0.875rem;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--border-color) 78%, transparent);
   scrollbar-color: color-mix(in srgb, var(--foreground) 18%, transparent)
     transparent;
   scrollbar-width: thin;
@@ -448,21 +449,71 @@ html {
   min-width: 100%;
   table-layout: auto;
 }
+
+.indices-list-table.ant-table-wrapper .ant-table {
+  background: transparent;
+}
+
 .indices-list-table.ant-table-wrapper .ant-table-thead > tr > th {
   white-space: nowrap;
-  background: color-mix(
-    in srgb,
-    var(--correlation-card-tint) 72%,
-    var(--correlation-card-surface)
+  height: 56px;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  vertical-align: middle !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--correlation-card-tint) 86%, #ffffff),
+    color-mix(
+      in srgb,
+      var(--correlation-card-surface) 94%,
+      var(--surface-subtle)
+    )
   ) !important;
   color: var(--foreground) !important;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   border-bottom: 1px solid var(--border-color) !important;
 }
+
+.indices-list-table.ant-table-wrapper
+  .ant-table-thead
+  > tr
+  > th
+  .ant-table-column-sorters {
+  min-height: 56px;
+  align-items: center;
+}
+
+.indices-list-table.ant-table-wrapper
+  .ant-table-thead
+  > tr
+  > th
+  .ant-table-column-title {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.25rem;
+}
+
+.indices-list-table.ant-table-wrapper
+  .ant-table-thead
+  > tr
+  > th
+  .ant-table-column-sorter {
+  display: inline-flex;
+  align-items: center;
+}
+
 .indices-list-table.ant-table-wrapper .ant-table-tbody > tr > td {
+  padding-top: 14px;
+  padding-bottom: 14px;
   vertical-align: middle;
   border-bottom: 1px solid var(--border-color) !important;
+  background: color-mix(
+    in srgb,
+    var(--correlation-card-surface) 96%,
+    var(--surface-subtle)
+  );
 }
 
 .indices-list-table.ant-table-wrapper .ant-table-tbody > tr:hover > td {
@@ -475,7 +526,11 @@ html {
 
 .indices-list-table.ant-table-wrapper .ant-table-cell-fix-left,
 .indices-list-table.ant-table-wrapper .ant-table-cell-fix-left-last {
-  background: var(--correlation-card-surface) !important;
+  background: color-mix(
+    in srgb,
+    var(--correlation-card-surface) 98%,
+    var(--surface-subtle)
+  ) !important;
 }
 
 .indices-list-table.ant-table-wrapper
@@ -486,10 +541,14 @@ html {
   .ant-table-thead
   > tr
   > th.ant-table-cell-fix-left-last {
-  background: color-mix(
-    in srgb,
-    var(--correlation-card-tint) 72%,
-    var(--correlation-card-surface)
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--correlation-card-tint) 86%, #ffffff),
+    color-mix(
+      in srgb,
+      var(--correlation-card-surface) 94%,
+      var(--surface-subtle)
+    )
   ) !important;
 }
 

@@ -622,7 +622,7 @@ export function getMockIndexDetail(codeNorm: string): IndexDetailRecord | null {
 }
 
 export function getMockIndexListRows(): IndexListRow[] {
-  return MOCK_DETAIL_SEEDS.map((s) => {
+  return MOCK_DETAIL_SEEDS.map((s, index) => {
     const pbLegacy =
       s.pb === null
         ? ({ "1Y": null, "5Y": null, "10Y": null, ALL: null } as LegacyPeWindow)
@@ -632,7 +632,16 @@ export function getMockIndexListRows(): IndexListRow[] {
       code: s.code,
       name: s.name,
       category: s.category,
+      displayOrder: index + 1,
       asOfDate: AS_OF,
+      close:
+        DETAIL_BY_CODE.get(s.code)?.fullHistoryPrices.at(-1)?.close ?? null,
+      historyHigh:
+        DETAIL_BY_CODE.get(s.code)?.fullHistoryPrices.reduce(
+          (high, point) => Math.max(high, point.close),
+          0
+        ) ?? null,
+      drawdownFromHighPct: null,
       peTtm: s.peTtm,
       pePercentileCurrent: s.percentileByWindow["1Y"],
       percentile5yPe: s.percentileByWindow["5Y"],

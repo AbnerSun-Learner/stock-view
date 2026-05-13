@@ -15,13 +15,16 @@ from __future__ import annotations
 import json
 import re
 import sys
-from datetime import date
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 _ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(_ROOT))
 
 CODE_REGEX = re.compile(r"^\d{6}\.(SH|SZ|CSI)$")
+MARKET_TZ = ZoneInfo("Asia/Shanghai")
+MARKET_CLOSE_TIME = time(15, 0)
 
 
 def _to_iso_date(raw: object) -> str:
@@ -29,6 +32,14 @@ def _to_iso_date(raw: object) -> str:
     if len(td) == 8:
         return f"{td[:4]}-{td[4:6]}-{td[6:]}"
     return td
+
+
+def effective_query_end_date() -> date:
+    """盘中查询上一自然日；盘后查询当天。非交易日由 TuShare 自动回落到最近交易日。"""
+    now = datetime.now(MARKET_TZ)
+    if now.time() < MARKET_CLOSE_TIME:
+        return now.date() - timedelta(days=1)
+    return now.date()
 
 
 def fetch_index_daily(code: str) -> dict:
@@ -42,7 +53,7 @@ def fetch_index_daily(code: str) -> dict:
     df = pro.index_daily(
         ts_code=symbol,
         start_date="20000101",
-        end_date=date.today().strftime("%Y%m%d"),
+        end_date=effective_query_end_date().strftime("%Y%m%d"),
         fields="ts_code,trade_date,close",
     )
 

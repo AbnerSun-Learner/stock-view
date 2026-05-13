@@ -44,8 +44,12 @@ export interface IndexListRow {
   code: string;
   name: string;
   category: IndexCategory;
+  displayOrder: number;
   /** 数据更新时间 / 截至日 */
   asOfDate: string;
+  close: number | null;
+  historyHigh: number | null;
+  drawdownFromHighPct: number | null;
   peTtm: number | null;
   /** 当前 PE 估值分位 */
   pePercentileCurrent: number | null;
