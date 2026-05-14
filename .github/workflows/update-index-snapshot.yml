@@ -1,0 +1,75 @@
+name: Update Index Snapshot
+
+on:
+  schedule:
+    # GitHub cron uses UTC. These run at 15:10, 15:30 and 16:00 Asia/Shanghai.
+    - cron: "10,30 7 * * 1-5"
+    - cron: "0 8 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-index-snapshot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Validate required TuShare secrets
+        env:
+          TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+          DATA_API: ${{ secrets.DATA_API }}
+        run: |
+          missing=0
+          if [ -z "$TUSHARE_TOKEN" ]; then
+            echo "::error::Missing required GitHub Secret: TUSHARE_TOKEN"
+            missing=1
+          fi
+          if [ -z "$DATA_API" ]; then
+            echo "::error::Missing required GitHub Secret: DATA_API"
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Node.js dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prefetch index snapshot
+        env:
+          TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+          DATA_API: ${{ secrets.DATA_API }}
+          DATA_API_SCHEME: ${{ secrets.DATA_API_SCHEME }}
+          TUSHARE_SYNC_PROXY_ENV: ${{ secrets.TUSHARE_SYNC_PROXY_ENV }}
+        run: pnpm indices:prefetch
+
+      - name: Commit snapshot
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(indices): update index list snapshot"
+          file_pattern: data/indices/list-snapshot.json

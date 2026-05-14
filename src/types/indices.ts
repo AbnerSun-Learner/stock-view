@@ -61,6 +61,42 @@ export interface IndexListRow {
   pbPercentile10y: number | null;
 }
 
+export interface SupportedIndexMeta {
+  code: string;
+  name: string;
+  category: IndexCategory;
+  displayOrder: number;
+}
+
+export interface IndexListSnapshotFailure {
+  code: string;
+  name: string;
+  reason: string;
+}
+
+export interface IndexListSnapshot {
+  generatedAt: string;
+  marketDate: string;
+  marketTimeZone: "Asia/Shanghai";
+  rows: IndexListRow[];
+  failures: IndexListSnapshotFailure[];
+}
+
+export type IndexListSnapshotStatus = "ready" | "updating" | "unavailable";
+
+export interface IndexListSnapshotNotice {
+  status: IndexListSnapshotStatus;
+  title: string;
+  description: string;
+  marketDate: string | null;
+  generatedAt: string | null;
+}
+
+export interface IndexListSnapshotResult {
+  rows: IndexListRow[];
+  notice: IndexListSnapshotNotice;
+}
+
 export interface TrackingEtfRow {
   code: string;
   name: string;

@@ -3,128 +3,34 @@ import {
   fetchIndexPrices,
   fetchIndexValuations,
 } from "@/lib/indices/server/tushare-runner";
+import {
+  getSupportedIndexMeta,
+  getVisibleIndexMetas,
+} from "@/lib/indices/supported-indices";
 import type {
-  IndexCategory,
   IndexChartWindow,
   IndexDetailRecord,
   IndexListRow,
+  IndexListSnapshot,
+  IndexListSnapshotNotice,
+  IndexListSnapshotResult,
   IndexPricePoint,
   IndexValuationPoint,
   IndustryCompositionByLevel,
+  SupportedIndexMeta,
 } from "@/types/indices";
+import { readFile } from "fs/promises";
+import path from "path";
 
-interface SupportedIndexMeta {
-  code: string;
-  name: string;
-  category: IndexCategory;
-  displayOrder: number;
-}
-
-const SUPPORTED_INDICES: SupportedIndexMeta[] = [
-  { code: "000016.SH", name: "上证50", category: "宽基", displayOrder: 10 },
-  { code: "000300.SH", name: "沪深300", category: "宽基", displayOrder: 20 },
-  { code: "000688.SH", name: "科创50", category: "宽基", displayOrder: 30 },
-  { code: "000852.SH", name: "中证1000", category: "宽基", displayOrder: 40 },
-  { code: "000905.SH", name: "中证500", category: "宽基", displayOrder: 50 },
-  { code: "399006.SZ", name: "创业板指", category: "宽基", displayOrder: 60 },
-  { code: "932000.CSI", name: "中证2000", category: "宽基", displayOrder: 70 },
-  {
-    code: "000922.CSI",
-    name: "中证红利",
-    category: "主题",
-    displayOrder: 1000,
-  },
-  {
-    code: "930955.CSI",
-    name: "红利低波100",
-    category: "主题",
-    displayOrder: 1010,
-  },
-  { code: "000932.SH", name: "中证消费", category: "行业", displayOrder: 1020 },
-  { code: "399997.SZ", name: "中证白酒", category: "行业", displayOrder: 1030 },
-  {
-    code: "000807.CSI",
-    name: "食品饮料",
-    category: "行业",
-    displayOrder: 1040,
-  },
-  {
-    code: "000808.CSI",
-    name: "医药生物",
-    category: "行业",
-    displayOrder: 1050,
-  },
-  {
-    code: "931152.CSI",
-    name: "CS创新药",
-    category: "主题",
-    displayOrder: 1060,
-  },
-  { code: "399989.SZ", name: "中证医疗", category: "行业", displayOrder: 1070 },
-  { code: "399967.SZ", name: "中证军工", category: "行业", displayOrder: 1080 },
-  { code: "399986.SZ", name: "中证银行", category: "行业", displayOrder: 1090 },
-  { code: "399975.SZ", name: "证券公司", category: "行业", displayOrder: 1100 },
-  { code: "399998.SZ", name: "中证煤炭", category: "行业", displayOrder: 1110 },
-  {
-    code: "930708.CSI",
-    name: "中证有色",
-    category: "行业",
-    displayOrder: 1120,
-  },
-  {
-    code: "930606.CSI",
-    name: "中证钢铁",
-    category: "行业",
-    displayOrder: 1130,
-  },
-  { code: "399971.SZ", name: "中证传媒", category: "行业", displayOrder: 1140 },
-  { code: "000827.SH", name: "中证环保", category: "主题", displayOrder: 1150 },
-  { code: "399976.SZ", name: "CS新能车", category: "主题", displayOrder: 1160 },
-  {
-    code: "931071.CSI",
-    name: "人工智能",
-    category: "主题",
-    displayOrder: 1170,
-  },
-  {
-    code: "931186.CSI",
-    name: "中证科技",
-    category: "主题",
-    displayOrder: 1180,
-  },
-  {
-    code: "000949.CSI",
-    name: "中证农业",
-    category: "行业",
-    displayOrder: 1190,
-  },
-  {
-    code: "930707.CSI",
-    name: "中证畜牧",
-    category: "行业",
-    displayOrder: 1200,
-  },
-  {
-    code: "930608.CSI",
-    name: "中证基建",
-    category: "行业",
-    displayOrder: 1210,
-  },
-  {
-    code: "000825.CSI",
-    name: "中证央企红利",
-    category: "主题",
-    displayOrder: 1220,
-  },
-  {
-    code: "000824.CSI",
-    name: "中证国企红利",
-    category: "主题",
-    displayOrder: 1230,
-  },
-];
-
-const LIST_FETCH_CONCURRENCY = 4;
+const SNAPSHOT_PATH = path.join(
+  process.cwd(),
+  "data",
+  "indices",
+  "list-snapshot.json"
+);
+const MARKET_CLOSE_HOUR = 15;
+const MARKET_TZ = "Asia/Shanghai";
+const MARKET_STALE_MAX_DAYS = 10;
 
 const EMPTY_INDUSTRY_COMPOSITION: IndustryCompositionByLevel = {
   asOfDate: null,
@@ -226,51 +132,174 @@ function latestDate(
   prices: readonly IndexPricePoint[],
   valuations: readonly IndexValuationPoint[]
 ): string {
-  const valuationDate = valuations[valuations.length - 1]?.date;
   const priceDate = prices[prices.length - 1]?.date;
-  return valuationDate ?? priceDate ?? "";
+  const valuationDate = valuations[valuations.length - 1]?.date;
+  return priceDate ?? valuationDate ?? "";
 }
 
-function latestClose(prices: readonly IndexPricePoint[]): number | null {
-  return prices[prices.length - 1]?.close ?? null;
+function emptySnapshotNotice(
+  title: string,
+  description: string
+): IndexListSnapshotNotice {
+  return {
+    status: "unavailable",
+    title,
+    description,
+    marketDate: null,
+    generatedAt: null,
+  };
 }
 
-function historyHigh(prices: readonly IndexPricePoint[]): number | null {
-  if (prices.length === 0) return null;
-  return Math.max(...prices.map((point) => point.close));
+function getShanghaiParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: MARKET_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return {
+    date: `${map.year}-${map.month}-${map.day}`,
+    weekday: map.weekday ?? "",
+    hour: Number.parseInt(map.hour ?? "0", 10),
+    minute: Number.parseInt(map.minute ?? "0", 10),
+  };
 }
 
-function drawdownFromHighPct(
-  close: number | null,
-  high: number | null
-): number | null {
-  if (close === null || high === null || high <= 0) return null;
-  return Math.round((close / high - 1) * 1000) / 10;
+function isWeekend(weekday: string): boolean {
+  return weekday === "Sat" || weekday === "Sun";
+}
+
+function daysBetweenDates(a: string, b: string): number {
+  const start = Date.parse(`${a}T00:00:00Z`);
+  const end = Date.parse(`${b}T00:00:00Z`);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return Infinity;
+  return Math.round((end - start) / 86_400_000);
+}
+
+function isIsoDate(value: unknown): value is string {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function isNullableNumber(value: unknown): value is number | null {
+  return value === null || isFiniteNumber(value);
+}
+
+function isIndexListRow(value: unknown): value is IndexListRow {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Record<string, unknown>;
+  return (
+    typeof row.code === "string" &&
+    typeof row.name === "string" &&
+    typeof row.category === "string" &&
+    isFiniteNumber(row.displayOrder) &&
+    isIsoDate(row.asOfDate) &&
+    isNullableNumber(row.close) &&
+    isNullableNumber(row.historyHigh) &&
+    isNullableNumber(row.drawdownFromHighPct)
+  );
+}
+
+function parseSnapshot(raw: unknown): IndexListSnapshot | null {
+  if (!raw || typeof raw !== "object") return null;
+  const snapshot = raw as Record<string, unknown>;
+  if (
+    typeof snapshot.generatedAt !== "string" ||
+    !isIsoDate(snapshot.marketDate) ||
+    snapshot.marketTimeZone !== MARKET_TZ ||
+    !Array.isArray(snapshot.rows) ||
+    !Array.isArray(snapshot.failures)
+  )
+    return null;
+
+  const rows = snapshot.rows.filter(isIndexListRow);
+  if (rows.length !== snapshot.rows.length) return null;
+
+  return {
+    generatedAt: snapshot.generatedAt,
+    marketDate: snapshot.marketDate,
+    marketTimeZone: MARKET_TZ,
+    rows,
+    failures: [],
+  };
+}
+
+async function readIndexListSnapshot(): Promise<IndexListSnapshot | null> {
+  try {
+    const raw = await readFile(SNAPSHOT_PATH, "utf-8");
+    return parseSnapshot(JSON.parse(raw));
+  } catch (error) {
+    console.warn("[indices] failed to read list snapshot", error);
+    return null;
+  }
+}
+
+function validateSnapshotRows(rows: readonly IndexListRow[]): boolean {
+  const expectedCodes = new Set(
+    getVisibleIndexMetas().map((meta) => meta.code)
+  );
+  if (rows.length !== expectedCodes.size) return false;
+
+  for (const row of rows) {
+    if (!expectedCodes.has(row.code)) return false;
+    if (row.close === null || row.historyHigh === null) return false;
+  }
+  return true;
+}
+
+function buildSnapshotNotice(
+  snapshot: IndexListSnapshot
+): IndexListSnapshotNotice {
+  const now = getShanghaiParts();
+  const generatedAt = new Date(snapshot.generatedAt);
+  const generated = Number.isNaN(generatedAt.getTime())
+    ? null
+    : getShanghaiParts(generatedAt);
+  const ageDays = daysBetweenDates(snapshot.marketDate, now.date);
+  if (ageDays < 0 || ageDays > MARKET_STALE_MAX_DAYS) {
+    return {
+      status: "unavailable",
+      title: "指数数据尚未更新",
+      description: "当前快照日期异常，请稍后重试。",
+      marketDate: snapshot.marketDate,
+      generatedAt: snapshot.generatedAt,
+    };
+  }
+
+  if (
+    now.date === snapshot.marketDate ||
+    now.hour < MARKET_CLOSE_HOUR ||
+    isWeekend(now.weekday) ||
+    generated?.date === now.date
+  ) {
+    return {
+      status: "ready",
+      title: "指数数据已更新",
+      description: `当前展示 ${snapshot.marketDate} 交易日数据。`,
+      marketDate: snapshot.marketDate,
+      generatedAt: snapshot.generatedAt,
+    };
+  }
+
+  return {
+    status: "updating",
+    title: "今日收盘数据更新中",
+    description: `当前展示 ${snapshot.marketDate} 交易日数据，今日快照生成后会自动更新。`,
+    marketDate: snapshot.marketDate,
+    generatedAt: snapshot.generatedAt,
+  };
 }
 
 function supportedMeta(code: string): SupportedIndexMeta | null {
-  return SUPPORTED_INDICES.find((item) => item.code === code) ?? null;
-}
-
-async function mapWithConcurrency<T, R>(
-  values: readonly T[],
-  concurrency: number,
-  task: (value: T, index: number) => Promise<R>
-): Promise<R[]> {
-  const results: R[] = new Array(values.length);
-  let nextIndex = 0;
-  const workerCount = Math.min(concurrency, values.length);
-
-  async function worker() {
-    while (nextIndex < values.length) {
-      const currentIndex = nextIndex;
-      nextIndex += 1;
-      results[currentIndex] = await task(values[currentIndex], currentIndex);
-    }
-  }
-
-  await Promise.all(Array.from({ length: workerCount }, worker));
-  return results;
+  return getSupportedIndexMeta(code);
 }
 
 async function buildIndexDetail(
@@ -309,79 +338,6 @@ async function buildIndexDetail(
   };
 }
 
-async function buildIndexListRow(
-  meta: SupportedIndexMeta
-): Promise<IndexListRow | null> {
-  const [prices, valuations] = await Promise.all([
-    fetchIndexPrices(meta.code),
-    fetchIndexValuations(meta.code),
-  ]);
-
-  const safePrices = prices ?? [];
-  const safeValuations = valuations ?? [];
-  const pePercentiles = buildPercentiles(safeValuations, "peTtm");
-  const pbPercentiles = buildPercentiles(safeValuations, "pb");
-  const close = latestClose(safePrices);
-  const high = historyHigh(safePrices);
-
-  return toListRow(
-    {
-      code: meta.code,
-      name: meta.name,
-      category: meta.category,
-      asOfDate: latestDate(safePrices, safeValuations),
-      listingAnchorDate: safePrices[0]?.date ?? safeValuations[0]?.date ?? "",
-      peTtm: latestValue(safeValuations, (row) => row.peTtm),
-      pb: latestValue(safeValuations, (row) => row.pb),
-      percentilePeByChartWindow: pePercentiles,
-      percentilePbByChartWindow: pbPercentiles,
-      gaugePePercentile: pePercentiles.ALL,
-      gaugePbPercentile: pbPercentiles.ALL,
-      fullHistoryPrices: safePrices,
-      fullHistoryValuation: safeValuations,
-      industryComposition: EMPTY_INDUSTRY_COMPOSITION,
-      etfs: [],
-    },
-    {
-      displayOrder: meta.displayOrder,
-      close,
-      historyHigh: high,
-      drawdownFromHighPct: drawdownFromHighPct(close, high),
-    }
-  );
-}
-
-interface IndexListRowMetrics {
-  displayOrder: number;
-  close: number | null;
-  historyHigh: number | null;
-  drawdownFromHighPct: number | null;
-}
-
-function toListRow(
-  detail: IndexDetailRecord,
-  metrics: IndexListRowMetrics
-): IndexListRow {
-  return {
-    code: detail.code,
-    name: detail.name,
-    category: detail.category,
-    displayOrder: metrics.displayOrder,
-    asOfDate: detail.asOfDate,
-    close: metrics.close,
-    historyHigh: metrics.historyHigh,
-    drawdownFromHighPct: metrics.drawdownFromHighPct,
-    peTtm: detail.peTtm,
-    pePercentileCurrent: detail.percentilePeByChartWindow.ALL,
-    percentile5yPe: detail.percentilePeByChartWindow["5Y"],
-    percentile10yPe: detail.percentilePeByChartWindow["10Y"],
-    pb: detail.pb,
-    pbPercentileCurrent: detail.percentilePbByChartWindow.ALL,
-    pbPercentile5y: detail.percentilePbByChartWindow["5Y"],
-    pbPercentile10y: detail.percentilePbByChartWindow["10Y"],
-  };
-}
-
 export function isSupportedRealIndex(code: string): boolean {
   return supportedMeta(code) !== null;
 }
@@ -394,11 +350,33 @@ export async function getIndexDetail(
   return buildIndexDetail(meta);
 }
 
-export async function getIndexListRows(): Promise<IndexListRow[]> {
-  const details = await mapWithConcurrency(
-    SUPPORTED_INDICES,
-    LIST_FETCH_CONCURRENCY,
-    buildIndexListRow
-  );
-  return details.filter((row): row is IndexListRow => row !== null);
+export async function getIndexListSnapshotResult(): Promise<IndexListSnapshotResult> {
+  const snapshot = await readIndexListSnapshot();
+  if (!snapshot) {
+    return {
+      rows: [],
+      notice: emptySnapshotNotice(
+        "指数数据尚未生成",
+        "当前还没有可用快照，请等待 GitHub Actions 完成收盘数据更新。"
+      ),
+    };
+  }
+
+  if (!validateSnapshotRows(snapshot.rows)) {
+    return {
+      rows: [],
+      notice: emptySnapshotNotice(
+        "指数数据暂不可用",
+        "当前快照不完整，为避免展示错误行情，已暂停展示卡片数据。"
+      ),
+    };
+  }
+
+  const notice = buildSnapshotNotice(snapshot);
+  if (notice.status === "unavailable") return { rows: [], notice };
+
+  return {
+    rows: snapshot.rows.sort((a, b) => a.displayOrder - b.displayOrder),
+    notice,
+  };
 }

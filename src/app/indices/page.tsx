@@ -1,5 +1,5 @@
 import { IndexListView } from "@/components/indices/index-list-view";
-import { getIndexListRows } from "@/lib/indices/server/fetch-index-data";
+import { getIndexListSnapshotResult } from "@/lib/indices/server/fetch-index-data";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -11,6 +11,6 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function IndicesListPage() {
-  const initialRows = await getIndexListRows();
-  return <IndexListView initialRows={initialRows} />;
+  const snapshot = await getIndexListSnapshotResult();
+  return <IndexListView initialRows={snapshot.rows} notice={snapshot.notice} />;
 }
