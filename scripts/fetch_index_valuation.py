@@ -233,6 +233,14 @@ def fetch_index_valuation(code: str) -> dict:
         )
 
     if points:
+        latest_point_date = points[-1]["date"]
+        if latest_point_date < _to_iso_date(query_end_date.strftime("%Y%m%d")):
+            fallback = _fallback_current_valuation_from_members(pro, symbol, query_end_date)
+            fallback_points = fallback.get("points", [])
+            if fallback_points:
+                latest_fallback = fallback_points[-1]
+                if latest_fallback.get("date", "") > latest_point_date:
+                    points.append(latest_fallback)
         return {"symbol": symbol, "points": points}
     return _fallback_current_valuation_from_members(pro, symbol, query_end_date)
 

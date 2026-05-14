@@ -56,6 +56,8 @@ interface RawIndustryPayload {
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const MISS_TTL_MS = 60 * 1000;
 const INDUSTRY_CACHE_TTL_MS = 60 * 60 * 1000;
+const PRICE_EMPTY_RETRY_ATTEMPTS = 3;
+const PRICE_EMPTY_RETRY_BASE_MS = 700;
 
 const priceCache = new Map<string, CacheEntry<IndexPricePoint[]>>();
 const valuationCache = new Map<string, CacheEntry<IndexValuationPoint[]>>();
@@ -212,17 +214,25 @@ export async function fetchIndexPrices(
   if (cached !== undefined) return cached;
 
   try {
-    const result = (await runScript(
-      "fetch_index_daily.py",
-      code
-    )) as RawPricePayload;
-    const points = parsePricePoints(result?.points ?? []);
-    if (points.length === 0) {
-      writeCache(priceCache, code, null);
-      return null;
+    for (let attempt = 0; attempt < PRICE_EMPTY_RETRY_ATTEMPTS; attempt++) {
+      const result = (await runScript(
+        "fetch_index_daily.py",
+        code
+      )) as RawPricePayload;
+      const points = parsePricePoints(result?.points ?? []);
+      if (points.length > 0) {
+        writeCache(priceCache, code, points);
+        return points;
+      }
+      if (attempt < PRICE_EMPTY_RETRY_ATTEMPTS - 1)
+        await sleep(PRICE_EMPTY_RETRY_BASE_MS * (attempt + 1));
     }
-    writeCache(priceCache, code, points);
-    return points;
+
+    console.warn(
+      `[indices] fetchIndexPrices returned empty points for ${code}`
+    );
+    writeCache(priceCache, code, null);
+    return null;
   } catch (error) {
     console.error(`[indices] fetchIndexPrices failed for ${code}`, error);
     writeCache(priceCache, code, null);
