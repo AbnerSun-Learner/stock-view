@@ -55,6 +55,7 @@ interface RawIndustryPayload {
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const MISS_TTL_MS = 60 * 1000;
+const RATE_LIMIT_MISS_TTL_MS = 5 * 1000;
 const INDUSTRY_CACHE_TTL_MS = 60 * 60 * 1000;
 const PRICE_EMPTY_RETRY_ATTEMPTS = 3;
 const PRICE_EMPTY_RETRY_BASE_MS = 700;
@@ -62,16 +63,25 @@ const PRICE_EMPTY_RETRY_BASE_MS = 700;
 const priceCache = new Map<string, CacheEntry<IndexPricePoint[]>>();
 const valuationCache = new Map<string, CacheEntry<IndexValuationPoint[]>>();
 const industryCache = new Map<string, CacheEntry<IndustryCompositionByLevel>>();
-const INDUSTRY_CACHE_KEY_REV = ":sw2021_batch_v2";
+const VALUATION_CACHE_KEY_REV = ":valuation_v2";
+const INDUSTRY_CACHE_KEY_REV = ":sw2021_batch_v4";
 
 function isRetryableExecError(error: unknown): boolean {
   const text =
     error instanceof Error
       ? `${error.message}\n${error.stack ?? ""}`
       : String(error);
-  return /Connection aborted|RemoteDisconnected|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|socket hang up|timed out|reset by peer|\b502\b|\b503\b|\b504\b|TLS|SSLHandshake/i.test(
+  return /请求速度过快|Connection aborted|RemoteDisconnected|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|socket hang up|timed out|reset by peer|\b502\b|\b503\b|\b504\b|TLS|SSLHandshake/i.test(
     text
   );
+}
+
+function isRateLimitError(error: unknown): boolean {
+  const text =
+    error instanceof Error
+      ? `${error.message}\n${error.stack ?? ""}`
+      : String(error);
+  return /请求速度过快/i.test(text);
 }
 
 function sleep(ms: number): Promise<void> {
@@ -104,8 +114,18 @@ function writeCache<T>(
   map.set(key, {
     data,
     ts: Date.now(),
-    ttl: data === null ? MISS_TTL_MS : ttl,
+    ttl,
   });
+}
+
+function writeMissCache<T>(
+  map: Map<string, CacheEntry<T>>,
+  key: string,
+  ttl = MISS_TTL_MS
+) {
+  const current = map.get(key);
+  if (current?.data) return;
+  writeCache(map, key, null, ttl);
 }
 
 async function runScript(filename: string, code: string): Promise<unknown> {
@@ -231,11 +251,15 @@ export async function fetchIndexPrices(
     console.warn(
       `[indices] fetchIndexPrices returned empty points for ${code}`
     );
-    writeCache(priceCache, code, null);
+    writeMissCache(priceCache, code);
     return null;
   } catch (error) {
     console.error(`[indices] fetchIndexPrices failed for ${code}`, error);
-    writeCache(priceCache, code, null);
+    writeMissCache(
+      priceCache,
+      code,
+      isRateLimitError(error) ? RATE_LIMIT_MISS_TTL_MS : MISS_TTL_MS
+    );
     return null;
   }
 }
@@ -243,7 +267,8 @@ export async function fetchIndexPrices(
 export async function fetchIndexValuations(
   code: string
 ): Promise<IndexValuationPoint[] | null> {
-  const cached = readCache(valuationCache, code);
+  const cacheKey = `${code}${VALUATION_CACHE_KEY_REV}`;
+  const cached = readCache(valuationCache, cacheKey);
   if (cached !== undefined) return cached;
 
   try {
@@ -253,14 +278,18 @@ export async function fetchIndexValuations(
     )) as RawValuationPayload;
     const points = parseValuationPoints(result?.points ?? []);
     if (points.length === 0) {
-      writeCache(valuationCache, code, null);
+      writeMissCache(valuationCache, cacheKey, RATE_LIMIT_MISS_TTL_MS);
       return null;
     }
-    writeCache(valuationCache, code, points);
+    writeCache(valuationCache, cacheKey, points);
     return points;
   } catch (error) {
     console.error(`[indices] fetchIndexValuations failed for ${code}`, error);
-    writeCache(valuationCache, code, null);
+    writeMissCache(
+      valuationCache,
+      cacheKey,
+      isRateLimitError(error) ? RATE_LIMIT_MISS_TTL_MS : MISS_TTL_MS
+    );
     return null;
   }
 }
@@ -273,17 +302,23 @@ export async function fetchIndexIndustryComposition(
   if (cached !== undefined) return cached;
 
   try {
-    const result = (await runScript(
-      "fetch_index_industry.py",
-      code
-    )) as RawIndustryPayload;
-    const data = parseIndustryComposition(result);
+    let data: IndustryCompositionByLevel | null = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const result = (await runScript(
+        "fetch_index_industry.py",
+        code
+      )) as RawIndustryPayload;
+      data = parseIndustryComposition(result);
+      if (data.sw1.length > 0 || data.sw2.length > 0 || data.sw3.length > 0)
+        break;
+      if (attempt === 0) await sleep(PRICE_EMPTY_RETRY_BASE_MS);
+    }
+
     if (
-      data.sw1.length === 0 &&
-      data.sw2.length === 0 &&
-      data.sw3.length === 0
+      !data ||
+      (data.sw1.length === 0 && data.sw2.length === 0 && data.sw3.length === 0)
     ) {
-      writeCache(industryCache, cacheKey, null);
+      writeMissCache(industryCache, cacheKey);
       return null;
     }
     writeCache(industryCache, cacheKey, data, INDUSTRY_CACHE_TTL_MS);
@@ -293,7 +328,11 @@ export async function fetchIndexIndustryComposition(
       `[indices] fetchIndexIndustryComposition failed for ${code}`,
       error
     );
-    writeCache(industryCache, cacheKey, null);
+    writeMissCache(
+      industryCache,
+      cacheKey,
+      isRateLimitError(error) ? RATE_LIMIT_MISS_TTL_MS : MISS_TTL_MS
+    );
     return null;
   }
 }

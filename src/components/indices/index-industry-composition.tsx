@@ -160,7 +160,7 @@ export function IndexIndustryComposition({
       ) : (
         <div className="mt-6 grid items-stretch gap-6 xl:grid-cols-[minmax(0,1fr)_21rem]">
           <div className="min-w-0 h-full">
-            <div className="grid h-full gap-5 lg:grid-cols-[minmax(0,1fr)_9.5rem] lg:items-stretch">
+            <div className="grid h-full gap-5">
               <div className="min-h-[360px] min-w-0">
                 {pieOption ? (
                   <div className="relative">
@@ -175,7 +175,7 @@ export function IndexIndustryComposition({
                   </div>
                 ) : null}
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3 lg:flex lg:h-full lg:flex-col lg:justify-between lg:gap-0">
+              <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3 xl:grid-cols-4">
                 {rows.map((row, i) => (
                   <div
                     key={`${level}-legend-${row.name}`}

@@ -138,15 +138,94 @@ function PercentileGauge({
   );
 }
 
+function fmtRatio(value: number | null | undefined, digits: number): string {
+  if (value === null || value === undefined) return "—";
+  return value.toLocaleString("zh-CN", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+}
+
+function CurrentValuationCard({
+  title,
+  value,
+  digits,
+  accent,
+}: {
+  title: string;
+  value: number | null | undefined;
+  digits: number;
+  accent: "brand" | "teal";
+}) {
+  const accentClass =
+    accent === "teal" ? "text-[#0e7490]" : "text-[var(--correlation-brand)]";
+
+  return (
+    <div
+      className="flex min-h-[10.75rem] flex-col items-center justify-center rounded-2xl border border-[color:var(--border-color)] bg-[color-mix(in_srgb,var(--correlation-card-surface)_86%,transparent)] px-4 py-5 text-center shadow-[0_10px_24px_color-mix(in_srgb,var(--foreground)_4%,transparent)]"
+      role="group"
+      aria-label={`${title} ${fmtRatio(value, digits)}`}
+    >
+      <p className="text-xs font-medium text-[var(--muted-foreground)]">
+        {title}
+      </p>
+      <p
+        className={`mt-3 font-mono text-3xl font-semibold tabular-nums ${accentClass}`}
+      >
+        {fmtRatio(value, digits)}
+      </p>
+    </div>
+  );
+}
+
+function ValuationWidget({
+  percentile,
+  currentValue,
+  currentTitle,
+  percentileCaption,
+  digits,
+  accent,
+}: {
+  percentile: number | null;
+  currentValue: number | null | undefined;
+  currentTitle: string;
+  percentileCaption: string;
+  digits: number;
+  accent: "brand" | "teal";
+}) {
+  if (percentile !== null) {
+    return (
+      <PercentileGauge
+        value={percentile}
+        caption={percentileCaption}
+        accent={accent}
+      />
+    );
+  }
+
+  return (
+    <CurrentValuationCard
+      title={currentTitle}
+      value={currentValue}
+      digits={digits}
+      accent={accent}
+    />
+  );
+}
+
 interface IndexPercentileWidgetsProps {
   gaugePePercentile: number | null;
   gaugePbPercentile: number | null;
+  peTtm?: number | null;
+  pb?: number | null;
   isEmbedded?: boolean;
 }
 
 export function IndexPercentileWidgets({
   gaugePePercentile,
   gaugePbPercentile,
+  peTtm,
+  pb,
   isEmbedded = false,
 }: IndexPercentileWidgetsProps) {
   const content = (
@@ -164,14 +243,20 @@ export function IndexPercentileWidgets({
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <PercentileGauge
-          value={gaugePePercentile}
-          caption="PE 分位仪表盘（0–100）"
+        <ValuationWidget
+          percentile={gaugePePercentile}
+          currentValue={peTtm}
+          currentTitle="当前估值（PE_TTM）"
+          percentileCaption="PE 分位仪表盘（0–100）"
+          digits={2}
           accent="brand"
         />
-        <PercentileGauge
-          value={gaugePbPercentile}
-          caption="PB 分位仪表盘（0–100）"
+        <ValuationWidget
+          percentile={gaugePbPercentile}
+          currentValue={pb}
+          currentTitle="当前估值（PB）"
+          percentileCaption="PB 分位仪表盘（0–100）"
+          digits={3}
           accent="teal"
         />
       </div>

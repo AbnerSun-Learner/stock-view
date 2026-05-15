@@ -102,6 +102,8 @@ export function IndexDetailView({ detail }: IndexDetailViewProps) {
               <IndexPercentileWidgets
                 gaugePePercentile={detail.gaugePePercentile}
                 gaugePbPercentile={detail.gaugePbPercentile}
+                peTtm={detail.peTtm}
+                pb={detail.pb}
                 isEmbedded
               />
             </div>
