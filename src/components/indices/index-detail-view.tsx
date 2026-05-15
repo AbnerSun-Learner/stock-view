@@ -68,6 +68,32 @@ export function IndexDetailView({ detail }: IndexDetailViewProps) {
         <div className="relative space-y-4">
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,28rem)] lg:items-start">
             <div className="min-w-0">
+              <nav
+                aria-label="面包屑导航"
+                className="mb-4 flex flex-wrap items-center gap-2 text-xs text-[var(--muted-foreground)]"
+              >
+                <Link
+                  href="/indices"
+                  className="rounded-sm text-[var(--correlation-brand)] transition hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--correlation-brand)]"
+                >
+                  行情中心
+                </Link>
+                <span aria-hidden className="text-[var(--muted-foreground)]/70">
+                  /
+                </span>
+                <Link
+                  href="/indices"
+                  className="rounded-sm text-[var(--correlation-brand)] transition hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--correlation-brand)]"
+                >
+                  指数
+                </Link>
+                <span aria-hidden className="text-[var(--muted-foreground)]/70">
+                  /
+                </span>
+                <span className="font-medium text-[var(--foreground)]">
+                  {detail.name}
+                </span>
+              </nav>
               <p className="text-xs font-semibold tracking-[0.22em] uppercase text-[var(--correlation-brand)]">
                 Market center · Index
               </p>

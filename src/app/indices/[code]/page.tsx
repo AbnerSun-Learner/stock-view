@@ -4,6 +4,8 @@ import { getIndexDetail } from "@/lib/indices/server/fetch-index-data";
 import { getSupportedIndexMeta } from "@/lib/indices/supported-indices";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import IndexDetailLoading from "./loading";
 
 interface PageProps {
   params: Promise<{ code: string }>;
@@ -30,8 +32,22 @@ export async function generateMetadata({
 
 export default async function IndexDetailPage({ params }: PageProps) {
   const { code } = await params;
-  const detail = await getIndexDetail(normalizeIndexCode(code));
+  const normalizedCode = normalizeIndexCode(code);
+
+  return (
+    <Suspense fallback={<IndexDetailLoading />}>
+      <IndexDetailContent code={normalizedCode} />
+    </Suspense>
+  );
+}
+
+async function IndexDetailContent({ code }: IndexDetailContentProps) {
+  const detail = await getIndexDetail(code);
   if (!detail) notFound();
 
   return <IndexDetailView detail={detail} />;
+}
+
+interface IndexDetailContentProps {
+  code: string;
 }
