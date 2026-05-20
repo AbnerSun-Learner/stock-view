@@ -1,3 +1,4 @@
+import { fetchIndexDetailFromDatabase } from "@/lib/indices/server/index-db-reader";
 import {
   fetchIndexIndustryComposition,
   fetchIndexPrices,
@@ -8,6 +9,7 @@ import {
   getVisibleIndexMetas,
 } from "@/lib/indices/supported-indices";
 import type {
+  IndexCategory,
   IndexChartWindow,
   IndexDetailRecord,
   IndexListRow,
@@ -31,6 +33,7 @@ const SNAPSHOT_PATH = path.join(
 const MARKET_CLOSE_HOUR = 15;
 const MARKET_TZ = "Asia/Shanghai";
 const MARKET_STALE_MAX_DAYS = 10;
+const DATABASE_DETAIL_CATEGORIES = new Set<IndexCategory>(["宽基", "行业"]);
 
 const EMPTY_INDUSTRY_COMPOSITION: IndustryCompositionByLevel = {
   asOfDate: null,
@@ -74,6 +77,13 @@ function windowCutoff(
 interface DatedValue {
   date: string;
   value: number;
+}
+
+interface BuildIndexDetailRecordArgs {
+  meta: SupportedIndexMeta;
+  prices: IndexPricePoint[];
+  valuations: IndexValuationPoint[];
+  industryComposition: IndustryCompositionByLevel;
 }
 
 function percentileOfLatest(
@@ -305,6 +315,9 @@ function supportedMeta(code: string): SupportedIndexMeta | null {
 async function buildIndexDetail(
   meta: SupportedIndexMeta
 ): Promise<IndexDetailRecord | null> {
+  if (DATABASE_DETAIL_CATEGORIES.has(meta.category))
+    return buildDatabaseIndexDetail(meta);
+
   const [prices, valuations] = await Promise.all([
     fetchIndexPrices(meta.code),
     fetchIndexValuations(meta.code),
@@ -316,23 +329,52 @@ async function buildIndexDetail(
   const industryComposition =
     (await fetchIndexIndustryComposition(meta.code)) ??
     EMPTY_INDUSTRY_COMPOSITION;
-  const pePercentiles = buildPercentiles(safeValuations, "peTtm");
-  const pbPercentiles = buildPercentiles(safeValuations, "pb");
+
+  return buildIndexDetailRecord({
+    meta,
+    prices,
+    valuations: safeValuations,
+    industryComposition,
+  });
+}
+
+async function buildDatabaseIndexDetail(
+  meta: SupportedIndexMeta
+): Promise<IndexDetailRecord | null> {
+  const data = await fetchIndexDetailFromDatabase(meta.code);
+  if (!data) return null;
+
+  return buildIndexDetailRecord({
+    meta,
+    prices: data.prices,
+    valuations: data.valuations,
+    industryComposition: data.industryComposition,
+  });
+}
+
+function buildIndexDetailRecord({
+  meta,
+  prices,
+  valuations,
+  industryComposition,
+}: BuildIndexDetailRecordArgs): IndexDetailRecord {
+  const pePercentiles = buildPercentiles(valuations, "peTtm");
+  const pbPercentiles = buildPercentiles(valuations, "pb");
 
   return {
     code: meta.code,
     name: meta.name,
     category: meta.category,
-    asOfDate: latestDate(prices, safeValuations),
+    asOfDate: latestDate(prices, valuations),
     listingAnchorDate: prices[0].date,
-    peTtm: latestValue(safeValuations, (row) => row.peTtm),
-    pb: latestValue(safeValuations, (row) => row.pb),
+    peTtm: latestValue(valuations, (row) => row.peTtm),
+    pb: latestValue(valuations, (row) => row.pb),
     percentilePeByChartWindow: pePercentiles,
     percentilePbByChartWindow: pbPercentiles,
     gaugePePercentile: pePercentiles.ALL,
     gaugePbPercentile: pbPercentiles.ALL,
     fullHistoryPrices: prices,
-    fullHistoryValuation: safeValuations,
+    fullHistoryValuation: valuations,
     industryComposition: industryComposition ?? EMPTY_INDUSTRY_COMPOSITION,
     etfs: [],
   };

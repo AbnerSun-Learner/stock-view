@@ -44,43 +44,49 @@
   {
     "code": "000922.CSI",
     "name": "中证红利",
-    "category": "主题",
+    "category": "行业",
+    "displayOrder": 1080
+  },
+  {
+    "code": "000827.SH",
+    "name": "中证环保",
+    "category": "行业",
     "displayOrder": 1000
   },
   {
-    "code": "930955.CSI",
-    "name": "红利低波100",
-    "category": "主题",
+    "code": "000991.SH",
+    "name": "全指医药",
+    "category": "行业",
     "displayOrder": 1010
   },
   {
-    "code": "000932.SH",
-    "name": "中证消费",
+    "code": "000992.SH",
+    "name": "金融地产",
     "category": "行业",
     "displayOrder": 1020
   },
   {
-    "code": "399997.SZ",
-    "name": "中证白酒",
+    "code": "000993.SH",
+    "name": "全指信息",
     "category": "行业",
     "displayOrder": 1030
   },
   {
-    "code": "000807.CSI",
-    "name": "食品饮料",
+    "code": "399396.SZ",
+    "name": "国证食品",
     "category": "行业",
     "displayOrder": 1040
   },
   {
-    "code": "000808.CSI",
-    "name": "医药生物",
+    "code": "399812.SZ",
+    "name": "养老产业",
     "category": "行业",
     "displayOrder": 1050
   },
   {
-    "code": "931152.CSI",
-    "name": "CS创新药",
-    "category": "主题",
+    "code": "399967.SZ",
+    "name": "中证军工",
+    "category": "行业",
     "displayOrder": 1060
   },
   {
@@ -90,14 +96,8 @@
     "displayOrder": 1070
   },
   {
-    "code": "399967.SZ",
-    "name": "中证军工",
-    "category": "行业",
-    "displayOrder": 1080
-  },
-  {
-    "code": "399986.SZ",
-    "name": "中证银行",
+    "code": "399971.SZ",
+    "name": "中证传媒",
     "category": "行业",
     "displayOrder": 1090
   },
@@ -108,81 +108,39 @@
     "displayOrder": 1100
   },
   {
-    "code": "399998.SZ",
-    "name": "中证煤炭",
-    "category": "行业",
-    "displayOrder": 1110
-  },
-  {
-    "code": "930708.CSI",
-    "name": "中证有色",
-    "category": "行业",
-    "displayOrder": 1120
-  },
-  {
-    "code": "930606.CSI",
-    "name": "中证钢铁",
-    "category": "行业",
-    "displayOrder": 1130
-  },
-  {
-    "code": "399971.SZ",
-    "name": "中证传媒",
-    "category": "行业",
-    "displayOrder": 1140
-  },
-  {
-    "code": "000827.SH",
-    "name": "中证环保",
+    "code": "930955.CSI",
+    "name": "红利低波100",
     "category": "主题",
-    "displayOrder": 1150
+    "displayOrder": 1110
   },
   {
     "code": "399976.SZ",
     "name": "CS新能车",
     "category": "主题",
-    "displayOrder": 1160
+    "displayOrder": 1120
   },
   {
     "code": "931071.CSI",
     "name": "人工智能",
     "category": "主题",
-    "displayOrder": 1170
+    "displayOrder": 1130
   },
   {
     "code": "931186.CSI",
     "name": "中证科技",
     "category": "主题",
-    "displayOrder": 1180
-  },
-  {
-    "code": "000949.CSI",
-    "name": "中证农业",
-    "category": "行业",
-    "displayOrder": 1190
-  },
-  {
-    "code": "930707.CSI",
-    "name": "中证畜牧",
-    "category": "行业",
-    "displayOrder": 1200
-  },
-  {
-    "code": "930608.CSI",
-    "name": "中证基建",
-    "category": "行业",
-    "displayOrder": 1210
+    "displayOrder": 1140
   },
   {
     "code": "000825.CSI",
     "name": "中证央企红利",
     "category": "主题",
-    "displayOrder": 1220
+    "displayOrder": 1150
   },
   {
     "code": "000824.CSI",
     "name": "中证国企红利",
     "category": "主题",
-    "displayOrder": 1230
+    "displayOrder": 1160
   }
 ]
