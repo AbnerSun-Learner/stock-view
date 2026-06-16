@@ -1,7 +1,8 @@
 "use client";
 
+import { HelpTooltip } from "@/components/shared/help-tooltip";
 import { InputNumber } from "antd";
-import { Filter, HelpCircle, Shield } from "lucide-react";
+import { Filter, Shield } from "lucide-react";
 
 interface GridStepConfigProps {
   baseStep: number;
@@ -59,28 +60,32 @@ export function GridStepConfig({
             <h3 className="text-base font-semibold text-[var(--foreground)]">
               网格步长
             </h3>
-            <div className="group relative">
-              <HelpCircle className="h-4 w-4 cursor-help text-[var(--muted-foreground)] transition-colors hover:text-[var(--accent)]" />
-              <div className="pointer-events-none absolute left-0 top-full z-[99999] mt-2 hidden w-[min(100vw-2rem,20rem)] rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 text-xs leading-relaxed text-[var(--foreground)] shadow-[var(--ds-shadow-lg)] group-hover:block">
-                <div className="mb-2 font-semibold text-[var(--foreground)]">
-                  计算逻辑公式：
-                </div>
-                <div className="space-y-1 font-mono text-[11px] text-[var(--muted-foreground)]">
-                  <div>P₁ = 基准价</div>
-                  <div>P₂ = P₁ × (1 - Step_initial)</div>
-                  <div>Pₙ = Pₙ₋₁ × (1 - Stepₙ₋₁)</div>
-                  <div className="mt-2 border-t border-[var(--border)] pt-2">
-                    <div className="text-[var(--foreground)]">
-                      动态步长更新：
-                    </div>
-                    <div>Stepₙ = Stepₙ₋₁ × (1 + Scale)</div>
-                    <div className="mt-1 text-[11px] leading-snug">
-                      稳健模式 Scale=0.3 · 抄底模式 Scale=0.6
+            <HelpTooltip
+              size="md"
+              placement="bottomLeft"
+              maxWidth="20rem"
+              title={
+                <>
+                  <div className="mb-2 font-semibold text-[var(--foreground)]">
+                    计算逻辑公式：
+                  </div>
+                  <div className="space-y-1 font-mono text-[11px] text-[var(--muted-foreground)]">
+                    <div>P₁ = 基准价</div>
+                    <div>P₂ = P₁ × (1 - Step_initial)</div>
+                    <div>Pₙ = Pₙ₋₁ × (1 - Stepₙ₋₁)</div>
+                    <div className="mt-2 border-t border-[var(--border)] pt-2">
+                      <div className="text-[var(--foreground)]">
+                        动态步长更新：
+                      </div>
+                      <div>Stepₙ = Stepₙ₋₁ × (1 + Scale)</div>
+                      <div className="mt-1 text-[11px] leading-snug">
+                        稳健模式 Scale=0.3 · 抄底模式 Scale=0.6
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
+                </>
+              }
+            />
           </div>
         </div>
 

@@ -59,19 +59,19 @@ export default function GridPage() {
   };
 
   return (
-    <AntdProvider>
-      <div className="relative min-h-screen overflow-x-hidden bg-[var(--page-bg)] text-[var(--foreground)]">
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-[420px] opacity-90"
-          aria-hidden
-        >
-          <div className="ds-hero-glow absolute inset-0" />
-        </div>
+    <div className="relative min-h-screen overflow-x-hidden bg-[var(--page-bg)] text-[var(--foreground)]">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[420px] opacity-90"
+        aria-hidden
+      >
+        <div className="ds-hero-glow absolute inset-0" />
+      </div>
 
-        <StillwellSiteNav />
+      <StillwellSiteNav containerClassName="site-container--grid" />
 
+      <AntdProvider>
         <div className="relative pt-[72px]">
-          <div className="mx-auto max-w-6xl px-6 py-14 lg:px-10 lg:py-16">
+          <div className="site-container site-container--grid py-14 lg:py-16">
             {/* 页头 */}
             <header className="mb-10 lg:mb-12">
               <div className="ds-section-label">
@@ -89,9 +89,9 @@ export default function GridPage() {
             <ErrorAlert errors={errors} />
 
             {/* 主体布局 */}
-            <div className="grid grid-cols-12 gap-8 lg:gap-10">
+            <div className="grid grid-cols-12 gap-8 xl:gap-10">
               {/* 左侧：参数配置 */}
-              <div className="col-span-12 lg:col-span-4">
+              <div className="col-span-12 xl:col-span-4">
                 <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card)] shadow-[var(--ds-shadow-md)]">
                   {/* 基本信息 */}
                   <div className="border-b border-[var(--border)]">
@@ -170,7 +170,7 @@ export default function GridPage() {
               </div>
 
               {/* 右侧：计算结果 */}
-              <div className="col-span-12 space-y-8 lg:col-span-8">
+              <div className="col-span-12 space-y-8 xl:col-span-8">
                 {gridData.length === 0 || !stressTest ? (
                   <div className="flex min-h-[480px] items-center justify-center rounded-xl border border-dashed border-[var(--border)] bg-[color-mix(in_srgb,var(--card)_88%,transparent)] px-6 shadow-[var(--ds-shadow-sm)] backdrop-blur-[2px] lg:min-h-[520px]">
                     <div className="max-w-sm text-center">
@@ -217,7 +217,7 @@ export default function GridPage() {
             </div>
           </div>
         </div>
-      </div>
-    </AntdProvider>
+      </AntdProvider>
+    </div>
   );
 }

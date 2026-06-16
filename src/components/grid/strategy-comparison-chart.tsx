@@ -6,6 +6,7 @@
  * 使用 recharts 实现交互式图表
  */
 
+import { TOOLTIP_Z_INDEX } from "@/components/shared/help-tooltip";
 import { useMemo } from "react";
 import {
   CartesianGrid,
@@ -114,7 +115,7 @@ function CustomTooltip({
         backgroundColor: colors.tooltipBg,
         borderColor: colors.tooltipBorder,
         minWidth: "320px",
-        zIndex: 9999,
+        zIndex: TOOLTIP_Z_INDEX,
       }}
     >
       {/* 标题 */}
@@ -374,7 +375,7 @@ export function StrategyComparisonChart({
                   priceDecimals={priceDecimals}
                 />
               )}
-              wrapperStyle={{ zIndex: 9999 }}
+              wrapperStyle={{ zIndex: TOOLTIP_Z_INDEX }}
             />
             <Legend
               wrapperStyle={{

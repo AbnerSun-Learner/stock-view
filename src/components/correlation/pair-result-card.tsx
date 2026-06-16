@@ -1,7 +1,7 @@
 "use client";
 
+import { HelpTooltip } from "@/components/shared/help-tooltip";
 import type { PairCorrelationData } from "@/lib/correlation/pair-correlation-types";
-import { HelpCircle } from "lucide-react";
 
 interface PairResultCardProps {
   data: PairCorrelationData;
@@ -108,15 +108,12 @@ function StatWithTip({ label, tooltip, value }: StatWithTipProps) {
         <p className="text-[10px] font-medium tracking-[0.16em] uppercase text-[var(--muted-foreground)]">
           {label}
         </p>
-        <span className="group relative shrink-0 inline-flex">
-          <HelpCircle
-            className="w-3 h-3 cursor-help opacity-50 hover:opacity-80 transition-opacity"
-            strokeWidth={1.5}
-          />
-          <span className="correlation-rich-tooltip absolute left-0 top-full mt-2 hidden group-hover:block z-[60] normal-case whitespace-normal">
-            {tooltip}
-          </span>
-        </span>
+        <HelpTooltip
+          title={tooltip}
+          variant="rich"
+          placement="bottomLeft"
+          maxWidth="22rem"
+        />
       </div>
       <p className="text-base font-light font-en-arial tabular-nums text-[var(--correlation-chart-line)]">
         {value}

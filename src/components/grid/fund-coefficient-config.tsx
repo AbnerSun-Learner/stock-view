@@ -1,7 +1,7 @@
 "use client";
 
+import { HelpTooltip } from "@/components/shared/help-tooltip";
 import { InputNumber } from "antd";
-import { HelpCircle } from "lucide-react";
 
 interface FundCoefficientConfigProps {
   amountPerGrid: number;
@@ -61,12 +61,12 @@ export function FundCoefficientConfig({
             <h3 className="text-base font-semibold text-[var(--foreground)]">
               资金系数
             </h3>
-            <div className="group relative">
-              <HelpCircle className="h-4 w-4 cursor-help text-[var(--muted-foreground)] transition-colors hover:text-[var(--accent)]" />
-              <div className="pointer-events-none absolute left-0 top-full z-[99999] mt-2 hidden w-64 rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 text-xs leading-relaxed text-[var(--foreground)] shadow-[var(--ds-shadow-lg)] group-hover:block">
-                控制每个档位的资金分配和利润保留策略
-              </div>
-            </div>
+            <HelpTooltip
+              size="md"
+              placement="bottomLeft"
+              maxWidth="16rem"
+              title="控制每个档位的资金分配和利润保留策略"
+            />
           </div>
         </div>
       </div>
@@ -80,12 +80,11 @@ export function FundCoefficientConfig({
           >
             <span className="text-[var(--loss)]">*</span>
             {fields[0].label}
-            <div className="group relative">
-              <HelpCircle className="h-3.5 w-3.5 cursor-help text-[var(--muted-foreground)]" />
-              <div className="pointer-events-none absolute bottom-full left-0 z-[99999] mb-2 hidden w-56 rounded-lg border border-[var(--border)] bg-[var(--card)] p-2 text-xs leading-snug text-[var(--foreground)] shadow-[var(--ds-shadow-md)] group-hover:block">
-                {fields[0].tooltip}
-              </div>
-            </div>
+            <HelpTooltip
+              title={fields[0].tooltip}
+              placement="topLeft"
+              maxWidth="14rem"
+            />
           </label>
           <InputNumber
             id={fields[0].key}
@@ -114,12 +113,11 @@ export function FundCoefficientConfig({
               >
                 <span className="text-[var(--loss)]">*</span>
                 {field.label}
-                <div className="group relative">
-                  <HelpCircle className="h-3.5 w-3.5 cursor-help text-[var(--muted-foreground)]" />
-                  <div className="pointer-events-none absolute bottom-full left-0 z-[99999] mb-2 hidden w-56 rounded-lg border border-[var(--border)] bg-[var(--card)] p-2 text-xs leading-snug text-[var(--foreground)] shadow-[var(--ds-shadow-md)] group-hover:block">
-                    {field.tooltip}
-                  </div>
-                </div>
+                <HelpTooltip
+                  title={field.tooltip}
+                  placement="topLeft"
+                  maxWidth="14rem"
+                />
               </label>
               <InputNumber
                 id={field.key}

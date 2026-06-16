@@ -2,8 +2,7 @@
 
 import { sortTrackingEtfs } from "@/lib/indices/sort-etfs";
 import type { TrackingEtfRow } from "@/types/indices";
-import { CopyOutlined } from "@ant-design/icons";
-import { App, Button } from "antd";
+import { Button, Tag } from "antd";
 import { useMemo } from "react";
 
 interface IndexEtfTableProps {
@@ -38,7 +37,6 @@ function avgNullable(values: (number | null)[]): number | null {
 }
 
 export function IndexEtfTable({ etfs }: IndexEtfTableProps) {
-  const { message } = App.useApp();
   const sorted = useMemo(() => sortTrackingEtfs(etfs), [etfs]);
 
   const totalAum = useMemo(
@@ -58,10 +56,12 @@ export function IndexEtfTable({ etfs }: IndexEtfTableProps) {
   if (sorted.length === 0) {
     return (
       <div className="rounded-2xl border border-[color:var(--border-color)] bg-[var(--correlation-card-tint)] px-6 py-10 text-center text-sm text-[var(--muted-foreground)]">
-        TuShare 暂无可用跟踪 ETF 数据
+        当前指数暂未匹配到可展示 ETF
       </div>
     );
   }
+
+  const hasRelatedRows = sorted.some((row) => row.matchType === "related");
 
   return (
     <section className="rounded-2xl border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] p-5 shadow-[0_14px_36px_color-mix(in_srgb,var(--foreground)_5%,transparent)] md:p-6">
@@ -74,7 +74,8 @@ export function IndexEtfTable({ etfs }: IndexEtfTableProps) {
             跟踪 ETF
           </h3>
           <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-            按规模与流动性排序，展示可交易产品的成本、折溢价与跟踪误差。
+            按规模与流动性排序，优先展示严格跟踪当前指数的 ETF。
+            {hasRelatedRows ? "暂无精确样本时展示同方向相关标的。" : null}
           </p>
         </div>
         <div className="rounded-xl border border-[color:var(--border-color)] bg-[var(--correlation-card-tint)] px-4 py-3 text-xs text-[var(--muted-foreground)]">
@@ -125,6 +126,7 @@ export function IndexEtfTable({ etfs }: IndexEtfTableProps) {
                     <span className="rounded-full bg-[var(--correlation-brand)] px-2.5 py-1 text-[11px] font-semibold text-white">
                       TOP {index + 1}
                     </span>
+                    <EtfMatchTag matchType={row.matchType} />
                     <span className="font-mono text-sm tabular-nums text-[var(--correlation-brand)]">
                       {row.code}
                     </span>
@@ -134,19 +136,20 @@ export function IndexEtfTable({ etfs }: IndexEtfTableProps) {
                   </h4>
                 </div>
                 <Button
-                  type="text"
-                  aria-label={`复制 ${row.code}`}
-                  icon={<CopyOutlined aria-hidden />}
+                  type="primary"
+                  href={`/etfs/${encodeURIComponent(row.code)}`}
                   className="self-start"
-                  onClick={() => {
-                    void navigator.clipboard.writeText(row.code).then(() => {
-                      message.success(`已复制 ${row.code}`);
-                    });
-                  }}
                 >
-                  复制
+                  ETF 详情
                 </Button>
               </div>
+
+              {row.matchType === "related" ? (
+                <p className="mt-3 rounded-lg border border-[color:var(--border-color)] bg-[var(--correlation-card-surface)] px-3 py-2 text-xs leading-relaxed text-[var(--muted-foreground)]">
+                  该产品跟踪 {row.trackingIndexName ?? "相近指数"}
+                  ，仅作为同方向观察标的。
+                </p>
+              ) : null}
 
               <div className="mt-4 grid gap-3 text-xs sm:grid-cols-5">
                 <Metric label="规模" value={`${fmtYi(row.aumYi)} 亿`} />
@@ -203,6 +206,15 @@ export function IndexEtfTable({ etfs }: IndexEtfTableProps) {
       </div>
     </section>
   );
+}
+
+function EtfMatchTag({
+  matchType,
+}: {
+  matchType: TrackingEtfRow["matchType"];
+}) {
+  if (matchType === "related") return <Tag color="gold">相关ETF</Tag>;
+  return <Tag color="blue">精确跟踪</Tag>;
 }
 
 interface MetricProps {

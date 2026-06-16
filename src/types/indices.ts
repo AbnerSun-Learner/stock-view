@@ -100,6 +100,10 @@ export interface IndexListSnapshotResult {
 export interface TrackingEtfRow {
   code: string;
   name: string;
+  /** 匹配口径：exact 为严格跟踪当前指数，related 为同方向可观察标的 */
+  matchType?: "exact" | "related";
+  trackingIndexCode?: string | null;
+  trackingIndexName?: string | null;
   /** 基金规模（亿元人民币），无则 null */
   aumYi: number | null;
   /** 管理费率，如 0.0015 表示 0.15%/年 */

@@ -61,7 +61,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-/** Lobster — 顶栏英文品牌名 Stillwell */
+/** Lobster — 保留加载，供营销/装饰性英文标题按需使用 */
 const lobster = Lobster({
   variable: "--font-lobster",
   weight: "400",

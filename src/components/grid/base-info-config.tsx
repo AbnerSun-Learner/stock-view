@@ -1,7 +1,7 @@
 "use client";
 
+import { HelpTooltip } from "@/components/shared/help-tooltip";
 import { InputNumber } from "antd";
-import { HelpCircle } from "lucide-react";
 import { useMemo } from "react";
 
 interface BaseInfoConfigProps {
@@ -90,12 +90,12 @@ export function BaseInfoConfig({
             <h3 className="text-base font-semibold text-[var(--foreground)]">
               基准信息
             </h3>
-            <div className="group relative">
-              <HelpCircle className="h-4 w-4 cursor-help text-[var(--muted-foreground)] transition-colors hover:text-[var(--accent)]" />
-              <div className="pointer-events-none absolute left-0 top-full z-[99999] mt-2 hidden w-64 rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 text-xs leading-relaxed text-[var(--foreground)] shadow-[var(--ds-shadow-lg)] group-hover:block">
-                设置网格交易的基础参数，包括交易单位、价格精度和价格区间
-              </div>
-            </div>
+            <HelpTooltip
+              size="md"
+              placement="bottomLeft"
+              maxWidth="16rem"
+              title="设置网格交易的基础参数，包括交易单位、价格精度和价格区间"
+            />
           </div>
         </div>
       </div>
@@ -109,12 +109,7 @@ export function BaseInfoConfig({
             >
               <span className="text-[var(--loss)]">*</span>
               {field.label}
-              <div className="group relative">
-                <HelpCircle className="h-3.5 w-3.5 cursor-help text-[var(--muted-foreground)]" />
-                <div className="pointer-events-none absolute bottom-full left-0 z-[99999] mb-2 hidden w-48 rounded-lg border border-[var(--border)] bg-[var(--card)] p-2 text-xs leading-snug text-[var(--foreground)] shadow-[var(--ds-shadow-md)] group-hover:block">
-                  {field.tooltip}
-                </div>
-              </div>
+              <HelpTooltip title={field.tooltip} placement="topLeft" />
             </label>
             <InputNumber
               id={field.key}

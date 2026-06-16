@@ -303,121 +303,123 @@ function CorrelationPageContent() {
     <div className="correlation-page min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       <StillwellSiteNav />
 
-      <div className="pt-[72px]">
-        <div className="mx-auto max-w-6xl space-y-12 px-6 py-16 md:px-10 md:py-20 lg:py-24">
-          <motion.header
-            className="relative isolate"
-            initial={
-              reduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }
-            }
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: reduceMotion ? 0 : 0.68, ease: easeOut }}
-          >
-            <div className="ds-hero-glow" aria-hidden />
-            <div className="relative z-[1]">
-              <div className="ds-section-label">
-                <CorrelationHeaderPulse />
-                <span className="ds-section-label__text">Index Comparison</span>
-              </div>
-              <h1 className="mb-4 max-w-4xl text-[2.5rem] font-normal leading-[1.08] tracking-tight text-[var(--foreground)] md:text-5xl lg:text-6xl">
-                指数对比
-              </h1>
-              <p
-                className="max-w-xl text-base leading-[1.7] text-[var(--muted-foreground)]"
-                style={{ letterSpacing: "0.02em" }}
-              >
-                结合净值涨跌联动与底层成分重叠，看清两只指数基金标的的
-                <span className="marketing-gradient-text">真实重合度</span>
-                与分散度。
-              </p>
-            </div>
-          </motion.header>
-
-          {showCharts ? (
-            <section className="flex flex-row justify-end items-center gap-4 pb-6 correlation-results-rule overflow-x-auto correlation-period-toolbar">
-              <Segmented<CorrelationPeriod>
-                value={period}
-                onChange={(v) => handlePeriodChange(v)}
-                options={PERIOD_OPTIONS}
-                className={`correlation-segmented shrink-0${
-                  loading ? " opacity-70" : ""
-                }`}
-                disabled={loading}
-              />
-            </section>
-          ) : null}
-
-          {error && sessionPair ? (
-            <Alert
-              title="对比失败"
-              description={error}
-              type="error"
-              showIcon
-              action={
-                <button
-                  type="button"
-                  onClick={() =>
-                    fetchPairData({
-                      a: sessionPair.a,
-                      b: sessionPair.b,
-                      p: period,
-                      preserveOnError: false,
-                    })
-                  }
-                  className="marketing-primary-btn px-4 py-2 text-xs font-semibold text-[var(--accent-foreground)]"
-                >
-                  重试
-                </button>
+      <AntdProvider>
+        <div className="pt-[72px]">
+          <div className="site-container space-y-12 py-16 md:py-20 lg:py-24">
+            <motion.header
+              className="relative isolate"
+              initial={
+                reduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }
               }
-              className="correlation-card border border-[color:var(--border-color)]"
-            />
-          ) : null}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: reduceMotion ? 0 : 0.68, ease: easeOut }}
+            >
+              <div className="ds-hero-glow" aria-hidden />
+              <div className="relative z-[1]">
+                <div className="ds-section-label">
+                  <CorrelationHeaderPulse />
+                  <span className="ds-section-label__text">
+                    Index Comparison
+                  </span>
+                </div>
+                <h1 className="mb-4 max-w-4xl text-[2.5rem] font-normal leading-[1.08] tracking-tight text-[var(--foreground)] md:text-5xl lg:text-6xl">
+                  指数对比
+                </h1>
+                <p
+                  className="max-w-xl text-base leading-[1.7] text-[var(--muted-foreground)]"
+                  style={{ letterSpacing: "0.02em" }}
+                >
+                  结合净值涨跌联动与底层成分重叠，看清两只指数基金标的的
+                  <span className="marketing-gradient-text">真实重合度</span>
+                  与分散度。
+                </p>
+              </div>
+            </motion.header>
 
-          <section className="grid grid-cols-12 gap-6 lg:items-start">
-            <aside className="col-span-12 lg:col-span-4 space-y-6">
-              <PairInputCard
-                loading={loading}
-                currentA={codeA}
-                currentB={codeB}
-                onSubmit={handleSubmit}
+            {showCharts ? (
+              <section className="flex flex-row justify-end items-center gap-4 pb-6 correlation-results-rule overflow-x-auto correlation-period-toolbar">
+                <Segmented<CorrelationPeriod>
+                  value={period}
+                  onChange={(v) => handlePeriodChange(v)}
+                  options={PERIOD_OPTIONS}
+                  className={`correlation-segmented shrink-0${
+                    loading ? " opacity-70" : ""
+                  }`}
+                  disabled={loading}
+                />
+              </section>
+            ) : null}
+
+            {error && sessionPair ? (
+              <Alert
+                title="对比失败"
+                description={error}
+                type="error"
+                showIcon
+                action={
+                  <button
+                    type="button"
+                    onClick={() =>
+                      fetchPairData({
+                        a: sessionPair.a,
+                        b: sessionPair.b,
+                        p: period,
+                        preserveOnError: false,
+                      })
+                    }
+                    className="marketing-primary-btn px-4 py-2 text-xs font-semibold text-[var(--accent-foreground)]"
+                  >
+                    重试
+                  </button>
+                }
+                className="correlation-card border border-[color:var(--border-color)]"
               />
-              {showLoadingBlocks ? <SkeletonResultCard /> : null}
-              {data ? (
-                <PairResultCard data={data} periodLabel={periodLabel} />
-              ) : null}
-            </aside>
+            ) : null}
 
-            <main className="col-span-12 lg:col-span-8 space-y-6">
-              {showLoadingBlocks ? (
-                <>
-                  <SkeletonChart />
-                  <SkeletonChart />
-                  <SkeletonTable />
-                </>
-              ) : showCharts ? (
-                <>
-                  <LazyPairPerformanceChart
-                    data={data}
-                    periodLabel={periodLabel}
-                  />
-                  <LazyPairRollingChart data={data} />
-                  <PairCompareTable data={data} />
-                </>
-              ) : null}
-            </main>
-          </section>
+            <section className="grid grid-cols-12 gap-6 lg:items-start">
+              <aside className="col-span-12 lg:col-span-4 space-y-6">
+                <PairInputCard
+                  loading={loading}
+                  currentA={codeA}
+                  currentB={codeB}
+                  onSubmit={handleSubmit}
+                />
+                {showLoadingBlocks ? <SkeletonResultCard /> : null}
+                {data ? (
+                  <PairResultCard data={data} periodLabel={periodLabel} />
+                ) : null}
+              </aside>
+
+              <main className="col-span-12 lg:col-span-8 space-y-6">
+                {showLoadingBlocks ? (
+                  <>
+                    <SkeletonChart />
+                    <SkeletonChart />
+                    <SkeletonTable />
+                  </>
+                ) : showCharts ? (
+                  <>
+                    <LazyPairPerformanceChart
+                      data={data}
+                      periodLabel={periodLabel}
+                    />
+                    <LazyPairRollingChart data={data} />
+                    <PairCompareTable data={data} />
+                  </>
+                ) : null}
+              </main>
+            </section>
+          </div>
         </div>
-      </div>
+      </AntdProvider>
     </div>
   );
 }
 
 export default function CorrelationPage() {
   return (
-    <AntdProvider>
-      <Suspense fallback={<PairPageSuspenseFallback />}>
-        <CorrelationPageContent />
-      </Suspense>
-    </AntdProvider>
+    <Suspense fallback={<PairPageSuspenseFallback />}>
+      <CorrelationPageContent />
+    </Suspense>
   );
 }

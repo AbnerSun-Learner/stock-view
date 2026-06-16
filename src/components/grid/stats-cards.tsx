@@ -1,7 +1,7 @@
 "use client";
 
+import { HelpTooltip } from "@/components/shared/help-tooltip";
 import type { StressTest } from "@/types/grid";
-import { HelpCircle } from "lucide-react";
 
 interface StatsCardsProps {
   stressTest: StressTest;
@@ -66,15 +66,11 @@ export function StatsCards({ stressTest }: StatsCardsProps) {
               {item.label}
             </span>
             {item.tooltip && (
-              <div className="group relative">
-                <HelpCircle
-                  className="h-3 w-3 cursor-help text-[var(--muted-foreground)] opacity-60"
-                  strokeWidth={1.5}
-                />
-                <div className="pointer-events-none absolute bottom-full left-0 z-[99999] mb-2 hidden w-52 rounded-lg border border-[var(--border)] bg-[var(--card)] p-2.5 text-xs font-normal leading-snug text-[var(--foreground)] shadow-[var(--ds-shadow-lg)] group-hover:block">
-                  {item.tooltip}
-                </div>
-              </div>
+              <HelpTooltip
+                title={item.tooltip}
+                placement="topLeft"
+                maxWidth="13rem"
+              />
             )}
           </div>
           <div

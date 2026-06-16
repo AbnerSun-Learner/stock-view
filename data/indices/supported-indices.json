@@ -36,12 +36,6 @@
     "displayOrder": 60
   },
   {
-    "code": "932000.CSI",
-    "name": "中证2000",
-    "category": "宽基",
-    "displayOrder": 70
-  },
-  {
     "code": "000922.CSI",
     "name": "中证红利",
     "category": "行业",
@@ -58,12 +52,6 @@
     "name": "全指医药",
     "category": "行业",
     "displayOrder": 1010
-  },
-  {
-    "code": "000992.SH",
-    "name": "金融地产",
-    "category": "行业",
-    "displayOrder": 1020
   },
   {
     "code": "000993.SH",

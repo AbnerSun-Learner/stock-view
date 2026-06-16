@@ -285,7 +285,7 @@ export default function LandingPage() {
       <main>
         {/* Hero：1.1fr / 0.9fr · 展示标题比例与氛围光 */}
         <motion.section
-          className="relative isolate mx-auto max-w-6xl px-6 pb-20 pt-36 md:pb-28 md:pt-40 lg:pb-36 lg:pt-44"
+          className="site-container relative isolate pb-20 pt-36 md:pb-28 md:pt-40 lg:pb-36 lg:pt-44"
           initial="hidden"
           animate="visible"
           variants={reduceMotion ? {} : stagger}
@@ -368,7 +368,7 @@ export default function LandingPage() {
           viewport={{ once: true, amount: 0.15, margin: "-60px" }}
           variants={reduceMotion ? {} : stagger}
         >
-          <div className="mx-auto max-w-6xl px-6 lg:px-10">
+          <div className="site-container">
             <motion.div variants={reduceMotion ? {} : fadeUp}>
               <SectionLabel text="Tools · 基础工具" />
             </motion.div>
@@ -403,7 +403,7 @@ export default function LandingPage() {
         {/* About + Snapshot · 点阵深色卡 */}
         <section
           id="about"
-          className="mx-auto max-w-6xl scroll-mt-24 px-6 py-28 md:py-36 lg:py-44 lg:px-10"
+          className="site-container scroll-mt-24 py-28 md:py-36 lg:py-44"
         >
           <motion.div
             initial="hidden"
@@ -493,7 +493,7 @@ export default function LandingPage() {
             className="pointer-events-none absolute -left-20 bottom-0 h-56 w-56 rounded-full bg-[color-mix(in_srgb,var(--accent-secondary)_6%,transparent)] blur-[100px]"
             aria-hidden
           />
-          <div className="relative mx-auto max-w-6xl px-6 lg:px-10">
+          <div className="site-container relative">
             <motion.div variants={reduceMotion ? {} : fadeUp}>
               <SectionLabel text="Start Now" onDark />
             </motion.div>
@@ -533,7 +533,7 @@ export default function LandingPage() {
       </main>
 
       <motion.footer
-        className="mx-auto max-w-6xl border-t border-[var(--border)] px-6 py-8 lg:px-10"
+        className="site-container border-t border-[var(--border)] py-8"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.35 }}

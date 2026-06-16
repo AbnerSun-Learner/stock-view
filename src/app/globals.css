@@ -21,6 +21,9 @@
   --ds-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.08);
   --ds-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1);
 
+  /* 浮层：Tooltip 始终高于顶栏 (z-50) 与其它页面叠层 */
+  --z-tooltip: 10000;
+
   --landing-bg: #fafafa;
 
   /* 指数对比矩阵填色基（仅 RGB 通道，alpha 由 JS 给出） */
@@ -296,12 +299,50 @@ h6 {
   transform: scale(0.98);
 }
 
-/** 顶栏英文品牌名（Lobster）·字色与章节标签 / 卡片眉题一致 */
+/** 全站主内容区与顶栏共用水平对齐：max-w-6xl · px-4 · lg:px-6 */
+.site-container {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .site-container {
+    padding-inline: 1.5rem;
+  }
+}
+
+/** 网格页：略放宽内容区、收紧左右边距，表格保持原字号且不横向滚动 */
+.site-container--grid {
+  max-width: 80rem;
+  padding-inline: 0.5rem;
+}
+
+@media (min-width: 1024px) {
+  .site-container--grid {
+    padding-inline: 0.75rem;
+  }
+}
+
+/** 顶栏品牌区：固定深蓝黑，避免 Ant Design 链接色覆盖 */
+.site-nav-brand,
+.site-nav-brand:visited {
+  color: var(--foreground);
+}
+
+.site-nav-brand:hover {
+  color: var(--foreground);
+  opacity: 0.7;
+}
+
+/** 顶栏英文品牌名 · Inter 粗体，与 Logo 同色（参考稿深蓝 #0f172a） */
 .nav-brand-en {
-  font-family: var(--font-lobster), cursive;
-  font-weight: 400;
-  letter-spacing: 0.02em;
-  color: var(--accent);
+  font-family: var(--font-inter), var(--font-noto-sans-sc), "PingFang SC",
+    sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: inherit;
 }
 
 /** 页面内英文文案：Arial（与中文混排时 CJK 回退 Noto） */
@@ -546,6 +587,37 @@ html {
 }
 
 /* 指数对比：对比结果问号说明 & 图表 Tooltip（浅卡渐变，无侧边饰条） */
+.ant-tooltip {
+  z-index: var(--z-tooltip) !important;
+  --antd-arrow-background-color: #ffffff;
+}
+
+.ant-tooltip .ant-tooltip-container {
+  color: var(--foreground) !important;
+  background: #ffffff !important;
+  border: 1px solid var(--border);
+  box-shadow: var(--ds-shadow-lg);
+}
+
+.ds-help-tooltip .ant-tooltip-container {
+  min-width: 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.55;
+  border-radius: 0.5rem;
+}
+
+.ds-help-tooltip--rich .ant-tooltip-container {
+  padding: 0.75rem;
+  border-color: color-mix(
+    in srgb,
+    var(--border-color) 88%,
+    var(--correlation-brand)
+  );
+  box-shadow: 0 6px 26px rgba(0, 82, 255, 0.14),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+
 .correlation-rich-tooltip {
   min-width: 16rem;
   max-width: min(22rem, 94vw);
